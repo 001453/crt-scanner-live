@@ -1,0 +1,183 @@
+<meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:#F4F7FB;color:#1F2937}
+.db{max-width:1180px;margin:0 auto;padding:16px 14px 30px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.hdr h2{font-size:24px;font-weight:700;color:#111827}
+.hdr p{font-size:13px;color:#6B7280;margin-top:4px}
+.pill{font-size:12px;padding:4px 11px;border-radius:20px;font-weight:600}
+.ok{background:#EAF3DE;color:#3B6D11}.ld{background:#FAEEDA;color:#854F0B}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;background:#fff;padding:10px;border:1px solid #E5E7EB;border-radius:10px}
+.cb{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#4B5563;cursor:pointer}
+.cb.on{background:#185FA5;color:#fff;border-color:#185FA5}
+.rbtn{font-size:12px;padding:7px 12px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#111827;cursor:pointer;margin-left:auto}
+.scan-note{font-size:12px;color:#6B7280;padding:2px 6px}
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-bottom:1rem}
+.mc{background:#fff;border-radius:10px;padding:12px;border:1px solid #E5E7EB}
+.mc .lb{font-size:12px;color:#6B7280;margin-bottom:5px}
+.mc .vl{font-size:26px;font-weight:700;color:#111827}
+.pos{color:#2E7D32}.neg{color:#B91C1C}.muted{color:#6B7280}
+.sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:1rem}
+.sc{border-radius:12px;border:1px solid #E5E7EB;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.sc.sel{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.15)}
+.sc-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px}
+.sc-pair{font-size:15px;font-weight:700;color:#111827}
+.sc-cat{font-size:11px;color:#6B7280;margin-top:2px}
+.live-tag,.ai-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px}
+.live-tag{background:#E8F5E9;color:#1B5E20}
+.ai-ok{background:#E8F5E9;color:#1B5E20}.ai-warn{background:#FFF4E5;color:#92400E}.ai-muted{background:#EEF2F7;color:#475569}
+.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
+.blong{background:#EAF3DE;color:#2E6309}.bshort{background:#FCEBEB;color:#9A2020}
+.sc-divider{height:1px;background:#EEF2F7;margin:0 12px}
+.levels{display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 12px 10px}
+.lv{display:flex;flex-direction:column;align-items:center;padding:6px 4px;border-radius:6px}
+.lv.entry-lv{background:rgba(24,95,165,.08)}
+.lv .lname{font-size:10px;color:#6B7280;margin-bottom:3px;font-weight:600}
+.lv .lprice{font-size:15px;font-weight:600}
+.lv .ldesc{font-size:10px;margin-top:2px;color:#6B7280}
+.sc-footer{background:#F9FAFB;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+.sc-meta{font-size:11px;color:#6B7280}
+.rr-badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;background:#fff;border:1px solid #D1D5DB;color:#111827}
+.sbtn{font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer}
+.wait-msg{text-align:center;padding:2rem;color:#6B7280;font-size:13px;grid-column:1/-1}
+.chartbox,.tcard,.aip{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:1rem}
+.chartbox h3,.tcard h3,.aip h3{font-size:14px;font-weight:700;color:#374151;margin-bottom:8px}
+.feed,.chartmeta,.src{font-size:12px;color:#6B7280;margin-bottom:8px}
+.chartacts{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.pinbtn{font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid #D1D5DB;background:#fff;cursor:pointer}
+.pinbtn.on{background:#185FA5;color:#fff}
+#chart{height:320px;width:100%}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:#6B7280;font-weight:600;padding:7px;border-bottom:1px solid #E5E7EB;white-space:nowrap}
+td{padding:8px 7px;border-bottom:1px solid #F1F5F9;color:#111827;white-space:nowrap}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.kcard{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:10px}
+.kcard h4{font-size:13px;margin-bottom:6px;color:#374151}
+.klist{font-size:11px;color:#4B5563;max-height:150px;overflow:auto;line-height:1.45}
+.clickrow{cursor:pointer}
+.clickrow:hover{background:#F8FBFF}
+.reason{font-size:11px;color:#6B7280}
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px}
+.risk-grid label{font-size:11px;color:#6B7280;display:flex;flex-direction:column;gap:4px}
+.risk-grid input{padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:12px}
+</style>
+<div class="db">
+  <div class="hdr"><div><h2>CRT Scanner</h2><p>Candle Range Theory · İşlem Adayları</p></div><span class="pill ld" id="pill">Taranıyor...</span></div>
+  <div class="src" id="srcNote">—</div>
+  <div class="ctrl">
+    <button class="cb on" onclick="setCat('all',this)">Tümü</button><button class="cb" onclick="setCat('forex',this)">Forex</button><button class="cb" onclick="setCat('metals',this)">Metaller</button><button class="cb" onclick="setCat('crypto',this)">Kripto</button><button class="cb" onclick="setCat('indices',this)">Endeksler</button>
+    <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)">AI Filtre: Açık</button>
+    <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))">İşlem limit: 6</button>
+    <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
+    <button class="rbtn" onclick="refreshAll()">Tara</button>
+  </div>
+  <div class="mg"><div class="mc"><div class="lb">Taranan</div><div class="vl muted" id="m0">—</div></div><div class="mc"><div class="lb">Long</div><div class="vl pos" id="m1">—</div></div><div class="mc"><div class="lb">Short</div><div class="vl neg" id="m2">—</div></div><div class="mc"><div class="lb">Yatay Bölge</div><div class="vl muted" id="m3">—</div></div></div>
+  <div class="sig-grid" id="sigGrid"><div class="wait-msg">Tarama başlatılıyor...</div></div>
+  <div class="chartbox"><h3>Canlı Grafik (Seçili Sinyal)</h3><div class="feed" id="sigFeed">Yeni sinyaller burada akacak...</div><div class="chartmeta" id="chartMeta">Karttan "Grafikte Aç" seçin.</div><div class="chartacts"><button class="pinbtn" id="pinBtn" onclick="togglePin()">Sabitle: Kapalı</button><span class="scan-note" id="pinInfo">Seçili parite otomatik değişebilir.</span></div><div id="chart"></div></div>
+  <div class="tcard"><h3>Kategori Bazlı Tarama (Hepsi)</h3><div class="kgrid" id="kGrid"></div></div>
+  <div class="tcard">
+    <h3>Kasa / Lot Yönetimi</h3>
+    <div class="reason">Forex için varsayılan kaldıraç: 1:200. Önerilen lot, risk tutarı ve marjin sınırı birlikte dikkate alınarak hesaplanır.</div>
+    <div class="risk-grid">
+      <label>Bakiye (USD)<input id="accBal" type="number" step="10" value="1000"></label>
+      <label>Risk % (işlem başı)<input id="riskPct" type="number" step="0.1" value="1"></label>
+      <label>Kaldıraç<input id="levVal" type="number" step="1" value="200"></label>
+      <label>Min Lot<input id="minLot" type="number" step="0.01" value="0.01"></label>
+      <label>Max Lot<input id="maxLot" type="number" step="0.01" value="5"></label>
+      <label>Lot Adımı<input id="lotStep" type="number" step="0.01" value="0.01"></label>
+    </div>
+    <button class="cb" style="margin-top:8px" onclick="updateRiskConfig()">Lot Hesabını Güncelle</button>
+  </div>
+  <div class="tcard">
+    <h3>Tek Tık Emir Planı</h3>
+    <div class="risk-grid">
+      <label>Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="3"></label>
+      <label>Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="2"></label>
+      <label>Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="40"></label>
+    </div>
+    <button class="cb" style="margin-top:8px" onclick="updatePlanConfig()">Planı Güncelle</button>
+    <div class="kgrid" id="planGrid" style="margin-top:10px"></div>
+  </div>
+  <div class="tcard"><h3>Tüm Tarama Sonuçları</h3><div class="reason">Not: <b>Bölge %</b> sinyalden sonraki değişim değil, sinyal anındaki range genişliğidir. Formül: <code>(CRH-CRL)/Mid * 100</code>.</div><table><thead><tr><th>Parite</th><th>Fiyat</th><th>Trend</th><th>Sinyal</th><th>Giriş</th><th>SL</th><th>TP</th><th>R:R</th><th>Takip TF</th><th>CRH</th><th>CRL</th><th>Bölge%</th></tr></thead><tbody id="tbl"></tbody></table></div>
+  <div class="tcard"><h3>Sinyal Sonuç / Sebep (İnceleme Alanı)</h3><div class="kgrid" id="reviewGrid"></div></div>
+  <div class="aip"><h3>AI Analiz (OpenAI)</h3><div class="feed" id="aio">Tarama sonrası analiz alabilirsiniz.</div><button class="cb" onclick="runAI()">Analiz Et</button></div>
+</div>
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+const PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
+const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
+let riskCfg={balance:1000,riskPct:1,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
+let planCfg={dailyRiskPct:3,maxOpenPos:2,maxMarginUse:40};
+const catLabel=c=>({forex:'Forex',metals:'Metaller',crypto:'Kripto',indices:'Endeks'}[c]||c);
+const dp=id=>['BTCUSD'].includes(id)?0:['ETHUSD','BNBUSD'].includes(id)?2:['SOLUSD','XRPUSD','XAGUSD'].includes(id)?3:['XAUUSD','XPTUSD','XPDUSD','US30','US500','NAS100','UK100','DE40'].includes(id)?2:5;
+const fp=(v,id)=>v==null||isNaN(v)?'—':Number(v).toFixed(dp(id));
+function detectTrend(c){const f=c.slice(0,10).reduce((s,x)=>s+x.c,0)/10,l=c.slice(-10).reduce((s,x)=>s+x.c,0)/10,d=(l-f)/f*100;return d>0.25?'up':d<-0.25?'down':'range'}
+function detectRange(c){const s=c.slice(-24),crh=Math.max(...s.map(x=>x.h)),crl=Math.min(...s.map(x=>x.l)),mid=(crh+crl)/2,pct=(crh-crl)/mid*100;return{crh,crl,mid,pct,isRange:pct<2}}
+function calcLevels(a,e,crh,crl){const atr=(crh-crl)*0.15;let sl,tp,rr;if(a==='LONG'){sl=crl-atr*.5;tp=crh-atr*.3;rr=(tp-e)/(e-sl)}else{sl=crh+atr*.5;tp=crl+atr*.3;rr=(e-tp)/(sl-e)}return{sl,tp,rr:Number.isFinite(rr)&&rr>0?rr:0}}
+function crtScan(c,t){const r=detectRange(c),{crh,crl,mid,pct,isRange}=r;if(!isRange)return{action:'WAIT',crh,crl,mid,pct};const [c1,c2,c3]=c.slice(-3),p=c3.c,z=(crh-crl)*.38,nearB=p<=crl+z,nearT=p>=crh-z,sL=c2.l<c1.l,sH=c2.h>c1.h,b1=c1.c>c1.o,b2=c1.c<c1.o;if(nearB&&(t==='up'||t==='range')&&sL&&b1){const e=c3.c,l=calcLevels('LONG',e,crh,crl);return{action:'LONG',crh,crl,mid,pct,entry:e,...l}}if(nearT&&(t==='down'||t==='range')&&sH&&b2){const e=c3.c,l=calcLevels('SHORT',e,crh,crl);return{action:'SHORT',crh,crl,mid,pct,entry:e,...l}}return{action:'WAIT',crh,crl,mid,pct}}
+function signalQuality(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 0;let s=0,rr=d.sig.rr||0,p=d.sig.pct||99;if(rr>=2)s+=50;else if(rr>=1.5)s+=35;else if(rr>=1.2)s+=20;if(p<=1.2)s+=25;else if(p<=1.8)s+=15;if(d.aiStatus==='confirmed')s+=20;if(d.trend==='range')s+=5;return Math.min(100,s)}
+function getRecommendation(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'Pas';const rr=d.sig.rr||0,p=d.sig.pct||99;if(d.aiStatus==='confirmed'&&rr>=1.6&&p<=1.8)return'Hemen';if(rr>=1.2&&p<=2.2)return'Bekle';return'Pas'}
+function invalidationRule(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'—';return d.sig.action==='LONG'?`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) altı`:`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) üstü`}
+function roundStep(v,step){if(step<=0)return v;return Math.floor(v/step)*step}
+function lotSuggestion(d){
+  if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return null;
+  const entry=d.sig.entry,sl=d.sig.sl,price=d.price||entry||0;
+  const stopDist=Math.abs((entry||0)-(sl||0));
+  if(!stopDist||!price)return null;
+  const riskAmount=(riskCfg.balance*riskCfg.riskPct)/100;
+  let contractSize=100000;
+  if(d.pair.cat==='metals')contractSize=100;
+  if(d.pair.cat==='crypto')contractSize=1;
+  if(d.pair.cat==='indices')contractSize=10;
+  let riskPerLot=stopDist*contractSize;
+  if(d.pair.cat==='forex'&&!d.pair.id.endsWith('USD'))riskPerLot=riskPerLot/Math.max(price,0.00001);
+  const lotByRisk=riskAmount/Math.max(riskPerLot,0.00001);
+  const marginPerLot=(price*contractSize)/Math.max(riskCfg.leverage,1);
+  const maxByMargin=(riskCfg.balance*0.9)/Math.max(marginPerLot,0.00001);
+  let lot=Math.min(lotByRisk,maxByMargin,riskCfg.maxLot);
+  lot=Math.max(riskCfg.minLot,lot);
+  lot=roundStep(lot,riskCfg.lotStep);
+  return {lot:Number(lot.toFixed(2)),riskAmount:Number(riskAmount.toFixed(2)),maxByMargin:Number(maxByMargin.toFixed(2))};
+}
+function contractSizeFor(d){if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
+function marginUsagePct(d,lot){const entry=d.price||d.sig?.entry||0;if(!entry||!lot)return 0;const marginPerLot=(entry*contractSizeFor(d))/Math.max(riskCfg.leverage,1);return ((marginPerLot*lot)/Math.max(riskCfg.balance,1))*100}
+function safeRecommendation(d){const base=getRecommendation(d);const lot=lotSuggestion(d);if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};const m=marginUsagePct(d,lot.lot);if(m>planCfg.maxMarginUse)return{rec:'Pas',reason:`Marjin ${m.toFixed(1)}% > limit ${planCfg.maxMarginUse}%`};if((d.sig?.rr||0)<1.2)return{rec:'Pas',reason:'RR düşük'};if(base==='Hemen'&&m>planCfg.maxMarginUse*0.8)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};return{rec:base,reason:'Koşullar uygun'}}
+const aiText=d=>d.aiStatus==='confirmed'?'AI Onaylı':d.aiStatus==='watch'?'AI Şüpheli':'AI Bekliyor';
+const aiClass=d=>d.aiStatus==='confirmed'?'ai-tag ai-ok':d.aiStatus==='watch'?'ai-tag ai-warn':'ai-tag ai-muted';
+const recommendTF=d=>!d?.sig||!['LONG','SHORT'].includes(d.sig.action)?'—':(d.sig.pct<.8&&d.sig.rr>=1.8?'M15/H1':d.sig.pct<1.4?'M30/H1':'H1/H4');
+function filtered(){return PAIRS.filter(p=>activeCat==='all'||p.cat===activeCat).map(p=>MKT[p.id]).filter(Boolean)}
+function setCat(c,el){activeCat=c;document.querySelectorAll('.ctrl .cb').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderAll()}
+function pushFeed(m){const el=document.getElementById('sigFeed');const cur=el.textContent==='Yeni sinyaller burada akacak...'?'':el.textContent+'\n';el.textContent=(cur+m).split('\n').slice(-8).join('\n')}
+function initChart(){if(chartRef||!window.LightweightCharts)return;const el=document.getElementById('chart');chartRef=LightweightCharts.createChart(el,{layout:{background:{type:'solid',color:'#fff'},textColor:'#444'}});candleSeries=typeof chartRef.addCandlestickSeries==='function'?chartRef.addCandlestickSeries({upColor:'#3B6D11',downColor:'#A32D2D',wickUpColor:'#3B6D11',wickDownColor:'#A32D2D',borderVisible:false}):chartRef.addSeries(window.LightweightCharts.CandlestickSeries,{upColor:'#3B6D11',downColor:'#A32D2D'});chartRef.applyOptions({width:el.clientWidth,height:320});window.addEventListener('resize',()=>chartRef&&chartRef.applyOptions({width:el.clientWidth}))}
+function showOnChart(id){initChart();const d=MKT[id];if(!d||!candleSeries)return;selectedPairId=id;candleSeries.setData(d.candles.map(c=>({time:c.t,open:c.o,high:c.h,low:c.l,close:c.c})));lines.forEach(l=>candleSeries.removePriceLine(l));lines=[];if(d.sig&&['LONG','SHORT'].includes(d.sig.action)){lines.push(candleSeries.createPriceLine({price:d.sig.entry,color:'#185FA5',title:'ENTRY'}));lines.push(candleSeries.createPriceLine({price:d.sig.sl,color:'#A32D2D',title:'SL'}));lines.push(candleSeries.createPriceLine({price:d.sig.tp,color:'#3B6D11',title:'TP'}))}document.getElementById('chartMeta').textContent=`${d.pair.label} · ${d.sig.action||'WAIT'} · Takip TF: ${recommendTF(d)}`;renderSignalCards()}
+function togglePin(){const b=document.getElementById('pinBtn'),i=document.getElementById('pinInfo');if(pinnedPairId){pinnedPairId=null;b.textContent='Sabitle: Kapalı';b.classList.remove('on');i.textContent='Seçili parite otomatik değişebilir.';return}if(!selectedPairId||!MKT[selectedPairId])return;i.textContent=`Sabit parite: ${MKT[selectedPairId].pair.label}`;pinnedPairId=selectedPairId;b.textContent='Sabitle: Açık';b.classList.add('on')}
+function renderMetrics(){const a=Object.values(MKT),s=a.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));m0.textContent=a.length;m1.textContent=s.filter(d=>d.sig.action==='LONG').length;m2.textContent=s.filter(d=>d.sig.action==='SHORT').length;m3.textContent=a.filter(d=>d.sig&&d.sig.pct<2).length}
+function renderSignalCards(){const a=filtered().filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((x,y)=>signalQuality(y)-signalQuality(x)).slice(0,tradeLimit);if(!a.length){sigGrid.innerHTML='<div class="wait-msg">İnceleme için aktif sinyal yok.</div>';return}sigGrid.innerHTML=a.map(d=>`<div class="sc ${selectedPairId===d.pair.id?'sel':''}"><div class="sc-head"><div><div class="sc-pair">${d.pair.label}<span class="live-tag">CANLI · ${d.sourceName||'mt5'} · ${d.sourceSymbol||d.pair.id}</span><span class="${aiClass(d)}">${aiText(d)}</span></div><div class="sc-cat">${catLabel(d.pair.cat)} · ${d.trend==='up'?'↑ Yükselen':d.trend==='down'?'↓ Düşen':'→ Yatay'} · Kalite ${signalQuality(d)}/100</div></div><span class="badge ${d.sig.action==='LONG'?'blong':'bshort'}">${d.sig.action}</span></div><div class="sc-divider"></div><div class="levels"><div class="lv"><div class="lname">STOP</div><div class="lprice neg">${fp(d.sig.sl,d.pair.id)}</div></div><div class="lv entry-lv"><div class="lname">GİRİŞ</div><div class="lprice">${fp(d.sig.entry,d.pair.id)}</div></div><div class="lv"><div class="lname">HEDEF</div><div class="lprice pos">${fp(d.sig.tp,d.pair.id)}</div></div></div><div class="sc-footer"><span class="sc-meta">R:R ${d.sig.rr.toFixed(2)} · TF ${recommendTF(d)}</span><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Aç</button></div></div>`).join('')}
+function signalReason(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 'Sinyal yok / bekle modu';const t=d.trend==='up'?'trend yukarı':d.trend==='down'?'trend aşağı':'trend yatay';const z=d.sig.pct<=1.2?'dar bölge':d.sig.pct<=2?'orta bölge':'geniş bölge';const rr=(d.sig.rr||0)>=2?'yüksek RR':(d.sig.rr||0)>=1.4?'orta RR':'düşük RR';return `${t}, ${z}, ${rr}`}
+function renderTable(){const rows=filtered();tbl.innerHTML=rows.length?rows.map(d=>{const s=d.sig&&['LONG','SHORT'].includes(d.sig.action),sig=s?`<span class="${d.sig.action==='LONG'?'pos':'neg'}">${d.sig.action}</span> <span class="${aiClass(d)}">${aiText(d)}</span>`:'—',cl=s?'clickrow':'',oc=s?` onclick="showOnChart('${d.pair.id}')"`:'';return`<tr class="${cl}"${oc}><td>${d.pair.label}</td><td>${fp(d.price,d.pair.id)}</td><td>${d.trend}</td><td>${sig}</td><td>${s?fp(d.sig.entry,d.pair.id):'—'}</td><td>${s?fp(d.sig.sl,d.pair.id):'—'}</td><td>${s?fp(d.sig.tp,d.pair.id):'—'}</td><td>${s?d.sig.rr.toFixed(2):'—'}</td><td>${s?recommendTF(d):'—'}</td><td>${fp(d.sig?.crh,d.pair.id)}</td><td>${fp(d.sig?.crl,d.pair.id)}</td><td>${d.sig?.pct?d.sig.pct.toFixed(2)+'%':'—'}</td></tr>`}).join(''):'<tr><td colspan="12" class="muted">Veri yok</td></tr>'}
+function renderReviewCards(){const root=document.getElementById('reviewGrid');if(!root)return;const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).sort((a,b)=>signalQuality(b)-signalQuality(a));root.innerHTML=sigs.length?sigs.map(d=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),m=lot?marginUsagePct(d,lot.lot):0;return`<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>${d.pair.label} · ${d.sig.action} · R:R ${d.sig.rr.toFixed(2)}</h4><div class="klist">Öneri: <b>${safe.rec}</b><br>Sonuç: ${d.aiStatus==='confirmed'?'İşleme Uygun':'İzleme'}<br>Sebep: ${signalReason(d)}<br>Onay: ${recommendTF(d)}<br>Geçersiz olma: ${invalidationRule(d)}<br>Güvenlik Notu: ${safe.reason}<br>Bölge: ${d.sig.pct.toFixed(2)}%<br>Lot (öneri): <b>${lot?lot.lot:'—'}</b> · Risk $${lot?lot.riskAmount:'—'} · Marjin ${m.toFixed(1)}%</div></div>`}).join(''):'<div class="kcard"><div class="klist">Aktif sinyal oluştuğunda burada sebep/sonuç kartı görünecek.</div></div>'}
+function renderOrderPlan(){const root=document.getElementById('planGrid');if(!root)return;const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return}const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);root.innerHTML=selected.map((d,idx)=>{const lot=lotSuggestion(d),safe=safeRecommendation(d);let lotAdj='—';if(lot){const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);lotAdj=Math.max(riskCfg.minLot,roundStep(scaled,riskCfg.lotStep)).toFixed(2)}const m=lotAdj!=='—'?marginUsagePct(d,Number(lotAdj)):0;return`<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>Önerilen Lot: <b>${lotAdj}</b><br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}</div></div>`}).join('')}
+function renderCategoryPanels(){kGrid.innerHTML=['forex','metals','crypto','indices'].map(c=>{const r=PAIRS.filter(p=>p.cat===c).map(p=>MKT[p.id]).filter(Boolean),s=r.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));return`<div class="kcard"><h4>${catLabel(c)} · ${r.length} ürün · ${s.length} sinyal</h4><div class="klist">${r.slice(0,30).map(d=>`${d.pair.label} · ${d.sig?.action||'WAIT'} · TF:${recommendTF(d)}`).join('<br>')||'Veri yok'}</div></div>`}).join('')}
+function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan()}
+async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend}));const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch"}]}\\nRule: rr<1.2 or zone>1.8 => watch.\\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:300,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]=x.status);items.forEach(d=>d.aiStatus=m[d.pair.id]==='confirmed'?'confirmed':m[d.pair.id]==='watch'?'watch':'unknown')}
+async function scanPairByIntervals(pair){let best=null;for(const itv of SCAN_INTERVALS){try{const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:itv,count:180,alignmentTimezone:SCAN_TZ})});if(!r.ok)continue;const j=await r.json();if(!Array.isArray(j.candles)||j.candles.length<30)continue;const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,row={pair,candles,trend,sig,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ};if(sig&&['LONG','SHORT'].includes(sig.action)){if(!best||sig.rr>(best.sig?.rr||0))best=row}else if(!best&&itv==='H1')best=row}catch(e){}}return best}
+async function refreshAll(){if(isScanning)return;isScanning=true;pill.textContent='Taranıyor...';pill.className='pill ld';MKT={};sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';let done=0,src={mt5:0,unsupported:0};for(const p of PAIRS){done++;pill.textContent=`Taranıyor... ${done}/${PAIRS.length} · ${p.label}`;const row=await scanPairByIntervals(p);if(row){MKT[p.id]=row;src.mt5++}else src.unsupported++;if(done%5===0)renderAll();await new Promise(r=>setTimeout(r,120))}const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));sigs.forEach(d=>d.aiStatus='unknown');try{await aiValidate(sigs)}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`)}const next={};sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`)});prevSignalMap=next;renderAll();pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;pill.className='pill ok';srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);isScanning=false}
+function toggleAutoScan(el){autoScanOn=!autoScanOn;el.textContent=`Oto Tarama: ${autoScanOn?'Açık':'Kapalı'}`;el.classList.toggle('on',autoScanOn);if(autoScanOn)startAuto();else stopAuto()}
+function toggleAiFilter(el){aiFilterOn=!aiFilterOn;el.textContent=`AI Filtre: ${aiFilterOn?'Açık':'Kapalı'}`;el.classList.toggle('on',aiFilterOn);renderSignalCards()}
+function setTradeLimit(v){const n=Number(v);if(!Number.isFinite(n))return;tradeLimit=Math.max(1,Math.min(20,n));limitLbl.textContent=`İşlem limit: ${tradeLimit}`;renderSignalCards()}
+function updateRiskConfig(){
+  riskCfg.balance=Math.max(10,Number(accBal.value||1000));
+  riskCfg.riskPct=Math.max(0.1,Number(riskPct.value||1));
+  riskCfg.leverage=Math.max(1,Number(levVal.value||200));
+  riskCfg.minLot=Math.max(0.001,Number(minLot.value||0.01));
+  riskCfg.maxLot=Math.max(riskCfg.minLot,Number(maxLot.value||5));
+  riskCfg.lotStep=Math.max(0.001,Number(lotStep.value||0.01));
+  renderReviewCards();renderOrderPlan();
+}
+function updatePlanConfig(){planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||3));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||2)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||40)));renderOrderPlan();renderReviewCards()}
+let autoT=null,countT=null;function tick(){if(!autoScanOn)return scanNote.textContent='Oto tarama kapalı';const ms=Math.max(0,AUTO_SCAN_MS-(Date.now()%AUTO_SCAN_MS));scanNote.textContent=`Sonraki tarama: ${Math.ceil(ms/1000)}sn`}function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterval(()=>refreshAll(),AUTO_SCAN_MS);countT=setInterval(tick,1000);tick()}function stopAuto(){clearInterval(autoT);clearInterval(countT)}
+async function runAI(){const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));const lines=sigs.map(d=>`${d.pair.label} ${d.sig.action} RR=${(d.sig.rr||0).toFixed(2)} TF=${recommendTF(d)}`).join('\n')||'Aktif sinyal yok';try{const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt:`CRT olarak değerlendir:\n${lines}`})});const j=await r.json();aio.textContent=(j.text||'Analiz alınamadı').toString()}catch(e){aio.textContent='AI hatası: '+e.message}}
+refreshAll().then(()=>startAuto());
+</script>
