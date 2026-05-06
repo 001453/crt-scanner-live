@@ -61,6 +61,88 @@ td{padding:8px 7px;border-bottom:1px solid #F1F5F9;color:#111827;white-space:now
 .risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px}
 .risk-grid label{font-size:11px;color:#6B7280;display:flex;flex-direction:column;gap:4px}
 .risk-grid input{padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:12px}
+
+/* Newspaper theme overrides (eye-friendly) */
+body{background:#efe6d2;color:#3a3328}
+.hdr h2{color:#2b241c}
+.hdr p,.scan-note,.reason,.src,.feed,.chartmeta{color:#6a5d49}
+.ctrl,.mc,.sc,.chartbox,.tcard,.aip,.kcard{background:#f9f2e4;border-color:#d6c9b2;box-shadow:none}
+.cb,.rbtn,.sbtn,.pinbtn,.aibtn{background:#f3ead8;border-color:#cdbb9c;color:#3a3328}
+.cb.on,.pinbtn.on{background:#6b5b45;color:#f8f2e6;border-color:#6b5b45}
+.sc-divider{background:#e5d9c2}
+th{color:#6f624f;border-bottom-color:#d8ccb8}
+td{color:#3a3328;border-bottom-color:#e8dcc9}
+.wait-msg{color:#7a6d58}
+.live-tag{background:#e8dfcc;color:#5a4d3d}
+.ai-ok{background:#dfe9d8;color:#395733}
+.ai-warn{background:#efe2cf;color:#7a4f1f}
+.ai-muted{background:#e7dece;color:#5a4d3d}
+.blong{background:#dfe9d8;color:#395733}
+.bshort{background:#f0ddd8;color:#7e2e2e}
+.pos{color:#2f6a3a}.neg{color:#8f3a34}.muted{color:#756955}
+
+/* Retro newspaper details */
+body{
+  background-image:
+    radial-gradient(rgba(80,60,30,0.03) 0.6px, transparent 0.6px),
+    linear-gradient(to bottom, rgba(255,255,255,0.15), rgba(0,0,0,0.02));
+  background-size: 3px 3px, 100% 100%;
+}
+.hdr h2,.chartbox h3,.tcard h3,.aip h3,.kcard h4{
+  font-family: "Times New Roman", Georgia, serif;
+  letter-spacing:.2px;
+}
+.hdr h2{
+  border-bottom:1px solid #cdbd9f;
+  display:inline-block;
+  padding-bottom:2px;
+}
+table{border-collapse:separate;border-spacing:0}
+th,td{
+  border-bottom:1px solid #d9ccb5;
+}
+th{
+  font-family:"Times New Roman", Georgia, serif;
+  font-size:12.5px;
+}
+.tcard table tr:hover td{
+  background:rgba(120,95,60,0.05);
+}
+
+/* Night newspaper mode */
+body.night-paper{
+  background:#2a241c;
+  color:#e6dcc9;
+  background-image:
+    radial-gradient(rgba(235,220,190,0.04) 0.6px, transparent 0.6px),
+    linear-gradient(to bottom, rgba(255,240,210,0.03), rgba(0,0,0,0.25));
+}
+body.night-paper .hdr h2{color:#f1e8d5;border-bottom-color:#6e5f47}
+body.night-paper .hdr p,
+body.night-paper .scan-note,
+body.night-paper .reason,
+body.night-paper .src,
+body.night-paper .feed,
+body.night-paper .chartmeta{color:#c3b49d}
+body.night-paper .ctrl,
+body.night-paper .mc,
+body.night-paper .sc,
+body.night-paper .chartbox,
+body.night-paper .tcard,
+body.night-paper .aip,
+body.night-paper .kcard{background:#3a3126;border-color:#62533d}
+body.night-paper .cb,
+body.night-paper .rbtn,
+body.night-paper .sbtn,
+body.night-paper .pinbtn,
+body.night-paper .aibtn{background:#4a3f31;border-color:#776347;color:#efe4cf}
+body.night-paper .cb.on,
+body.night-paper .pinbtn.on{background:#b89d72;color:#2b241c;border-color:#b89d72}
+body.night-paper th{color:#d7c8af;border-bottom-color:#5f513d}
+body.night-paper td{color:#e8decb;border-bottom-color:#544734}
+body.night-paper .tcard table tr:hover td{background:rgba(230,205,160,0.08)}
+body.night-paper .live-tag{background:#6d5c45;color:#f4e9d4}
+body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
 </style>
 <div class="db">
   <div class="hdr"><div><h2>CRT Scanner</h2><p>Candle Range Theory · İşlem Adayları</p></div><span class="pill ld" id="pill">Taranıyor...</span></div>
@@ -69,6 +151,7 @@ td{padding:8px 7px;border-bottom:1px solid #F1F5F9;color:#111827;white-space:now
     <button class="cb on" onclick="setCat('all',this)">Tümü</button><button class="cb" onclick="setCat('forex',this)">Forex</button><button class="cb" onclick="setCat('metals',this)">Metaller</button><button class="cb" onclick="setCat('crypto',this)">Kripto</button><button class="cb" onclick="setCat('indices',this)">Endeksler</button>
     <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)">AI Filtre: Açık</button>
     <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))">İşlem limit: 6</button>
+    <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)">Gece Gazetesi: Kapalı</button>
     <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
     <button class="rbtn" onclick="refreshAll()">Tara</button>
   </div>
@@ -175,6 +258,7 @@ async function scanPairByIntervals(pair){let best=null;for(const itv of SCAN_INT
 async function refreshAll(){if(isScanning)return;isScanning=true;pill.textContent='Taranıyor...';pill.className='pill ld';MKT={};sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';let done=0,src={mt5:0,unsupported:0};for(const p of PAIRS){done++;pill.textContent=`Taranıyor... ${done}/${PAIRS.length} · ${p.label}`;const row=await scanPairByIntervals(p);if(row){MKT[p.id]=row;src.mt5++}else src.unsupported++;if(done%5===0)renderAll();await new Promise(r=>setTimeout(r,120))}const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now()});cleanupOldSignals();try{await aiValidate(sigs)}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`)}const next={};sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`)});prevSignalMap=next;renderAll();pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;pill.className='pill ok';srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);isScanning=false}
 function toggleAutoScan(el){autoScanOn=!autoScanOn;el.textContent=`Oto Tarama: ${autoScanOn?'Açık':'Kapalı'}`;el.classList.toggle('on',autoScanOn);if(autoScanOn)startAuto();else stopAuto()}
 function toggleAiFilter(el){aiFilterOn=!aiFilterOn;el.textContent=`AI Filtre: ${aiFilterOn?'Açık':'Kapalı'}`;el.classList.toggle('on',aiFilterOn);renderSignalCards()}
+function toggleNightTheme(el){document.body.classList.toggle('night-paper');const on=document.body.classList.contains('night-paper');el.textContent=`Gece Gazetesi: ${on?'Açık':'Kapalı'}`;el.classList.toggle('on',on)}
 function setTradeLimit(v){const n=Number(v);if(!Number.isFinite(n))return;tradeLimit=Math.max(1,Math.min(20,n));limitLbl.textContent=`İşlem limit: ${tradeLimit}`;renderSignalCards()}
 function updateRiskConfig(){
   riskCfg.balance=Math.max(10,Number(accBal.value||1000));
