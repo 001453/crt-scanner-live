@@ -1,18 +1,72 @@
 const http = require('http');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
+const fs = require('fs');
+const path = require('path');
 const execFileAsync = promisify(execFile);
 
 const PORT = Number(process.env.PORT || 8787);
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/responses';
 const DB_PATH = process.env.CRT_DB_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/trade_log.db';
+const KNOWLEDGE_DIR = process.env.CRT_KNOWLEDGE_DIR || 'C:/Users/nihat/Projects/crt-scanner/knowledge';
 const ALLOW_REAL_TRADING = String(process.env.ALLOW_REAL_TRADING || 'false').toLowerCase() === 'true';
 const OANDA_API_KEY = process.env.OANDA_API_KEY;
 const OANDA_ENV = (process.env.OANDA_ENV || 'practice').toLowerCase();
 const OANDA_BASE_URL = OANDA_ENV === 'live'
   ? 'https://api-fxtrade.oanda.com/v3'
   : 'https://api-fxpractice.oanda.com/v3';
+const DEBUG_ENABLED = String(process.env.CRT_DEBUG_LOG || 'true').toLowerCase() === 'true';
+const DEBUG_LOG_PATH = process.env.CRT_DEBUG_LOG_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/debug.log';
+
+function ensureDebugDir() {
+  const dir = path.dirname(DEBUG_LOG_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+function logEvent(level, event, detail = {}) {
+  if (!DEBUG_ENABLED) return;
+  try {
+    ensureDebugDir();
+    const line = JSON.stringify({
+      ts: new Date().toISOString(),
+      level,
+      event,
+      ...detail
+    });
+    fs.appendFileSync(DEBUG_LOG_PATH, `${line}\n`, 'utf8');
+  } catch (_err) {
+    // ignore logging failures to avoid breaking runtime
+  }
+}
+
+function tailLines(filePath, limit) {
+  if (!fs.existsSync(filePath)) return [];
+  const txt = fs.readFileSync(filePath, 'utf8');
+  const lines = txt.split(/\r?\n/).filter(Boolean);
+  return lines.slice(-limit);
+}
+
+function getKnowledgeIndex() {
+  try {
+    if (!fs.existsSync(KNOWLEDGE_DIR)) return [];
+    const files = fs.readdirSync(KNOWLEDGE_DIR, { withFileTypes: true })
+      .filter((d) => d.isFile() && d.name.toLowerCase().endsWith('.pdf'))
+      .map((d) => {
+        const full = path.join(KNOWLEDGE_DIR, d.name);
+        const st = fs.statSync(full);
+        return {
+          name: d.name,
+          size_bytes: Number(st.size || 0),
+          updated_at: st.mtime.toISOString()
+        };
+      })
+      .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+    return files;
+  } catch (_e) {
+    return [];
+  }
+}
 
 function writeJson(res, statusCode, data) {
   res.writeHead(statusCode, {
@@ -46,7 +100,9 @@ function readBody(req) {
 }
 
 async function handleAnalyze(req, res) {
+  const startedAt = Date.now();
   if (!OPENAI_API_KEY) {
+    logEvent('error', 'analyze.missing_openai_key');
     writeJson(res, 500, {
       error: 'OPENAI_API_KEY tanimli degil. Yeni terminal acip tekrar baslatin.'
     });
@@ -61,6 +117,7 @@ async function handleAnalyze(req, res) {
       const maxTokens = Number(payload.max_tokens || 600);
 
       if (!prompt) {
+        logEvent('warn', 'analyze.invalid_prompt');
         writeJson(res, 400, { error: 'prompt zorunludur.' });
         return;
       }
@@ -81,6 +138,7 @@ async function handleAnalyze(req, res) {
 
       const j = await r.json();
       if (!r.ok) {
+        logEvent('error', 'analyze.openai_error', { status: r.status });
         writeJson(res, r.status, {
           error: 'OpenAI hatasi',
           detail: j
@@ -103,7 +161,9 @@ async function handleAnalyze(req, res) {
       writeJson(res, 200, {
         text: text || 'Bos analiz dondu. Model yanit uretmedi.'
       });
+      logEvent('info', 'analyze.ok', { elapsed_ms: Date.now() - startedAt, model });
   } catch (err) {
+    logEvent('error', 'analyze.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, {
       error: 'Proxy islemi basarisiz. OpenAI baglantisini kontrol edin.',
       detail: err.message
@@ -112,6 +172,7 @@ async function handleAnalyze(req, res) {
 }
 
 async function handleBrokerCandles(req, res) {
+  const startedAt = Date.now();
   try {
     const body = await readBody(req);
     const payload = JSON.parse(body || '{}');
@@ -121,6 +182,7 @@ async function handleBrokerCandles(req, res) {
     const count = Math.max(30, Math.min(500, Number(payload.count || 120)));
     const alignmentTimezone = String(payload.alignmentTimezone || 'UTC');
     if (!pairId) {
+      logEvent('warn', 'broker_candles.missing_pair');
       writeJson(res, 400, { error: 'pairId zorunludur.' });
       return;
     }
@@ -165,7 +227,7 @@ async function handleBrokerCandles(req, res) {
       '  print(json.dumps({"error":"Mum verisi yok","symbol":symbol,"detail":str(mt5.last_error())}), flush=True)',
       '  mt5.shutdown()',
       '  raise SystemExit(4)',
-      'candles=[{"t":int(r["time"]),"o":float(r["open"]),"h":float(r["high"]),"l":float(r["low"]),"c":float(r["close"])} for r in rates]',
+      'candles=[{"t":int(r["time"]),"o":float(r["open"]),"h":float(r["high"]),"l":float(r["low"]),"c":float(r["close"]),"v":int(r["tick_volume"]) if "tick_volume" in rates.dtype.names else 0} for r in rates]',
       'mt5.shutdown()',
       'print(json.dumps({"provider":"mt5","env":"demo","instrument":symbol,"granularity":gran,"timezone":tz,"candles":candles}), flush=True)'
     ].join('\n');
@@ -175,6 +237,7 @@ async function handleBrokerCandles(req, res) {
     });
     const j = JSON.parse((stdout || '').trim() || '{}');
     if (j.error) {
+      logEvent('error', 'broker_candles.upstream_error', { pairId, granularity, detail: j.error });
       writeJson(res, 502, j);
       return;
     }
@@ -187,7 +250,9 @@ async function handleBrokerCandles(req, res) {
       timezone: alignmentTimezone,
       candles
     });
+    logEvent('info', 'broker_candles.ok', { pairId, granularity, candles: candles.length, elapsed_ms: Date.now() - startedAt });
   } catch (err) {
+    logEvent('error', 'broker_candles.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, {
       error: 'Broker mum verisi alinmadi.',
       detail: err.message
@@ -195,7 +260,58 @@ async function handleBrokerCandles(req, res) {
   }
 }
 
+async function handleAvailablePairs(req, res) {
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const pairs = Array.isArray(payload.pairs) ? payload.pairs : [];
+    const pyCode = [
+      'import json,sys',
+      'import MetaTrader5 as mt5',
+      'p=json.loads(sys.argv[1])',
+      'pairs=p.get("pairs",[]) if isinstance(p,dict) else []',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'symbols=mt5.symbols_get() or []',
+      'names=[s.name for s in symbols]',
+      'def score(base,category,n):',
+      '  u=n.upper()',
+      '  clean="".join(ch for ch in u if ch.isalnum())',
+      '  if clean==base: return 100',
+      '  if clean.startswith(base): return 90',
+      '  if base in clean: return 80',
+      '  if category=="indices" and base=="NAS100" and ("NAS" in clean or "USTEC" in clean): return 70',
+      '  if category=="indices" and base=="US500" and ("SPX" in clean or "US500" in clean): return 70',
+      '  if category=="indices" and base=="US30" and ("US30" in clean or "DJI" in clean): return 70',
+      '  return -1',
+      'available=[]',
+      'unavailable=[]',
+      'for row in pairs:',
+      '  pid=str((row or {}).get("pairId","") or "").upper().strip()',
+      '  cat=str((row or {}).get("category","") or "").lower().strip()',
+      '  if not pid:',
+      '    continue',
+      '  base=pid.replace("/","").replace("_","").upper()',
+      '  cands=sorted(((score(base,cat,n),n) for n in names), reverse=True)',
+      '  symbol=next((n for s,n in cands if s>=70), None)',
+      '  if symbol:',
+      '    available.append({"pairId":pid,"category":cat,"symbol":symbol})',
+      '  else:',
+      '    unavailable.append({"pairId":pid,"category":cat})',
+      'mt5.shutdown()',
+      'print(json.dumps({"ok":True,"available":available,"unavailable":unavailable}, ensure_ascii=False), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode, [JSON.stringify({ pairs })]);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'available_pairs_failed', detail: err.message });
+  }
+}
+
 async function handleHealth(_req, res) {
+  const startedAt = Date.now();
   try {
     const pyCode = [
       'import json',
@@ -220,12 +336,15 @@ async function handleHealth(_req, res) {
       openai_key_present: !!OPENAI_API_KEY,
       ...j
     });
+    logEvent('info', 'health.ok', { mt5_ok: !!j.mt5_ok, terminal_connected: !!j.terminal_connected, elapsed_ms: Date.now() - startedAt });
   } catch (err) {
+    logEvent('error', 'health.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, { ok: false, error: 'Health check failed', detail: err.message });
   }
 }
 
 async function handleTradeSnapshot(_req, res) {
+  const startedAt = Date.now();
   try {
     const pyCode = [
       'import json, datetime',
@@ -239,7 +358,13 @@ async function handleTradeSnapshot(_req, res) {
       'open_rows = []',
       'for p in open_positions:',
       '  side = "LONG" if int(getattr(p, "type", -1)) == mt5.POSITION_TYPE_BUY else "SHORT"',
-      '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0)})',
+      '  comment = str(getattr(p, "comment", "") or "")',
+      '  lc = comment.lower()',
+      '  strategy_tag = "core"',
+      '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
+      '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
+      '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
+      '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
       'deals = mt5.history_deals_get(from_dt, now) or []',
       'closed_rows = []',
       'for d in deals:',
@@ -253,7 +378,13 @@ async function handleTradeSnapshot(_req, res) {
       '    reason_name = "sl"',
       '  result = "tp" if reason_name == "tp" else ("stop" if reason_name == "sl" else ("profit" if float(getattr(d, "profit", 0) or 0) >= 0 else "loss"))',
       '  side = "LONG" if int(getattr(d, "type", -1)) == mt5.ORDER_TYPE_SELL else "SHORT"',
-      '  closed_rows.append({"deal": int(getattr(d, "ticket", 0) or 0), "position_id": int(getattr(d, "position_id", 0) or 0), "symbol": str(getattr(d, "symbol", "") or ""), "side": side, "volume": float(getattr(d, "volume", 0) or 0), "price": float(getattr(d, "price", 0) or 0), "profit": float(getattr(d, "profit", 0) or 0), "reason": reason_name, "result": result, "time": int(getattr(d, "time", 0) or 0)})',
+      '  comment = str(getattr(d, "comment", "") or "")',
+      '  lc = comment.lower()',
+      '  strategy_tag = "core"',
+      '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
+      '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
+      '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
+      '  closed_rows.append({"deal": int(getattr(d, "ticket", 0) or 0), "position_id": int(getattr(d, "position_id", 0) or 0), "symbol": str(getattr(d, "symbol", "") or ""), "side": side, "volume": float(getattr(d, "volume", 0) or 0), "price": float(getattr(d, "price", 0) or 0), "profit": float(getattr(d, "profit", 0) or 0), "reason": reason_name, "result": result, "time": int(getattr(d, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
       'closed_rows = sorted(closed_rows, key=lambda x: x["time"], reverse=True)[:300]',
       'mt5.shutdown()',
       'print(json.dumps({"ok": True, "open_positions": open_rows, "closed_deals": closed_rows}), flush=True)'
@@ -261,12 +392,19 @@ async function handleTradeSnapshot(_req, res) {
     const { stdout } = await pyExec(pyCode);
     const j = JSON.parse((stdout || '').trim() || '{}');
     writeJson(res, 200, j);
+    logEvent('info', 'trade_snapshot.ok', {
+      open_positions: Array.isArray(j.open_positions) ? j.open_positions.length : 0,
+      closed_deals: Array.isArray(j.closed_deals) ? j.closed_deals.length : 0,
+      elapsed_ms: Date.now() - startedAt
+    });
   } catch (err) {
+    logEvent('error', 'trade_snapshot.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, { ok: false, error: 'trade_snapshot_failed', detail: err.message });
   }
 }
 
 async function handleManagePositions(req, res) {
+  const startedAt = Date.now();
   try {
     const body = await readBody(req);
     const payload = JSON.parse(body || '{}');
@@ -350,17 +488,25 @@ async function handleManagePositions(req, res) {
     const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct }), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
     writeJson(res, 200, j);
+    logEvent('info', 'manage_positions.ok', {
+      managed_count: Number(j.managed_count || 0),
+      actions: Array.isArray(j.actions) ? j.actions.length : 0,
+      elapsed_ms: Date.now() - startedAt
+    });
   } catch (err) {
+    logEvent('error', 'manage_positions.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, { ok: false, error: 'manage_positions_failed', detail: err.message });
   }
 }
 
 async function handleExecuteOrder(req, res) {
+  const startedAt = Date.now();
   try {
     const body = await readBody(req);
     const payload = JSON.parse(body || '{}');
     const targetAccountType = String(payload.target_account_type || '').trim().toLowerCase();
     if (!['demo', 'live'].includes(targetAccountType)) {
+      logEvent('warn', 'execute_order.invalid_target_account_type', { targetAccountType });
       writeJson(res, 400, {
         ok: false,
         error: 'invalid_target_account_type',
@@ -369,6 +515,7 @@ async function handleExecuteOrder(req, res) {
       return;
     }
     if (targetAccountType === 'live' && !ALLOW_REAL_TRADING) {
+      logEvent('warn', 'execute_order.live_blocked');
       writeJson(res, 403, {
         ok: false,
         error: 'live_trading_blocked',
@@ -384,28 +531,33 @@ async function handleExecuteOrder(req, res) {
       'os.makedirs(os.path.dirname(db_path), exist_ok=True)',
       'conn=sqlite3.connect(db_path)',
       'cur=conn.cursor()',
-      'cur.execute("""CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, symbol TEXT, side TEXT, lot REAL, entry REAL, sl REAL, tp REAL, dry_run INTEGER, status TEXT, detail TEXT, target_account_type TEXT)""")',
+      'cur.execute("""CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, symbol TEXT, side TEXT, lot REAL, entry REAL, sl REAL, tp REAL, dry_run INTEGER, status TEXT, detail TEXT, target_account_type TEXT, strategy_tag TEXT)""")',
       'cols=[r[1] for r in cur.execute("PRAGMA table_info(orders)").fetchall()]',
       'if "target_account_type" not in cols:',
       '  cur.execute("ALTER TABLE orders ADD COLUMN target_account_type TEXT")',
+      'if "strategy_tag" not in cols:',
+      '  cur.execute("ALTER TABLE orders ADD COLUMN strategy_tag TEXT")',
       'symbol=str(p.get("symbol","")).strip()',
       'side=str(p.get("side","")).upper()',
       'lot=float(p.get("lot",0) or 0)',
       'sl=float(p.get("sl",0) or 0)',
       'tp=float(p.get("tp",0) or 0)',
+      'max_spread_points=float(p.get("max_spread_points",0) or 0)',
       'dry=bool(p.get("dry_run",True))',
       'meta_login = int(p.get("meta_login",0) or 0)',
       'meta_password = str(p.get("meta_password","") or "")',
       'meta_server = str(p.get("meta_server","") or "")',
       'target_account_type = str(p.get("target_account_type","") or "").lower()',
+      'strategy_tag = str(p.get("strategy_tag","core") or "core").strip().lower()',
+      'if strategy_tag not in ("core","turtle_sopa","vwap_reclaim","sr_breakout"): strategy_tag = "core"',
       'allow_pyramiding = bool(p.get("allow_pyramiding", False))',
       'if not symbol or side not in ("LONG","SHORT") or lot<=0:',
       '  out={"ok":False,"error":"invalid_payload"}',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected","invalid_payload",target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected","invalid_payload",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if target_account_type not in ("demo","live"):',
       '  out={"ok":False,"error":"invalid_target_account_type"}',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected","invalid_target_account_type",target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected","invalid_target_account_type",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if meta_login and meta_password and meta_server:',
       '  ok_init = mt5.initialize(login=meta_login, password=meta_password, server=meta_server)',
@@ -417,19 +569,19 @@ async function handleExecuteOrder(req, res) {
       'if ai is None:',
       '  out={"ok":False,"error":"account_info_unavailable"}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","account_info_unavailable",target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","account_info_unavailable",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if meta_login and int(ai.login) != int(meta_login):',
       '  out={"ok":False,"error":"account_mismatch","detail":f"connected={ai.login} expected={meta_login}"}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'trade_mode = int(getattr(ai,"trade_mode",-1))',
       'current_account_type = "demo" if trade_mode == 0 else ("live" if trade_mode == 2 else "unknown")',
       'if current_account_type != target_account_type:',
       '  out={"ok":False,"error":"target_account_mismatch","detail":f"connected={current_account_type} expected={target_account_type}"}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if not allow_pyramiding:',
       '  open_positions = mt5.positions_get(symbol=symbol) or []',
@@ -443,72 +595,111 @@ async function handleExecuteOrder(req, res) {
       'if not mt5.symbol_select(symbol, True):',
       '  out={"ok":False,"error":"symbol_select_failed"}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","symbol_select_failed",target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","symbol_select_failed",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'tick=mt5.symbol_info_tick(symbol)',
       'if tick is None:',
       '  out={"ok":False,"error":"tick_unavailable"}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","tick_unavailable",target_account_type))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","tick_unavailable",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'entry=float(tick.ask if side=="LONG" else tick.bid)',
+      'si=mt5.symbol_info(symbol)',
+      'point=float(getattr(si,"point",0.0) or 0.0)',
+      'spread_points=float((tick.ask-tick.bid)/point) if point>0 else 0.0',
+      'if max_spread_points>0 and spread_points>max_spread_points:',
+      '  out={"ok":False,"error":"spread_too_wide","detail":f"spread={spread_points:.2f}pt > max={max_spread_points:.2f}pt","spread_points":spread_points,"max_spread_points":max_spread_points}',
+      '  mt5.shutdown()',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
+      '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if dry:',
-      '  out={"ok":True,"dry_run":True,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"target_account_type":target_account_type,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,1,"dry_run","preview",target_account_type))',
+      '  out={"ok":True,"dry_run":True,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"spread_points":spread_points,"target_account_type":target_account_type,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,1,"dry_run","preview",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); mt5.shutdown(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'order_type = mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
-      'req={ "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lot, "type": order_type, "price": entry, "sl": sl, "tp": tp, "deviation": 20, "magic": 20260506, "comment": "crt-auto", "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC }',
+      'order_comment = ("crt-"+strategy_tag)[:28]',
+      'req={ "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lot, "type": order_type, "price": entry, "sl": sl, "tp": tp, "deviation": 20, "magic": 20260506, "comment": order_comment, "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC }',
       'result=mt5.order_send(req)',
       'ok=bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
       'detail=str(getattr(result,"comment","")) if result else "no_result"',
       'ticket=int(getattr(result,"order",0) or getattr(result,"deal",0) or 0) if result else 0',
-      'out={"ok":ok,"dry_run":False,"ticket":ticket,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"retcode":int(getattr(result,"retcode",0) or 0),"detail":detail,"target_account_type":target_account_type,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
-      'cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,0,("sent" if ok else "rejected"),json.dumps(out),target_account_type))',
+      'out={"ok":ok,"dry_run":False,"ticket":ticket,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"spread_points":spread_points,"retcode":int(getattr(result,"retcode",0) or 0),"detail":detail,"target_account_type":target_account_type,"strategy_tag":strategy_tag,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
+      'cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,0,("sent" if ok else "rejected"),json.dumps(out),target_account_type,strategy_tag))',
       'conn.commit(); conn.close(); mt5.shutdown(); print(json.dumps(out), flush=True)'
     ].join('\n');
     const { stdout } = await pyExec(pyCode, [JSON.stringify(payload), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
+    logEvent(j.ok ? 'info' : 'warn', 'execute_order.result', {
+      ok: !!j.ok,
+      symbol: j.symbol || payload.symbol || '',
+      side: j.side || payload.side || '',
+      dry_run: !!j.dry_run,
+      error: j.error || '',
+      detail: j.detail || '',
+      elapsed_ms: Date.now() - startedAt
+    });
     writeJson(res, j.ok ? 200 : 400, j);
   } catch (err) {
+    logEvent('error', 'execute_order.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, { ok: false, error: 'execute_failed', detail: err.message });
   }
 }
 
 const server = http.createServer((req, res) => {
+  const parsedUrl = new URL(req.url, `http://127.0.0.1:${PORT}`);
+  const routePath = parsedUrl.pathname;
+
   if (req.method === 'OPTIONS') {
     writeJson(res, 204, {});
     return;
   }
 
-  if (req.url === '/api/crt-analyze' && req.method === 'POST') {
+  if (routePath === '/api/crt-analyze' && req.method === 'POST') {
     handleAnalyze(req, res);
     return;
   }
-  if (req.url === '/api/broker-candles' && req.method === 'POST') {
+  if (routePath === '/api/broker-candles' && req.method === 'POST') {
     handleBrokerCandles(req, res);
     return;
   }
-  if (req.url === '/api/health' && req.method === 'GET') {
+  if (routePath === '/api/health' && req.method === 'GET') {
     handleHealth(req, res);
     return;
   }
-  if (req.url === '/api/execute-order' && req.method === 'POST') {
+  if (routePath === '/api/execute-order' && req.method === 'POST') {
     handleExecuteOrder(req, res);
     return;
   }
-  if (req.url === '/api/trade-snapshot' && req.method === 'GET') {
+  if (routePath === '/api/trade-snapshot' && req.method === 'GET') {
     handleTradeSnapshot(req, res);
     return;
   }
-  if (req.url === '/api/manage-positions' && req.method === 'POST') {
+  if (routePath === '/api/manage-positions' && req.method === 'POST') {
     handleManagePositions(req, res);
     return;
   }
+  if (routePath === '/api/debug-log' && req.method === 'GET') {
+    const limit = Math.max(20, Math.min(1000, Number(parsedUrl.searchParams.get('limit') || 200)));
+    const lines = tailLines(DEBUG_LOG_PATH, limit);
+    writeJson(res, 200, { ok: true, path: DEBUG_LOG_PATH, lines });
+    return;
+  }
+  if (routePath === '/api/knowledge-index' && req.method === 'GET') {
+    const files = getKnowledgeIndex();
+    writeJson(res, 200, { ok: true, knowledge_dir: KNOWLEDGE_DIR, count: files.length, files });
+    return;
+  }
+  if (routePath === '/api/available-pairs' && req.method === 'POST') {
+    handleAvailablePairs(req, res);
+    return;
+  }
 
+  logEvent('warn', 'route.not_found', { method: req.method, url: req.url });
   writeJson(res, 404, { error: 'Not found' });
 });
 
 server.listen(PORT, '127.0.0.1', () => {
   // eslint-disable-next-line no-console
   console.log(`CRT AI proxy calisiyor: http://127.0.0.1:${PORT}`);
+  logEvent('info', 'server.started', { port: PORT, debug_log_path: DEBUG_LOG_PATH });
 });

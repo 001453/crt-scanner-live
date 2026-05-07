@@ -67,6 +67,11 @@ td{padding:8px 7px;border-bottom:1px solid #F1F5F9;color:#111827;white-space:now
 .hist-col h4{font-size:12px;margin-bottom:6px}
 .hist-list{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:6px}
 .hist-card{border:1px solid #d8ccb8;border-radius:8px;padding:6px;background:#fff9ef;font-size:11px}
+.dbg-box{background:#fff;border:1px solid #d6c9b2;border-radius:12px;padding:12px;margin-bottom:1rem}
+.dbg-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.dbg-log{font-family:Consolas,monospace;font-size:11px;line-height:1.4;background:#f7efdf;border:1px solid #d6c9b2;border-radius:8px;padding:8px;max-height:240px;overflow:auto;white-space:pre-wrap}
+.strat-pick{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.strat-pick label{display:flex;align-items:center;gap:4px;font-size:11px;color:#6B7280}
 
 /* Newspaper theme overrides (eye-friendly) */
 body{background:#efe6d2;color:#3a3328}
@@ -185,8 +190,25 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
       <label>Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="3"></label>
       <label>Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="2"></label>
       <label>Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="40"></label>
+      <label>Max Spread (point)<input id="maxSpreadPts" type="number" step="0.1" value="35"></label>
+      <label>Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="25"></label>
       <label>Canlı Emir Linki<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
       <label>Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
+      <label>Strateji Modu
+        <select id="strategyMode" onchange="syncChecksFromStrategyMode()">
+          <option value="hybrid" selected>Hybrid (CRT + Turtle Sopa)</option>
+          <option value="core">CRT + PA + Elliott</option>
+          <option value="turtle_sopa">Turtle Sopa (M1/M3/M5)</option>
+        </select>
+      </label>
+      <label>Tarama Stratejileri
+        <div class="strat-pick">
+          <label><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core</label>
+          <label><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
+          <label><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
+          <label><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
+        </div>
+      </label>
       <label>Strateji Profili
         <select id="strategyProfile">
           <option value="conservative">Conservative</option>
@@ -227,21 +249,49 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
       <div class="hist-col"><h4>Stop Olan</h4><div class="hist-list" id="histStop"></div></div>
     </div>
   </div>
+  <div class="tcard">
+    <h3>Pas Gecenler (Hipotetik Backtest)</h3>
+    <div class="reason">Sistem "Pas/Bekle" dedigi sinyaller girilseydi, sonraki fiyat akisina gore TP/Stop/Devam olarak izlenir.</div>
+    <div class="reason" id="passSummary">Pas Backtest: Devam 0 · TP 0 · Stop 0</div>
+    <div class="hist-wrap">
+      <div class="hist-col"><h4>Devam Eden</h4><div class="hist-list" id="passOpen"></div></div>
+      <div class="hist-col"><h4>TP Olan</h4><div class="hist-list" id="passTp"></div></div>
+      <div class="hist-col"><h4>Stop Olan</h4><div class="hist-list" id="passStop"></div></div>
+    </div>
+  </div>
   <div class="aip"><h3>AI Analiz (OpenAI)</h3><div class="feed" id="aio">Tarama sonrası analiz alabilirsiniz.</div><button class="cb" onclick="runAI()">Analiz Et</button></div>
+  <div class="dbg-box">
+    <h3>Debug / Log</h3>
+    <div class="dbg-actions">
+      <button class="cb" id="dbgToggleBtn" onclick="toggleDebugPanel()">Debug: Açık</button>
+      <button class="cb" onclick="refreshDebugLog()">Log Yenile</button>
+      <span class="scan-note" id="dbgInfo">Hazır</span>
+    </div>
+    <div class="dbg-log" id="dbgLog">Debug log bekleniyor...</div>
+  </div>
 </div>
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 const PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
-const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
 let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
-let planCfg={dailyRiskPct:3,maxOpenPos:2,maxMarginUse:40,liveOrderUrl:'',signalTtlMin:45,strategyProfile:'balanced',tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5};
+let planCfg={dailyRiskPct:3,maxOpenPos:2,maxMarginUse:40,maxSpreadPts:35,pairCooldownMin:25,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,strategyProfile:'balanced',tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5};
 const AI_CONFIRM_REQUIRED=true;
 let signalSeenAt={};
 let signalHistory=[];
 let realOpenPositions=[];
 let realClosedDeals=[];
+let closedDealsCache=[];
+let passBacktest=[];
+let knowledgeFiles=[];
+let availablePairIds=null;
+let unavailablePairIds=new Set();
+let strategyPerf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
+let debugEnabled=true;
 const HISTORY_KEY='crt_signal_history_v1';
+const PASS_BACKTEST_KEY='crt_pass_backtest_v1';
+const CLOSED_CACHE_KEY='crt_closed_deals_cache_v1';
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
 let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo'};
@@ -284,9 +334,134 @@ function detectElliott(c){
   const invalidation=bias==='bullish'?swingLow:(bias==='bearish'?swingHigh:null);
   const confidence=upImp||dnImp?72:48;
   const notes=[phase,bias];
-  return{phase,bias,confidence,invalidation,notes};
+  const p1=w1[w1.length-1],p2=w2[w2.length-1],p3=w3[w3.length-1],p4=w4[w4.length-1],p5=w5[w5.length-1];
+  const points=[p1,p2,p3,p4,p5].filter(Boolean).map((x,i)=>({label:`W${i+1}`,t:x.t,price:x.c}));
+  return{phase,bias,confidence,invalidation,notes,points};
+}
+function aggregateCandles(candles,factor){
+  if(!Array.isArray(candles)||candles.length<factor)return [];
+  const out=[];
+  for(let i=0;i+factor<=candles.length;i+=factor){
+    const chunk=candles.slice(i,i+factor);
+    out.push({
+      t:chunk[0].t,
+      o:chunk[0].o,
+      h:Math.max(...chunk.map(x=>x.h)),
+      l:Math.min(...chunk.map(x=>x.l)),
+      c:chunk[chunk.length-1].c,
+      v:chunk.reduce((s,x)=>s+Number(x.v||0),0)
+    });
+  }
+  return out;
+}
+function detectTurtleSopa(candles,trend){
+  if(!Array.isArray(candles)||candles.length<35)return{action:'WAIT',notes:['insufficient_data']};
+  const recent=candles.slice(-30);
+  const b=recent[recent.length-2],c=recent[recent.length-1];
+  const ref=recent.slice(0,recent.length-2);
+  const swingHigh=Math.max(...ref.map(x=>x.h));
+  const swingLow=Math.min(...ref.map(x=>x.l));
+  const avgRange=ref.reduce((s,x)=>s+(x.h-x.l),0)/Math.max(ref.length,1);
+  const avgVol=ref.reduce((s,x)=>s+Number(x.v||0),0)/Math.max(ref.length,1);
+  const volOk=avgVol>0?(Number(c.v||0)>=avgVol*1.2):true;
+  const rangeBreakOk=(c.h-c.l)>=avgRange*1.1;
+  const grabUp=b.h>swingHigh&&b.c<swingHigh;
+  const grabDn=b.l<swingLow&&b.c>swingLow;
+  const breakDown=c.c<b.l;
+  const breakUp=c.c>b.h;
+  if((trend==='up'||trend==='range')&&grabUp&&breakDown&&volOk&&rangeBreakOk){
+    const entry=c.c,sl=b.h,tp=entry-Math.abs(sl-entry)*2;
+    return{action:'SHORT',entry,sl,tp,rr:Math.abs(entry-tp)/Math.max(Math.abs(sl-entry),0.00001),notes:['liq_grab_up','volume_break_down']};
+  }
+  if((trend==='down'||trend==='range')&&grabDn&&breakUp&&volOk&&rangeBreakOk){
+    const entry=c.c,sl=b.l,tp=entry+Math.abs(entry-sl)*2;
+    return{action:'LONG',entry,sl,tp,rr:Math.abs(tp-entry)/Math.max(Math.abs(entry-sl),0.00001),notes:['liq_grab_down','volume_break_up']};
+  }
+  const fail=[];
+  if(!(trend==='up'||trend==='range'||trend==='down'))fail.push('trend_unknown');
+  if(!grabUp&&!grabDn)fail.push('no_liquidity_grab');
+  if(grabUp&&!breakDown)fail.push('no_bear_break_confirm');
+  if(grabDn&&!breakUp)fail.push('no_bull_break_confirm');
+  if(!volOk)fail.push('low_volume_break');
+  if(!rangeBreakOk)fail.push('weak_break_candle');
+  return{action:'WAIT',notes:fail.length?fail:['no_turtle_sopa_confirmation']};
+}
+function detectVWAPReclaim(candles,trend){
+  if(!Array.isArray(candles)||candles.length<30)return{action:'WAIT',notes:['insufficient_data']};
+  const w=candles.slice(-30);
+  let pv=0,vv=0;
+  w.forEach(x=>{const tp=(x.h+x.l+x.c)/3;const vol=Math.max(1,Number(x.v||1));pv+=tp*vol;vv+=vol;});
+  const vwap=pv/Math.max(1,vv);
+  const b=w[w.length-2],c=w[w.length-1];
+  const body=Math.abs(c.c-c.o),range=Math.max(0.00001,c.h-c.l);
+  const strong=body/range>=0.45;
+  if((trend==='up'||trend==='range')&&b.c<vwap&&c.c>vwap&&strong){
+    const entry=c.c,sl=Math.min(b.l,c.l),tp=entry+Math.abs(entry-sl)*2;
+    return{action:'LONG',entry,sl,tp,rr:Math.abs(tp-entry)/Math.max(Math.abs(entry-sl),0.00001),notes:['vwap_reclaim_long']};
+  }
+  if((trend==='down'||trend==='range')&&b.c>vwap&&c.c<vwap&&strong){
+    const entry=c.c,sl=Math.max(b.h,c.h),tp=entry-Math.abs(sl-entry)*2;
+    return{action:'SHORT',entry,sl,tp,rr:Math.abs(entry-tp)/Math.max(Math.abs(sl-entry),0.00001),notes:['vwap_reclaim_short']};
+  }
+  return{action:'WAIT',notes:['no_vwap_reclaim']};
+}
+function detectSRBreakoutRetest(candles,trend){
+  if(!Array.isArray(candles)||candles.length<40)return{action:'WAIT',notes:['insufficient_data']};
+  const ref=candles.slice(-35,-3),a=candles[candles.length-3],b=candles[candles.length-2],c=candles[candles.length-1];
+  const r=Math.max(...ref.map(x=>x.h)),s=Math.min(...ref.map(x=>x.l));
+  const retestLong=a.c>r&&b.l<=r&&c.c>r;
+  const retestShort=a.c<s&&b.h>=s&&c.c<s;
+  if((trend==='up'||trend==='range')&&retestLong){
+    const entry=c.c,sl=Math.min(b.l,s),tp=entry+Math.abs(entry-sl)*2;
+    return{action:'LONG',entry,sl,tp,rr:Math.abs(tp-entry)/Math.max(Math.abs(entry-sl),0.00001),notes:['sr_breakout_retest_long']};
+  }
+  if((trend==='down'||trend==='range')&&retestShort){
+    const entry=c.c,sl=Math.max(b.h,r),tp=entry-Math.abs(sl-entry)*2;
+    return{action:'SHORT',entry,sl,tp,rr:Math.abs(entry-tp)/Math.max(Math.abs(sl-entry),0.00001),notes:['sr_breakout_retest_short']};
+  }
+  return{action:'WAIT',notes:['no_sr_breakout_retest']};
 }
 function confluenceScore(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 0;let s=0;const rr=d.sig.rr||0,p=d.sig.pct||99,pa=d.pa||{},ew=d.elliott||{};if(rr>=2)s+=30;else if(rr>=1.6)s+=24;else if(rr>=1.3)s+=16;if(p<=1.2)s+=20;else if(p<=1.8)s+=14;const long=d.sig.action==='LONG';if(long&&(pa.bullEngulf||pa.bullPin||pa.insideBreakLong))s+=16;if(!long&&(pa.bearEngulf||pa.bearPin||pa.insideBreakShort))s+=16;if(d.trend==='up'&&long)s+=10;else if(d.trend==='down'&&!long)s+=10;else if(d.trend==='range')s+=6;if((long&&ew.bias==='bullish')||(!long&&ew.bias==='bearish'))s+=8;if(ew.phase==='impulse')s+=4;if(d.aiStatus==='confirmed')s+=18;return Math.min(100,s)}
+function strategyActionState(d){
+  if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return{ready:false,status:'WAIT',reason:'sinyal_yok'};
+  const isLong=d.sig.action==='LONG';
+  const ew=d.elliott||{};
+  const aiOk=d.aiStatus==='confirmed';
+  const rrOk=(d.sig.rr||0)>=1.3;
+  if(d.strategyTag==='turtle_sopa'){
+    const notes=d.turtle?.notes||[];
+    const liqOk=notes.includes('liq_grab_up')||notes.includes('liq_grab_down');
+    const volOk=notes.includes('volume_break_down')||notes.includes('volume_break_up');
+    const ready=liqOk&&volOk&&rrOk&&aiOk;
+    return{
+      ready,status:ready?'READY':'WAIT',
+      reason:ready?'turtle_confirmed':'turtle_kosul_eksik',
+      entryTrigger:'likidite fitili + ters hacimli kirilim',
+      invalidation:`SL ${fp(d.sig.sl,d.pair.id)}`,
+      takeProfit:`TP ${fp(d.sig.tp,d.pair.id)}`
+    };
+  }
+  if(d.strategyTag==='vwap_reclaim'){
+    const ok=(d.turtle?.notes||[]).some(x=>String(x).includes('vwap_reclaim'));
+    const ready=ok&&rrOk&&aiOk;
+    return{ready,status:ready?'READY':'WAIT',reason:ready?'vwap_confirmed':'vwap_kosul_eksik',entryTrigger:'VWAP reclaim + guclu mum',invalidation:`SL ${fp(d.sig.sl,d.pair.id)}`,takeProfit:`TP ${fp(d.sig.tp,d.pair.id)}`};
+  }
+  if(d.strategyTag==='sr_breakout'){
+    const ok=(d.turtle?.notes||[]).some(x=>String(x).includes('sr_breakout_retest'));
+    const ready=ok&&rrOk&&aiOk;
+    return{ready,status:ready?'READY':'WAIT',reason:ready?'sr_confirmed':'sr_kosul_eksik',entryTrigger:'S/R break + retest + continue',invalidation:`SL ${fp(d.sig.sl,d.pair.id)}`,takeProfit:`TP ${fp(d.sig.tp,d.pair.id)}`};
+  }
+  const ewAlign=(isLong&&ew.bias==='bullish')||(!isLong&&ew.bias==='bearish');
+  const paOk=isLong?(d.pa?.bullEngulf||d.pa?.bullPin||d.pa?.insideBreakLong):(d.pa?.bearEngulf||d.pa?.bearPin||d.pa?.insideBreakShort);
+  const ready=ewAlign&&paOk&&rrOk&&aiOk;
+  return{
+    ready,status:ready?'READY':'WAIT',
+    reason:ready?'core_confirmed':'core_kosul_eksik',
+    entryTrigger:ewAlign?'elliott_bias_uyumlu':'elliott_bias_uyumsuz',
+    invalidation:Number.isFinite(ew.invalidation)?`EW invalid ${fp(ew.invalidation,d.pair.id)}`:`SL ${fp(d.sig.sl,d.pair.id)}`,
+    takeProfit:`TP ${fp(d.sig.tp,d.pair.id)}`
+  };
+}
 function signalQuality(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 0;return confluenceScore(d)}
 function getRecommendation(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'Pas';const rr=d.sig.rr||0,p=d.sig.pct||99,t=strategyThresholds(),score=confluenceScore(d);if(d.aiStatus==='confirmed'&&rr>=t.rrNow&&p<=t.zoneNow&&score>=t.scoreNow)return'Hemen';if(rr>=t.rrWatch&&p<=t.zoneWatch&&score>=t.scoreWatch)return'Bekle';return'Pas'}
 function invalidationRule(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'—';return d.sig.action==='LONG'?`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) altı`:`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) üstü`}
@@ -329,6 +504,21 @@ function buildExitPlan(d){
 function contractSizeFor(d){if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
 function marginUsagePct(d,lot){const entry=d.price||d.sig?.entry||0;if(!entry||!lot)return 0;const marginPerLot=(entry*contractSizeFor(d))/Math.max(riskCfg.leverage,1);return ((marginPerLot*lot)/Math.max(riskCfg.balance,1))*100}
 function safeRecommendation(d){const base=getRecommendation(d);if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{rec:'Pas',reason:'AI onayi yok'};const lot=lotSuggestion(d);if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};const m=marginUsagePct(d,lot.lot);if(m>planCfg.maxMarginUse)return{rec:'Pas',reason:`Marjin ${m.toFixed(1)}% > limit ${planCfg.maxMarginUse}%`};const t=strategyThresholds();if((d.sig?.rr||0)<t.rrWatch)return{rec:'Pas',reason:'RR düşük'};if(base==='Hemen'&&m>planCfg.maxMarginUse*t.maxMarginFactor)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};return{rec:base,reason:'Koşullar uygun'}}
+function strategyWeight(tag){const t=String(tag||'core');const p=strategyPerf[t]||{score:1};return Math.max(0.7,Math.min(1.5,Number(p.score||1)))}
+function weightedSignalQuality(d){return signalQuality(d)*strategyWeight(d.strategyTag||'core')}
+function syncStrategyModeFromChecks(){
+  const c=!!scanCore.checked,t=!!scanTurtle.checked,v=!!scanVWAP.checked,s=!!scanSRBreak.checked;
+  if(!c&&!t&&!v&&!s){scanCore.checked=true;}
+  const cc=!!scanCore.checked,tt=!!scanTurtle.checked,vv=!!scanVWAP.checked,ss=!!scanSRBreak.checked;
+  if(vv||ss){strategyMode.value='hybrid';return;}
+  strategyMode.value=cc&&tt?'hybrid':(cc?'core':'turtle_sopa');
+}
+function syncChecksFromStrategyMode(){
+  const m=String(strategyMode.value||'hybrid');
+  if(m==='core'){scanCore.checked=true;scanTurtle.checked=false;return;}
+  if(m==='turtle_sopa'){scanCore.checked=false;scanTurtle.checked=true;return;}
+  scanCore.checked=true;scanTurtle.checked=true;
+}
 function buildLiveOrderLink(d,lot){if(!planCfg.liveOrderUrl)return'';const u=new URL(planCfg.liveOrderUrl);u.searchParams.set('symbol',d.pair.id);u.searchParams.set('side',d.sig.action);u.searchParams.set('entry',String(d.sig.entry));u.searchParams.set('sl',String(d.sig.sl));u.searchParams.set('tp',String(d.sig.tp));u.searchParams.set('lot',String(lot||0));return u.toString()}
 function cleanupOldSignals(){const now=Date.now(),ttl=Math.max(5,planCfg.signalTtlMin)*60000;Object.keys(signalSeenAt).forEach(k=>{if(now-signalSeenAt[k]>ttl)delete signalSeenAt[k]})}
 function normalizeSymbol(s){return String(s||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase()}
@@ -340,6 +530,16 @@ function isFreshSignal(d){const seenAt=signalSeenAt[d.pair.id]||0;const ttlMs=Ma
 function canAutoExecute(d){
   if(tradeCfg.lastHealth!=='MT5 OK')return{ok:false,reason:'health_not_ok'};
   if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{ok:false,reason:'ai_not_confirmed'};
+  const pairCooldownMs=Math.max(0,Number(planCfg.pairCooldownMin||0))*60000;
+  if(pairCooldownMs>0){
+    const now=Date.now();
+    const recent=Object.entries(tradeCfg.sentKeys||{}).find(([k,ts])=>k.startsWith(`${d.pair.id}:`)&&Number(ts)>0&&((now-Number(ts))<pairCooldownMs));
+    if(recent)return{ok:false,reason:'pair_cooldown_active'};
+  }
+  const actionState=strategyActionState(d);
+  // Keep strict action gate only for Turtle. For core/vwap/sr,
+  // AI + risk filters are enough to avoid missing good entries.
+  if((d.strategyTag==='turtle_sopa')&&!actionState.ready)return{ok:false,reason:`action_wait:${actionState.reason}`};
   if(!isFreshSignal(d))return{ok:false,reason:'signal_stale'};
   if(activeOpenByPairSide(d.pair.id,d.sig.action)>0)return{ok:false,reason:'same_side_open_exists'};
   return{ok:true,reason:'ok'};
@@ -349,23 +549,45 @@ function entryReasonText(d){
   const aiTxt=d.aiReason?`${d.aiStatus||'unknown'} (${d.aiReason})`:(d.aiStatus||'unknown');
   const paNotes=(d.pa?.notes||[]).slice(0,3).join(', ')||'PA yok';
   const ew=d.elliott?`${d.elliott.phase}/${d.elliott.bias}`:'unknown';
-  return `Neden: ${signalReason(d)} · PA:${paNotes} · Elliott:${ew} · AI:${aiTxt} · Plan:${safe.rec} (${safe.reason})`;
+  const ts=(d.turtle?.notes||[]).join(', ')||'n/a';
+  return `Neden: ${signalReason(d)} · PA:${paNotes} · Elliott:${ew} · Turtle:${ts} · AI:${aiTxt} · Plan:${safe.rec} (${safe.reason})`;
 }
 function healthSummaryText(account='—',mode='—'){return `Health: ${tradeCfg.lastHealth} · account ${account} · mode ${mode} · auto ${tradeCfg.autoEnabled?'ON':'OFF'} · ${tradeCfg.dryRun?'DRY':'LIVE'} · target ${titleCaseAccount(tradeCfg.targetAccountType)}`}
-async function checkHealth(){try{const r=await fetch(HEALTH_URL);const j=await r.json();tradeCfg.lastHealth=j.mt5_ok&&j.terminal_connected?'MT5 OK':'MT5 OFF';document.getElementById('healthInfo').textContent=healthSummaryText(j.account||'—',j.trade_mode||'—')}catch(e){tradeCfg.lastHealth='ERROR';document.getElementById('healthInfo').textContent=healthSummaryText('—','—')}}
+async function checkHealth(){try{const r=await fetch(HEALTH_URL);const j=await r.json();tradeCfg.lastHealth=j.mt5_ok&&j.terminal_connected?'MT5 OK':'MT5 OFF';document.getElementById('healthInfo').textContent=healthSummaryText(j.account||'—',j.trade_mode||'—');pushDebug(`health ${tradeCfg.lastHealth} account=${j.account||'-'} mode=${j.trade_mode||'-'}`)}catch(e){tradeCfg.lastHealth='ERROR';document.getElementById('healthInfo').textContent=healthSummaryText('—','—');pushDebug(`health_error ${e.message}`)}}
 async function executeSignalOrder(d,lotAdj){
   const key=`${historyKey(d)}:${lotAdj}`;
   if(tradeCfg.sentKeys[key])return {ok:true,skipped:true};
   const reason=entryReasonText(d);
-  const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(d.sig.sl),tp:Number(d.sig.tp),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
+  const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(d.sig.sl),tp:Number(d.sig.tp),max_spread_points:Number(planCfg.maxSpreadPts||0),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,strategy_tag:String(d.strategyTag||'core'),meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
   const r=await fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const j=await r.json();
-  if(j.ok){tradeCfg.sentKeys[key]=Date.now();pushFeed(`${new Date().toLocaleTimeString()} · Emir ${tradeCfg.dryRun?'DRY':'LIVE'} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · hesap:${tradeCfg.targetAccountType} · ${reason}`);await refreshTradeSnapshot()}
-  else pushFeed(`${new Date().toLocaleTimeString()} · Emir HATA ${d.pair.label}: ${j.error||j.detail||'unknown'}`);
+  if(j.ok){tradeCfg.sentKeys[key]=Date.now();pushFeed(`${new Date().toLocaleTimeString()} · Emir ${tradeCfg.dryRun?'DRY':'LIVE'} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · hesap:${tradeCfg.targetAccountType} · ${reason}`);pushDebug(`order_ok ${d.pair.id} ${d.sig.action} lot=${lotAdj} dry=${tradeCfg.dryRun}`);await refreshTradeSnapshot()}
+  else {pushFeed(`${new Date().toLocaleTimeString()} · Emir HATA ${d.pair.label}: ${j.error||j.detail||'unknown'}`);pushDebug(`order_error ${d.pair.id} ${j.error||j.detail||'unknown'}`)}
   return j;
 }
 function loadHistory(){try{signalHistory=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch(e){signalHistory=[]}}
 function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(signalHistory.slice(-500)))}
+function loadPassBacktest(){try{passBacktest=JSON.parse(localStorage.getItem(PASS_BACKTEST_KEY)||'[]')}catch(e){passBacktest=[]}}
+function savePassBacktest(){localStorage.setItem(PASS_BACKTEST_KEY,JSON.stringify(passBacktest.slice(-800)))}
+function loadClosedDealsCache(){try{closedDealsCache=JSON.parse(localStorage.getItem(CLOSED_CACHE_KEY)||'[]')}catch(e){closedDealsCache=[]}}
+function saveClosedDealsCache(){localStorage.setItem(CLOSED_CACHE_KEY,JSON.stringify(closedDealsCache.slice(-500)))}
+function mergeClosedDeals(incoming=[]){
+  const map=new Map();
+  const add=(x)=>{
+    if(!x)return;
+    const key=[
+      String(x.ticket||x.position_id||''),
+      String(x.symbol||''),
+      String(x.side||''),
+      String(x.time||''),
+      String(x.price||'')
+    ].join('|');
+    map.set(key,x);
+  };
+  closedDealsCache.forEach(add);
+  incoming.forEach(add);
+  closedDealsCache=Array.from(map.values()).sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,500);
+}
 function loadConfigs(){
   try{
     const pc=JSON.parse(localStorage.getItem(PLAN_CFG_KEY)||'{}');
@@ -373,8 +595,15 @@ function loadConfigs(){
       planCfg.dailyRiskPct=Math.max(0.1,Number(pc.dailyRiskPct||planCfg.dailyRiskPct));
       planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(pc.maxOpenPos||planCfg.maxOpenPos)));
       planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(pc.maxMarginUse||planCfg.maxMarginUse)));
+      planCfg.maxSpreadPts=Math.max(0,Number(pc.maxSpreadPts??planCfg.maxSpreadPts));
+      planCfg.pairCooldownMin=Math.max(0,Number(pc.pairCooldownMin??planCfg.pairCooldownMin));
       planCfg.liveOrderUrl=String(pc.liveOrderUrl||planCfg.liveOrderUrl||'').trim();
       planCfg.signalTtlMin=Math.max(5,Number(pc.signalTtlMin||planCfg.signalTtlMin));
+      planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(pc.strategyMode||''))?String(pc.strategyMode):planCfg.strategyMode;
+      planCfg.scanCore=('scanCore' in pc)?!!pc.scanCore:planCfg.scanCore;
+      planCfg.scanTurtle=('scanTurtle' in pc)?!!pc.scanTurtle:planCfg.scanTurtle;
+      planCfg.scanVWAP=('scanVWAP' in pc)?!!pc.scanVWAP:planCfg.scanVWAP;
+      planCfg.scanSRBreak=('scanSRBreak' in pc)?!!pc.scanSRBreak:planCfg.scanSRBreak;
       planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(pc.strategyProfile||''))?String(pc.strategyProfile):planCfg.strategyProfile;
       planCfg.tp1RR=Math.max(0.2,Number(pc.tp1RR||planCfg.tp1RR));
       planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(pc.tp2RR||planCfg.tp2RR));
@@ -399,8 +628,15 @@ function saveConfigs(){
     dailyRiskPct:planCfg.dailyRiskPct,
     maxOpenPos:planCfg.maxOpenPos,
     maxMarginUse:planCfg.maxMarginUse,
+    maxSpreadPts:planCfg.maxSpreadPts,
+    pairCooldownMin:planCfg.pairCooldownMin,
     liveOrderUrl:planCfg.liveOrderUrl,
     signalTtlMin:planCfg.signalTtlMin,
+    strategyMode:planCfg.strategyMode,
+    scanCore:planCfg.scanCore,
+    scanTurtle:planCfg.scanTurtle,
+    scanVWAP:planCfg.scanVWAP,
+    scanSRBreak:planCfg.scanSRBreak,
     strategyProfile:planCfg.strategyProfile,
     tp1RR:planCfg.tp1RR,
     tp2RR:planCfg.tp2RR,
@@ -455,6 +691,61 @@ function refreshHistoryStatus(){
     }
   });
 }
+function updatePassBacktestStatus(){
+  const priceByPair={};Object.values(MKT).forEach(d=>{priceByPair[d.pair.id]=d.price});
+  passBacktest.forEach(h=>{
+    if(h.status!=='open')return;
+    const px=priceByPair[h.pairId]; if(px==null)return;
+    if(h.side==='LONG'){
+      if(px>=h.tp){h.status='tp';h.closedAt=Date.now();h.result='profit'}
+      else if(px<=h.sl){h.status='stop';h.closedAt=Date.now();h.result='loss'}
+    }else{
+      if(px<=h.tp){h.status='tp';h.closedAt=Date.now();h.result='profit'}
+      else if(px>=h.sl){h.status='stop';h.closedAt=Date.now();h.result='loss'}
+    }
+  });
+}
+function upsertPassBacktestCandidates(){
+  const now=Date.now();
+  const cooldownMs=Math.max(5,Number(planCfg.signalTtlMin||45))*60000;
+  const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));
+  sigs.forEach(d=>{
+    const safe=safeRecommendation(d);
+    if(safe.rec==='Hemen')return;
+    const key=`${d.pair.id}:${d.sig.action}`;
+    const signature=historySignature(d);
+    const existingOpen=passBacktest.find(x=>x.key===key&&x.status==='open');
+    if(existingOpen)return;
+    const recentSame=passBacktest.find(x=>x.key===key&&x.signature===signature&&((now-(x.closedAt||x.openedAt))<cooldownMs));
+    if(recentSame)return;
+    passBacktest.push({
+      key,signature,pair:d.pair.label,pairId:d.pair.id,side:d.sig.action,entry:d.sig.entry,sl:d.sig.sl,tp:d.sig.tp,
+      reason:safe.reason,rec:safe.rec,strategyTag:d.strategyTag||'core',openedAt:now,status:'open',closedAt:null,result:null
+    });
+  });
+}
+function upsertPassBacktestFromBlocked(d,reason='auto_blocked'){
+  if(!d||!d.sig||!['LONG','SHORT'].includes(d.sig.action))return;
+  const now=Date.now();
+  const key=`${d.pair.id}:${d.sig.action}`;
+  const signature=historySignature(d);
+  const existingOpen=passBacktest.find(x=>x.key===key&&x.status==='open');
+  if(existingOpen)return;
+  passBacktest.push({
+    key,signature,pair:d.pair.label,pairId:d.pair.id,side:d.sig.action,entry:d.sig.entry,sl:d.sig.sl,tp:d.sig.tp,
+    reason:String(reason||'auto_blocked'),rec:'Pas',strategyTag:d.strategyTag||'core',openedAt:now,status:'open',closedAt:null,result:null
+  });
+}
+function renderPassBacktest(){
+  const open=passBacktest.filter(x=>x.status==='open').slice(-80).reverse();
+  const tp=passBacktest.filter(x=>x.status==='tp').slice(-80).reverse();
+  const stop=passBacktest.filter(x=>x.status==='stop').slice(-80).reverse();
+  const draw=(arr,kind)=>arr.length?arr.map(h=>`<div class="hist-card">${h.pair} ${h.side}<br>Entry ${Number(h.entry||0).toFixed(5)} · SL ${Number(h.sl||0).toFixed(5)} · TP ${Number(h.tp||0).toFixed(5)}<br>Str: ${h.strategyTag||'core'} · Rec: ${h.rec||'Pas'}<br>${kind==='open'?'Durum: Beklemede':`Sonuc: ${kind==='tp'?'TP/Kar':'Stop/Zarar'}`}</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
+  const openEl=document.getElementById('passOpen');if(openEl)openEl.innerHTML=draw(open,'open');
+  const tpEl=document.getElementById('passTp');if(tpEl)tpEl.innerHTML=draw(tp,'tp');
+  const stopEl=document.getElementById('passStop');if(stopEl)stopEl.innerHTML=draw(stop,'stop');
+  const s=document.getElementById('passSummary');if(s)s.textContent=`Pas Backtest: Devam ${open.length} · TP ${tp.length} · Stop ${stop.length}`;
+}
 function cleanupHistoryTTL(){
   const ttl=Math.max(30,planCfg.signalTtlMin)*60000*6; // archive keep longer
   const now=Date.now();
@@ -466,7 +757,29 @@ async function refreshTradeSnapshot(){
     if(!r.ok)return;
     const j=await r.json();
     realOpenPositions=Array.isArray(j.open_positions)?j.open_positions:[];
-    realClosedDeals=Array.isArray(j.closed_deals)?j.closed_deals:[];
+    const incomingClosed=Array.isArray(j.closed_deals)?j.closed_deals:[];
+    mergeClosedDeals(incomingClosed);
+    saveClosedDealsCache();
+    realClosedDeals=closedDealsCache.slice();
+    const perf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
+    realClosedDeals.forEach(x=>{
+      const t=String(x?.strategy_tag||'core');
+      const tag=(t in perf)?t:'core';
+      const pnl=Number(x?.profit||0);
+      perf[tag].trades+=1;
+      if(pnl>0)perf[tag].wins+=1;
+      perf[tag].pnl+=pnl;
+    });
+    Object.keys(perf).forEach(k=>{
+      const p=perf[k];
+      if(p.trades===0){p.score=1;return;}
+      const wr=p.wins/Math.max(1,p.trades);
+      const avg=p.pnl/Math.max(1,p.trades);
+      p.score=Math.max(0.7,Math.min(1.5,0.85+(wr*0.5)+(avg>0?0.15:-0.05)));
+    });
+    strategyPerf=perf;
+    pushDebug(`snapshot open=${realOpenPositions.length} closed=${realClosedDeals.length}`);
+    pushDebug(`perf core(${strategyPerf.core.trades}) s=${strategyPerf.core.score.toFixed(2)} turtle(${strategyPerf.turtle_sopa.trades}) s=${strategyPerf.turtle_sopa.score.toFixed(2)}`);
   }catch(e){}
 }
 async function runPositionManager(){
@@ -483,15 +796,15 @@ async function runPositionManager(){
 }
 function renderHistory(){
   const open=realOpenPositions.slice(0,80);
-  const tp=realClosedDeals.filter(x=>x.result==='tp').slice(0,80);
-  const stop=realClosedDeals.filter(x=>x.result==='stop').slice(0,80);
+  const tp=realClosedDeals.filter(x=>x.result==='tp'||x.result==='profit').slice(0,80);
+  const stop=realClosedDeals.filter(x=>x.result==='stop'||x.result==='loss').slice(0,80);
   const drawOpen=(arr)=>arr.length?arr.map(h=>`<div class="hist-card">${h.symbol} ${h.side}<br>Entry ${Number(h.price_open||0).toFixed(2)} · Lot ${Number(h.volume||0).toFixed(2)}<br>Kar/Zarar: ${Number(h.profit||0).toFixed(2)}<br>Açık</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
   const drawClosed=(arr)=>arr.length?arr.map(h=>`<div class="hist-card">${h.symbol} ${h.side}<br>Kapanış ${Number(h.price||0).toFixed(2)} · Lot ${Number(h.volume||0).toFixed(2)}<br>Kar/Zarar: ${Number(h.profit||0).toFixed(2)}<br>Kapanış: ${new Date((h.time||0)*1000).toLocaleString()}</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
   document.getElementById('histOpen').innerHTML=drawOpen(open);
   document.getElementById('histTp').innerHTML=drawClosed(tp);
   document.getElementById('histStop').innerHTML=drawClosed(stop);
   const hs=document.getElementById('historySummary');
-  if(hs)hs.textContent=`Gercek MT5 Ozeti: Acik ${open.length} · TP ${tp.length} · Stop ${stop.length}`;
+  if(hs)hs.textContent=`Gercek MT5 Ozeti: Acik ${open.length} · TP/Kar ${tp.length} · Stop/Zarar ${stop.length}`;
 }
 const aiText=d=>d.aiStatus==='confirmed'?'AI Onaylı':d.aiStatus==='watch'?'AI Şüpheli':'AI Bekliyor';
 const aiClass=d=>d.aiStatus==='confirmed'?'ai-tag ai-ok':d.aiStatus==='watch'?'ai-tag ai-warn':'ai-tag ai-muted';
@@ -499,20 +812,345 @@ const recommendTF=d=>!d?.sig||!['LONG','SHORT'].includes(d.sig.action)?'—':(d.
 function filtered(){return PAIRS.filter(p=>activeCat==='all'||p.cat===activeCat).map(p=>MKT[p.id]).filter(Boolean)}
 function setCat(c,el){activeCat=c;document.querySelectorAll('.ctrl .cb').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderAll()}
 function pushFeed(m){const el=document.getElementById('sigFeed');const cur=el.textContent==='Yeni sinyaller burada akacak...'?'':el.textContent+'\n';el.textContent=(cur+m).split('\n').slice(-8).join('\n')}
+function pushDebug(m){
+  if(!debugEnabled)return;
+  const el=document.getElementById('dbgLog');
+  if(!el)return;
+  const line=`${new Date().toLocaleTimeString()} · ${m}`;
+  const cur=(el.textContent==='Debug log bekleniyor...'?'':el.textContent+'\n');
+  el.textContent=(cur+line).split('\n').slice(-120).join('\n');
+}
+function toggleDebugPanel(){
+  debugEnabled=!debugEnabled;
+  const b=document.getElementById('dbgToggleBtn');
+  if(b){
+    b.textContent=`Debug: ${debugEnabled?'Açık':'Kapalı'}`;
+    b.classList.toggle('on',debugEnabled);
+  }
+  pushDebug(`debug_${debugEnabled?'enabled':'disabled'}`);
+}
+async function refreshDebugLog(){
+  const info=document.getElementById('dbgInfo');
+  try{
+    if(info)info.textContent='Log alınıyor...';
+    const r=await fetch(`${DEBUG_URL}?limit=160`);
+    const j=await r.json();
+    const lines=Array.isArray(j.lines)?j.lines:[];
+    const el=document.getElementById('dbgLog');
+    if(el)el.textContent=lines.length?lines.join('\n'):'Log boş';
+    if(info)info.textContent=`Backend log satırı: ${lines.length}`;
+  }catch(e){
+    if(info)info.textContent='Backend log alınamadı';
+    pushDebug(`debug_log_fetch_failed: ${e.message}`);
+  }
+}
+function knowledgeThemes(){
+  const names=(knowledgeFiles||[]).map(x=>String(x.name||'').toLowerCase());
+  const t=[];
+  if(names.some(n=>n.includes('elliott')))t.push('elliott_wave');
+  if(names.some(n=>n.includes('candlestick')||n.includes('nison')))t.push('candlestick');
+  if(names.some(n=>n.includes('price action')||n.includes('brooks')||n.includes('volman')))t.push('price_action');
+  if(names.some(n=>n.includes('fundamental')||n.includes('makro')||n.includes('iktisat')))t.push('macro_fundamental');
+  if(names.some(n=>n.includes('risk')||n.includes('guide')))t.push('risk_management');
+  return t;
+}
+async function loadKnowledgeIndex(){
+  try{
+    const r=await fetch(KNOW_URL);
+    if(!r.ok)return;
+    const j=await r.json();
+    knowledgeFiles=Array.isArray(j.files)?j.files:[];
+    pushDebug(`knowledge_index files=${knowledgeFiles.length} themes=${knowledgeThemes().join('|')||'none'}`);
+  }catch(e){
+    pushDebug(`knowledge_index_failed ${e.message}`);
+  }
+}
+async function refreshAvailablePairs(){
+  try{
+    const pairs=PAIRS.map(p=>({pairId:p.id,category:p.cat}));
+    const r=await fetch(AVAILABLE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairs})});
+    if(!r.ok)return;
+    const j=await r.json();
+    const avail=Array.isArray(j.available)?j.available:[];
+    const unavail=Array.isArray(j.unavailable)?j.unavailable:[];
+    availablePairIds=new Set(avail.map(x=>String(x.pairId||'').toUpperCase()).filter(Boolean));
+    unavailablePairIds=new Set(unavail.map(x=>String(x.pairId||'').toUpperCase()).filter(Boolean));
+    pushDebug(`available_pairs ok=${availablePairIds.size} skip=${unavailablePairIds.size}`);
+  }catch(e){
+    pushDebug(`available_pairs_failed ${e.message}`);
+  }
+}
+function detectSRTLevels(candles){
+  if(!Array.isArray(candles)||candles.length<24)return null;
+  const recent=candles.slice(-60);
+  const highs=recent.map(x=>x.h).sort((a,b)=>a-b);
+  const lows=recent.map(x=>x.l).sort((a,b)=>a-b);
+  const q=(arr,p)=>arr[Math.max(0,Math.min(arr.length-1,Math.floor((arr.length-1)*p)))];
+  const resistance=q(highs,0.85);
+  const support=q(lows,0.15);
+  return Number.isFinite(resistance)&&Number.isFinite(support)&&resistance>support?{support,resistance}:null;
+}
+function elliottWaveMarkers(candles,elliott){
+  if(!Array.isArray(candles)||!elliott)return [];
+  const ms=[];
+  const pts=Array.isArray(elliott.points)?elliott.points:[];
+  pts.forEach((p,i)=>{
+    if(!p||!Number.isFinite(p.t))return;
+    ms.push({time:p.t,position:(i%2===0?'aboveBar':'belowBar'),color:'#5A2A7A',shape:'circle',text:p.label||`W${i+1}`});
+  });
+  if(Number.isFinite(elliott.invalidation)){
+    const last=candles[candles.length-1];
+    ms.push({time:last.t,position:'inBar',color:'#7A2A5A',shape:'square',text:'EW invalid'});
+  }
+  return ms;
+}
 function initChart(){if(chartRef||!window.LightweightCharts)return;const el=document.getElementById('chart');chartRef=LightweightCharts.createChart(el,{layout:{background:{type:'solid',color:'#fff'},textColor:'#444'}});candleSeries=typeof chartRef.addCandlestickSeries==='function'?chartRef.addCandlestickSeries({upColor:'#3B6D11',downColor:'#A32D2D',wickUpColor:'#3B6D11',wickDownColor:'#A32D2D',borderVisible:false}):chartRef.addSeries(window.LightweightCharts.CandlestickSeries,{upColor:'#3B6D11',downColor:'#A32D2D'});chartRef.applyOptions({width:el.clientWidth,height:320});window.addEventListener('resize',()=>chartRef&&chartRef.applyOptions({width:el.clientWidth}))}
-function showOnChart(id){initChart();const d=MKT[id];if(!d||!candleSeries)return;selectedPairId=id;const prec=dp(d.pair.id);candleSeries.applyOptions({priceFormat:{type:'price',precision:prec,minMove:Math.pow(10,-prec)}});candleSeries.setData(d.candles.map(c=>({time:c.t,open:c.o,high:c.h,low:c.l,close:c.c})));lines.forEach(l=>candleSeries.removePriceLine(l));lines=[];const markers=[];const last=d.candles[d.candles.length-1];if(d.sig&&['LONG','SHORT'].includes(d.sig.action)){lines.push(candleSeries.createPriceLine({price:d.sig.entry,color:'#185FA5',title:`ENTRY ${fp(d.sig.entry,d.pair.id)}`,lineStyle:2,lineWidth:2}));lines.push(candleSeries.createPriceLine({price:d.sig.sl,color:'#A32D2D',title:`SL ${fp(d.sig.sl,d.pair.id)}`,lineStyle:2,lineWidth:2}));lines.push(candleSeries.createPriceLine({price:d.sig.tp,color:'#3B6D11',title:`TP ${fp(d.sig.tp,d.pair.id)}`,lineStyle:2,lineWidth:2}));if(Number.isFinite(d.sig.crh))lines.push(candleSeries.createPriceLine({price:d.sig.crh,color:'#9C7C38',title:`CRH ${fp(d.sig.crh,d.pair.id)}`,lineStyle:1,lineWidth:1}));if(Number.isFinite(d.sig.crl))lines.push(candleSeries.createPriceLine({price:d.sig.crl,color:'#9C7C38',title:`CRL ${fp(d.sig.crl,d.pair.id)}`,lineStyle:1,lineWidth:1}));const recent=d.candles.slice(-20);const swingHigh=Math.max(...recent.map(c=>c.h));const swingLow=Math.min(...recent.map(c=>c.l));if(Number.isFinite(swingHigh))lines.push(candleSeries.createPriceLine({price:swingHigh,color:'#7A5C2A',title:`SwingH ${fp(swingHigh,d.pair.id)}`,lineStyle:4,lineWidth:1}));if(Number.isFinite(swingLow))lines.push(candleSeries.createPriceLine({price:swingLow,color:'#7A5C2A',title:`SwingL ${fp(swingLow,d.pair.id)}`,lineStyle:4,lineWidth:1}));if(Number.isFinite(d.elliott?.invalidation))lines.push(candleSeries.createPriceLine({price:d.elliott.invalidation,color:'#5A2A7A',title:`Elliott Invalid ${fp(d.elliott.invalidation,d.pair.id)}`,lineStyle:3,lineWidth:1}));const zone=classifyRangeZone(d.price,d.sig.crh,d.sig.crl);if(last){markers.push({time:last.t,position:'inBar',color:'#185FA5',shape:'circle',text:'ENTRY'});markers.push({time:last.t,position:'belowBar',color:'#A32D2D',shape:'arrowDown',text:'SL'});markers.push({time:last.t,position:'aboveBar',color:'#3B6D11',shape:'arrowUp',text:'TP'});if(Number.isFinite(d.sig.crh))markers.push({time:last.t,position:'aboveBar',color:'#9C7C38',shape:'square',text:'Range Top'});if(Number.isFinite(d.sig.crl))markers.push({time:last.t,position:'belowBar',color:'#9C7C38',shape:'square',text:'Range Bottom'});if(Number.isFinite(swingHigh))markers.push({time:last.t,position:'aboveBar',color:'#7A5C2A',shape:'square',text:'Swing High'});if(Number.isFinite(swingLow))markers.push({time:last.t,position:'belowBar',color:'#7A5C2A',shape:'square',text:'Swing Low'});markers.push({time:last.t,position:zone==='UST'?'aboveBar':(zone==='ALT'?'belowBar':'inBar'),color:'#4A4A8A',shape:'square',text:`Zone:${zone}`});if(d.elliott?.phase)markers.push({time:last.t,position:'inBar',color:'#5A2A7A',shape:'square',text:`EW:${d.elliott.phase}/${d.elliott.bias}`})}document.getElementById('levelReadout').textContent=`ENTRY: ${fp(d.sig.entry,d.pair.id)} · SL: ${fp(d.sig.sl,d.pair.id)} · TP: ${fp(d.sig.tp,d.pair.id)} · CRH/CRL: ${fp(d.sig.crh,d.pair.id)}/${fp(d.sig.crl,d.pair.id)} · Range Zone: ${zone} · Elliott: ${d.elliott?.phase||'unknown'}/${d.elliott?.bias||'neutral'}`;}else{document.getElementById('levelReadout').textContent='ENTRY: — · SL: — · TP: —'}if(typeof candleSeries.setMarkers==='function')candleSeries.setMarkers(markers);document.getElementById('chartMeta').textContent=`${d.pair.label} · ${d.sig.action||'WAIT'} · Takip TF: ${recommendTF(d)} · profil:${planCfg.strategyProfile}`;renderSignalCards()}
+function showOnChart(id){
+  initChart();
+  const d=MKT[id];
+  if(!d||!candleSeries)return;
+  selectedPairId=id;
+  const prec=dp(d.pair.id);
+  candleSeries.applyOptions({priceFormat:{type:'price',precision:prec,minMove:Math.pow(10,-prec)}});
+  candleSeries.setData(d.candles.map(c=>({time:c.t,open:c.o,high:c.h,low:c.l,close:c.c})));
+  lines.forEach(l=>candleSeries.removePriceLine(l));lines=[];
+  const markers=[];
+  const last=d.candles[d.candles.length-1];
+  if(d.sig&&['LONG','SHORT'].includes(d.sig.action)){
+    lines.push(candleSeries.createPriceLine({price:d.sig.entry,color:'#185FA5',title:`ENTRY ${fp(d.sig.entry,d.pair.id)}`,lineStyle:2,lineWidth:2}));
+    lines.push(candleSeries.createPriceLine({price:d.sig.sl,color:'#A32D2D',title:`SL ${fp(d.sig.sl,d.pair.id)}`,lineStyle:2,lineWidth:2}));
+    lines.push(candleSeries.createPriceLine({price:d.sig.tp,color:'#3B6D11',title:`TP ${fp(d.sig.tp,d.pair.id)}`,lineStyle:2,lineWidth:2}));
+    if(Number.isFinite(d.sig.crh))lines.push(candleSeries.createPriceLine({price:d.sig.crh,color:'#9C7C38',title:`CRH ${fp(d.sig.crh,d.pair.id)}`,lineStyle:1,lineWidth:1}));
+    if(Number.isFinite(d.sig.crl))lines.push(candleSeries.createPriceLine({price:d.sig.crl,color:'#9C7C38',title:`CRL ${fp(d.sig.crl,d.pair.id)}`,lineStyle:1,lineWidth:1}));
+    const srt=detectSRTLevels(d.candles);
+    if(Number.isFinite(srt?.resistance))lines.push(candleSeries.createPriceLine({price:srt.resistance,color:'#7A3B2A',title:`SRT-R ${fp(srt.resistance,d.pair.id)}`,lineStyle:0,lineWidth:1}));
+    if(Number.isFinite(srt?.support))lines.push(candleSeries.createPriceLine({price:srt.support,color:'#2E6A3A',title:`SRT-S ${fp(srt.support,d.pair.id)}`,lineStyle:0,lineWidth:1}));
+    const recent=d.candles.slice(-20);
+    const swingHigh=Math.max(...recent.map(c=>c.h));
+    const swingLow=Math.min(...recent.map(c=>c.l));
+    if(Number.isFinite(swingHigh))lines.push(candleSeries.createPriceLine({price:swingHigh,color:'#7A5C2A',title:`SwingH ${fp(swingHigh,d.pair.id)}`,lineStyle:4,lineWidth:1}));
+    if(Number.isFinite(swingLow))lines.push(candleSeries.createPriceLine({price:swingLow,color:'#7A5C2A',title:`SwingL ${fp(swingLow,d.pair.id)}`,lineStyle:4,lineWidth:1}));
+    if(Number.isFinite(d.elliott?.invalidation))lines.push(candleSeries.createPriceLine({price:d.elliott.invalidation,color:'#5A2A7A',title:`Elliott Invalid ${fp(d.elliott.invalidation,d.pair.id)}`,lineStyle:3,lineWidth:1}));
+    const zone=classifyRangeZone(d.price,d.sig.crh,d.sig.crl);
+    if(last){
+      markers.push({time:last.t,position:'inBar',color:'#185FA5',shape:'circle',text:'ENTRY'});
+      markers.push({time:last.t,position:'belowBar',color:'#A32D2D',shape:'arrowDown',text:'SL'});
+      markers.push({time:last.t,position:'aboveBar',color:'#3B6D11',shape:'arrowUp',text:'TP'});
+      if(Number.isFinite(d.sig.crh))markers.push({time:last.t,position:'aboveBar',color:'#9C7C38',shape:'square',text:'Range Top'});
+      if(Number.isFinite(d.sig.crl))markers.push({time:last.t,position:'belowBar',color:'#9C7C38',shape:'square',text:'Range Bottom'});
+      if(Number.isFinite(srt?.resistance))markers.push({time:last.t,position:'aboveBar',color:'#7A3B2A',shape:'square',text:'SRT-R'});
+      if(Number.isFinite(srt?.support))markers.push({time:last.t,position:'belowBar',color:'#2E6A3A',shape:'square',text:'SRT-S'});
+      if(Number.isFinite(swingHigh))markers.push({time:last.t,position:'aboveBar',color:'#7A5C2A',shape:'square',text:'Swing High'});
+      if(Number.isFinite(swingLow))markers.push({time:last.t,position:'belowBar',color:'#7A5C2A',shape:'square',text:'Swing Low'});
+      markers.push({time:last.t,position:zone==='UST'?'aboveBar':(zone==='ALT'?'belowBar':'inBar'),color:'#4A4A8A',shape:'square',text:`Zone:${zone}`});
+      if(d.elliott?.phase)markers.push({time:last.t,position:'inBar',color:'#5A2A7A',shape:'square',text:`EW:${d.elliott.phase}/${d.elliott.bias}`});
+      markers.push(...elliottWaveMarkers(d.candles,d.elliott));
+    }
+    const act=strategyActionState(d);
+    if(last){
+      markers.push({time:last.t,position:'inBar',color:(act.ready?'#2E7D32':'#9A2020'),shape:'arrowUp',text:`${act.status}`});
+      markers.push({time:last.t,position:'inBar',color:'#3F3F46',shape:'square',text:`${d.strategyTag||'core'}`});
+    }
+    document.getElementById('levelReadout').textContent=`ENTRY: ${fp(d.sig.entry,d.pair.id)} · SL: ${fp(d.sig.sl,d.pair.id)} · TP: ${fp(d.sig.tp,d.pair.id)} · CRH/CRL: ${fp(d.sig.crh,d.pair.id)}/${fp(d.sig.crl,d.pair.id)} · SRT: ${srt?`${fp(srt.support,d.pair.id)}/${fp(srt.resistance,d.pair.id)}`:'n/a'} · Elliott: ${d.elliott?.phase||'unknown'}/${d.elliott?.bias||'neutral'} · ACTION:${act.status} (${act.reason})`;
+  }else{
+    document.getElementById('levelReadout').textContent='ENTRY: — · SL: — · TP: —';
+  }
+  if(typeof candleSeries.setMarkers==='function')candleSeries.setMarkers(markers);
+  document.getElementById('chartMeta').textContent=`${d.pair.label} · ${d.sig.action||'WAIT'} · Takip TF: ${recommendTF(d)} · profil:${planCfg.strategyProfile}`;
+  renderSignalCards();
+}
 function togglePin(){const b=document.getElementById('pinBtn'),i=document.getElementById('pinInfo');if(pinnedPairId){pinnedPairId=null;b.textContent='Sabitle: Kapalı';b.classList.remove('on');i.textContent='Seçili parite otomatik değişebilir.';return}if(!selectedPairId||!MKT[selectedPairId])return;i.textContent=`Sabit parite: ${MKT[selectedPairId].pair.label}`;pinnedPairId=selectedPairId;b.textContent='Sabitle: Açık';b.classList.add('on')}
 function renderMetrics(){const a=Object.values(MKT),s=a.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));m0.textContent=a.length;m1.textContent=s.filter(d=>d.sig.action==='LONG').length;m2.textContent=s.filter(d=>d.sig.action==='SHORT').length;m3.textContent=a.filter(d=>d.sig&&d.sig.pct<2).length}
-function renderSignalCards(){const a=filtered().filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((x,y)=>signalQuality(y)-signalQuality(x)).slice(0,tradeLimit);if(!a.length){sigGrid.innerHTML='<div class="wait-msg">İnceleme için aktif sinyal yok.</div>';return}sigGrid.innerHTML=a.map(d=>`<div class="sc ${selectedPairId===d.pair.id?'sel':''}"><div class="sc-head"><div><div class="sc-pair">${d.pair.label}<span class="live-tag">CANLI · ${d.sourceName||'mt5'} · ${d.sourceSymbol||d.pair.id}</span><span class="${aiClass(d)}">${aiText(d)}</span></div><div class="sc-cat">${catLabel(d.pair.cat)} · ${d.trend==='up'?'↑ Yükselen':d.trend==='down'?'↓ Düşen':'→ Yatay'} · Kalite ${signalQuality(d)}/100</div></div><span class="badge ${d.sig.action==='LONG'?'blong':'bshort'}">${d.sig.action}</span></div><div class="sc-divider"></div><div class="levels"><div class="lv"><div class="lname">STOP</div><div class="lprice neg">${fp(d.sig.sl,d.pair.id)}</div></div><div class="lv entry-lv"><div class="lname">GİRİŞ</div><div class="lprice">${fp(d.sig.entry,d.pair.id)}</div></div><div class="lv"><div class="lname">HEDEF</div><div class="lprice pos">${fp(d.sig.tp,d.pair.id)}</div></div></div><div class="sc-footer"><span class="sc-meta">R:R ${d.sig.rr.toFixed(2)} · TF ${recommendTF(d)}</span><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Aç</button></div></div>`).join('')}
+function renderSignalCards(){const a=filtered().filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((x,y)=>weightedSignalQuality(y)-weightedSignalQuality(x)).slice(0,tradeLimit);if(!a.length){sigGrid.innerHTML='<div class="wait-msg">İnceleme için aktif sinyal yok.</div>';return}sigGrid.innerHTML=a.map(d=>`<div class="sc ${selectedPairId===d.pair.id?'sel':''}"><div class="sc-head"><div><div class="sc-pair">${d.pair.label}<span class="live-tag">CANLI · ${d.sourceName||'mt5'} · ${d.sourceSymbol||d.pair.id}</span><span class="${aiClass(d)}">${aiText(d)}</span></div><div class="sc-cat">${catLabel(d.pair.cat)} · ${d.trend==='up'?'↑ Yükselen':d.trend==='down'?'↓ Düşen':'→ Yatay'} · Kalite ${signalQuality(d)}/100 · Ağırlık ${(strategyWeight(d.strategyTag||'core')).toFixed(2)}</div></div><span class="badge ${d.sig.action==='LONG'?'blong':'bshort'}">${d.sig.action}</span></div><div class="sc-divider"></div><div class="levels"><div class="lv"><div class="lname">STOP</div><div class="lprice neg">${fp(d.sig.sl,d.pair.id)}</div></div><div class="lv entry-lv"><div class="lname">GİRİŞ</div><div class="lprice">${fp(d.sig.entry,d.pair.id)}</div></div><div class="lv"><div class="lname">HEDEF</div><div class="lprice pos">${fp(d.sig.tp,d.pair.id)}</div></div></div><div class="sc-footer"><span class="sc-meta">R:R ${d.sig.rr.toFixed(2)} · TF ${recommendTF(d)}</span><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Aç</button></div></div>`).join('')}
 function signalReason(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 'Sinyal yok / bekle modu';const t=d.trend==='up'?'trend yukarı':d.trend==='down'?'trend aşağı':'trend yatay';const z=d.sig.pct<=1.2?'dar bölge':d.sig.pct<=2?'orta bölge':'geniş bölge';const rr=(d.sig.rr||0)>=2?'yüksek RR':(d.sig.rr||0)>=1.4?'orta RR':'düşük RR';return `${t}, ${z}, ${rr}`}
 function renderTable(){const rows=filtered();tbl.innerHTML=rows.length?rows.map(d=>{const s=d.sig&&['LONG','SHORT'].includes(d.sig.action),sig=s?`<span class="${d.sig.action==='LONG'?'pos':'neg'}">${d.sig.action}</span> <span class="${aiClass(d)}">${aiText(d)}</span>`:'—',cl=s?'clickrow':'',oc=s?` onclick="showOnChart('${d.pair.id}')"`:'';return`<tr class="${cl}"${oc}><td>${d.pair.label}</td><td>${fp(d.price,d.pair.id)}</td><td>${d.trend}</td><td>${sig}</td><td>${s?fp(d.sig.entry,d.pair.id):'—'}</td><td>${s?fp(d.sig.sl,d.pair.id):'—'}</td><td>${s?fp(d.sig.tp,d.pair.id):'—'}</td><td>${s?d.sig.rr.toFixed(2):'—'}</td><td>${s?recommendTF(d):'—'}</td><td>${fp(d.sig?.crh,d.pair.id)}</td><td>${fp(d.sig?.crl,d.pair.id)}</td><td>${d.sig?.pct?d.sig.pct.toFixed(2)+'%':'—'}</td></tr>`}).join(''):'<tr><td colspan="12" class="muted">Veri yok</td></tr>'}
-function renderReviewCards(){const root=document.getElementById('reviewGrid');if(!root)return;const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).sort((a,b)=>signalQuality(b)-signalQuality(a));root.innerHTML=sigs.length?sigs.map(d=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),m=lot?marginUsagePct(d,lot.lot):0;return`<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>${d.pair.label} · ${d.sig.action} · R:R ${d.sig.rr.toFixed(2)}</h4><div class="klist">Öneri: <b>${safe.rec}</b><br>Sonuç: ${d.aiStatus==='confirmed'?'İşleme Uygun':'İzleme'}<br>Sebep: ${signalReason(d)}<br>Onay: ${recommendTF(d)}<br>Geçersiz olma: ${invalidationRule(d)}<br>Güvenlik Notu: ${safe.reason}<br>Bölge: ${d.sig.pct.toFixed(2)}%<br>Lot (öneri): <b>${lot?lot.lot:'—'}</b> · Risk $${lot?lot.riskAmount:'—'} · Marjin ${m.toFixed(1)}%<br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'} · SL: $${lot?lot.slUsd:'—'} · TP: $${lot?lot.tpUsd:'—'}</div></div>`}).join(''):'<div class="kcard"><div class="klist">Aktif sinyal oluştuğunda burada sebep/sonuç kartı görünecek.</div></div>'}
-function renderOrderPlan(){const root=document.getElementById('planGrid');if(!root)return;const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return}const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);root.innerHTML=selected.map((d,idx)=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),exitPlan=buildExitPlan(d);let lotAdj='—';if(lot){const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);lotAdj=Math.max(riskCfg.minLot,roundStep(scaled,riskCfg.lotStep)).toFixed(2)}const m=lotAdj!=='—'?marginUsagePct(d,Number(lotAdj)):0;const link=lotAdj!=='—'?buildLiveOrderLink(d,lotAdj):'';return`<div class="kcard"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>${exitPlan?`TP1: ${fp(exitPlan.tp1,d.pair.id)} · TP2: ${fp(exitPlan.tp2,d.pair.id)}<br>BE Trigger: ${fp(exitPlan.beTrigger,d.pair.id)} · Trail Trigger: ${fp(exitPlan.trailTrigger,d.pair.id)}<br>`:''}Önerilen Lot: <b>${lotAdj}</b><br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br>SL'de Zarar: $${lot&&lotAdj!=='—'?(lot.slUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>TP'de Kar: $${lot&&lotAdj!=='—'?(lot.tpUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Hedef Hesap: <b>${titleCaseAccount(tradeCfg.targetAccountType)}</b><br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}<br><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Gör</button> ${lotAdj!=='—'?`<button class="sbtn" onclick="executeSignalOrder(MKT['${d.pair.id}'],'${lotAdj}')">${titleCaseAccount(tradeCfg.targetAccountType)} Hesaba Emir Gönder</button>`:''}<br>${link?`<a href="${link}" target="_blank" rel="noopener">Canlı Emir Aç (Link)</a>`:'Canlı emir linki girilmedi'}</div></div>`}).join('')}
+function renderReviewCards(){const root=document.getElementById('reviewGrid');if(!root)return;const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));root.innerHTML=sigs.length?sigs.map(d=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),m=lot?marginUsagePct(d,lot.lot):0,act=strategyActionState(d);return`<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>${d.pair.label} · ${d.sig.action} · R:R ${d.sig.rr.toFixed(2)}</h4><div class="klist">Strateji: <b>${d.strategyTag||'core'}</b><br>Aksiyon: <b>${act.status}</b> (${act.reason})<br>Entry Tetik: ${act.entryTrigger}<br>Invalidation: ${act.invalidation}<br>Take Profit: ${act.takeProfit}<br>Öneri: <b>${safe.rec}</b><br>Sonuç: ${d.aiStatus==='confirmed'?'İşleme Uygun':'İzleme'}<br>Sebep: ${signalReason(d)}<br>Onay: ${recommendTF(d)}<br>Geçersiz olma: ${invalidationRule(d)}<br>Güvenlik Notu: ${safe.reason}<br>Bölge: ${d.sig.pct.toFixed(2)}%<br>Lot (öneri): <b>${lot?lot.lot:'—'}</b> · Risk $${lot?lot.riskAmount:'—'} · Marjin ${m.toFixed(1)}%<br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'} · SL: $${lot?lot.slUsd:'—'} · TP: $${lot?lot.tpUsd:'—'}</div></div>`}).join(''):'<div class="kcard"><div class="klist">Aktif sinyal oluştuğunda burada sebep/sonuç kartı görünecek.</div></div>'}
+function renderOrderPlan(){const root=document.getElementById('planGrid');if(!root)return;const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a)).slice(0,planCfg.maxOpenPos);if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return}const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);root.innerHTML=selected.map((d,idx)=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),exitPlan=buildExitPlan(d);let lotAdj='—';if(lot){const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);lotAdj=Math.max(riskCfg.minLot,roundStep(scaled,riskCfg.lotStep)).toFixed(2)}const m=lotAdj!=='—'?marginUsagePct(d,Number(lotAdj)):0;const link=lotAdj!=='—'?buildLiveOrderLink(d,lotAdj):'';return`<div class="kcard"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>${exitPlan?`TP1: ${fp(exitPlan.tp1,d.pair.id)} · TP2: ${fp(exitPlan.tp2,d.pair.id)}<br>BE Trigger: ${fp(exitPlan.beTrigger,d.pair.id)} · Trail Trigger: ${fp(exitPlan.trailTrigger,d.pair.id)}<br>`:''}Önerilen Lot: <b>${lotAdj}</b><br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br>SL'de Zarar: $${lot&&lotAdj!=='—'?(lot.slUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>TP'de Kar: $${lot&&lotAdj!=='—'?(lot.tpUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Hedef Hesap: <b>${titleCaseAccount(tradeCfg.targetAccountType)}</b><br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}<br><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Gör</button> ${lotAdj!=='—'?`<button class="sbtn" onclick="executeSignalOrder(MKT['${d.pair.id}'],'${lotAdj}')">${titleCaseAccount(tradeCfg.targetAccountType)} Hesaba Emir Gönder</button>`:''}<br>${link?`<a href="${link}" target="_blank" rel="noopener">Canlı Emir Aç (Link)</a>`:'Canlı emir linki girilmedi'}</div></div>`}).join('')}
 function renderCategoryPanels(){kGrid.innerHTML=['forex','metals','crypto','indices'].map(c=>{const r=PAIRS.filter(p=>p.cat===c).map(p=>MKT[p.id]).filter(Boolean),s=r.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));return`<div class="kcard"><h4>${catLabel(c)} · ${r.length} ürün · ${s.length} sinyal</h4><div class="klist">${r.slice(0,30).map(d=>`${d.pair.label} · ${d.sig?.action||'WAIT'} · TF:${recommendTF(d)}`).join('<br>')||'Veri yok'}</div></div>`}).join('')}
-function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan();renderHistory()}
-async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend,entry:+(d.sig.entry||0).toFixed(dp(d.pair.id)),sl:+(d.sig.sl||0).toFixed(dp(d.pair.id)),tp:+(d.sig.tp||0).toFixed(dp(d.pair.id)),pa:(d.pa?.notes||[]).slice(0,3),elliott_phase:d.elliott?.phase||'unknown',elliott_bias:d.elliott?.bias||'neutral'}));const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch","reason":"kisa neden"}]}.\nIslem giris checklisti:\n1) Trend uyumu: trend up->LONG, trend down->SHORT, range ise daha sikı filtre.\n2) Risk/odul: rr >= 1.4 olmali.\n3) Bolge kalitesi: zone <= 1.8 olmali.\n4) Seviye tutarliligi: LONG icin sl<entry<tp, SHORT icin tp<entry<sl.\n5) Elliott uyumu: LONG icin bullish bias, SHORT icin bearish bias tercih edilir.\nBu kurallardan biri bozuksa status=watch.\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]={status:x.status,reason:String(x.reason||'')});items.forEach(d=>{const rec=m[d.pair.id];d.aiStatus=rec?.status==='confirmed'?'confirmed':rec?.status==='watch'?'watch':'unknown';d.aiReason=rec?.reason||''})}
-async function scanPairByIntervals(pair){let best=null;for(const itv of SCAN_INTERVALS){try{const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:itv,count:180,alignmentTimezone:SCAN_TZ})});if(!r.ok)continue;const j=await r.json();if(!Array.isArray(j.candles)||j.candles.length<30)continue;const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,pa=detectPASignals(candles),elliott=detectElliott(candles),row={pair,candles,trend,sig,pa,elliott,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ};if(sig&&['LONG','SHORT'].includes(sig.action)){if(!best||confluenceScore(row)>confluenceScore(best))best=row}else if(!best&&itv==='H1')best=row}catch(e){}}return best}
-async function refreshAll(){if(isScanning)return;isScanning=true;pill.textContent='Taranıyor...';pill.className='pill ld';MKT={};sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';let done=0,src={mt5:0,unsupported:0};for(const p of PAIRS){done++;pill.textContent=`Taranıyor... ${done}/${PAIRS.length} · ${p.label}`;const row=await scanPairByIntervals(p);if(row){MKT[p.id]=row;src.mt5++}else src.unsupported++;if(done%5===0)renderAll();await new Promise(r=>setTimeout(r,120))}const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now()});cleanupOldSignals();try{await aiValidate(sigs)}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`)}const next={};sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`)});prevSignalMap=next;await runPositionManager();await refreshTradeSnapshot();renderAll();pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;pill.className='pill ok';srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);if(tradeCfg.autoEnabled){if(tradeCfg.lastHealth!=='MT5 OK'){pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade durdu: MT5 health uygun degil`)}else{const cand=sigs.filter(d=>safeRecommendation(d).rec==='Hemen').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);for(const d of cand){const gate=canAutoExecute(d);if(!gate.ok){if(gate.reason!=='same_side_open_exists')pushFeed(`${new Date().toLocaleTimeString()} · Auto Skip ${d.pair.label}: ${gate.reason}`);continue}const lot=lotSuggestion(d);if(!lot)continue;const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;const lotAdj=Math.max(riskCfg.minLot,roundStep(Math.min(lot.lot,(budget/Math.max(cand.length,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),riskCfg.lotStep)).toFixed(2);await executeSignalOrder(d,lotAdj)}}}isScanning=false}
+function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan();renderHistory();renderPassBacktest()}
+async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend,entry:+(d.sig.entry||0).toFixed(dp(d.pair.id)),sl:+(d.sig.sl||0).toFixed(dp(d.pair.id)),tp:+(d.sig.tp||0).toFixed(dp(d.pair.id)),pa:(d.pa?.notes||[]).slice(0,3),elliott_phase:d.elliott?.phase||'unknown',elliott_bias:d.elliott?.bias||'neutral'}));const kThemes=knowledgeThemes();const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch","reason":"kisa neden"}]}.\nKnowledge themes (project knowledge folder): ${kThemes.join(', ')||'none'}.\nIslem giris checklisti:\n1) Trend uyumu: trend up->LONG, trend down->SHORT, range ise daha sikı filtre.\n2) Risk/odul: rr >= 1.4 olmali.\n3) Bolge kalitesi: zone <= 1.8 olmali.\n4) Seviye tutarliligi: LONG icin sl<entry<tp, SHORT icin tp<entry<sl.\n5) Elliott uyumu: LONG icin bullish bias, SHORT icin bearish bias tercih edilir.\n6) Price Action/Candlestick uyumu: engulf/pin/inside-break destekleyici degilse watch.\nBu kurallardan biri bozuksa status=watch.\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]={status:x.status,reason:String(x.reason||'')});items.forEach(d=>{const rec=m[d.pair.id];d.aiStatus=rec?.status==='confirmed'?'confirmed':rec?.status==='watch'?'watch':'unknown';d.aiReason=rec?.reason||''})}
+async function scanPairByIntervals(pair){
+  const dbg={pair:pair.id,coreErrors:0,turtleErrors:0,turtleWaitNotes:[],coreSig:0,turtleSig:0};
+  let bestCore=null;
+  if(planCfg.scanCore){
+    for(const itv of SCAN_INTERVALS){
+      try{
+        const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:itv,count:180,alignmentTimezone:SCAN_TZ})});
+        if(!r.ok){
+          dbg.coreErrors++;
+          pushDebug(`broker_fail pair=${pair.id} tf=${itv} status=${r.status}`);
+          continue;
+        }
+        const j=await r.json();
+        if(!Array.isArray(j.candles)||j.candles.length<30)continue;
+        const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,pa=detectPASignals(candles),elliott=detectElliott(candles);
+        const row={pair,candles,trend,sig,pa,elliott,turtle:null,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ,strategyTag:'core'};
+        if(sig&&['LONG','SHORT'].includes(sig.action)){dbg.coreSig++;if(!bestCore||weightedSignalQuality(row)>weightedSignalQuality(bestCore))bestCore=row}else if(!bestCore&&itv==='H1')bestCore=row;
+      }catch(e){dbg.coreErrors++;pushDebug(`broker_err pair=${pair.id} tf=${itv} ${e.message}`)}
+    }
+  }
+  let bestTurtle=null;
+  if(planCfg.scanTurtle){
+    try{
+      const r1=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M1',count:360,alignmentTimezone:SCAN_TZ})});
+      if(r1.ok){
+        const j1=await r1.json();
+        if(Array.isArray(j1.candles)&&j1.candles.length>=60){
+          const m1=j1.candles;
+          const m3=aggregateCandles(m1,3);
+          const m5=aggregateCandles(m1,5);
+          const all=[{tf:'M1',candles:m1},{tf:'M3',candles:m3},{tf:'M5',candles:m5}];
+          for(const x of all){
+            if(!x.candles||x.candles.length<35)continue;
+            const trend=detectTrend(x.candles);
+            const turtle=detectTurtleSopa(x.candles,trend);
+            const price=x.candles[x.candles.length-1]?.c;
+            if(turtle.action==='WAIT'){dbg.turtleWaitNotes.push(`${x.tf}:${(turtle.notes||[]).slice(0,2).join('|')}`);continue;}
+            const sig={action:turtle.action,entry:turtle.entry,sl:turtle.sl,tp:turtle.tp,rr:turtle.rr,crh:Math.max(...x.candles.slice(-24).map(c=>c.h)),crl:Math.min(...x.candles.slice(-24).map(c=>c.l)),pct:0.9};
+            const pa=detectPASignals(x.candles),elliott=detectElliott(x.candles);
+            const row={pair,candles:x.candles,trend,sig,pa,elliott,turtle,price,source:'live',sourceName:'mt5',sourceSymbol:j1.instrument||pair.id,timeframe:x.tf,timezone:SCAN_TZ,strategyTag:'turtle_sopa'};
+            dbg.turtleSig++;
+            if(!bestTurtle||weightedSignalQuality(row)>weightedSignalQuality(bestTurtle))bestTurtle=row;
+          }
+        }
+      }else{
+        dbg.turtleErrors++;
+        pushDebug(`broker_fail pair=${pair.id} tf=M1 status=${r1.status}`);
+      }
+    }catch(e){dbg.turtleErrors++;pushDebug(`broker_err pair=${pair.id} tf=M1 ${e.message}`)}
+  }
+  let bestVWAP=null;
+  if(planCfg.scanVWAP){
+    try{
+      const rv=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M15',count:220,alignmentTimezone:SCAN_TZ})});
+      if(rv.ok){
+        const jv=await rv.json();
+        if(Array.isArray(jv.candles)&&jv.candles.length>=40){
+          const candles=jv.candles,trend=detectTrend(candles),vwapSig=detectVWAPReclaim(candles,trend);
+          if(vwapSig.action!=='WAIT'){
+            const pa=detectPASignals(candles),elliott=detectElliott(candles),price=candles[candles.length-1]?.c;
+            const row={pair,candles,trend,sig:{...vwapSig,crh:Math.max(...candles.slice(-24).map(c=>c.h)),crl:Math.min(...candles.slice(-24).map(c=>c.l)),pct:1.1},pa,elliott,turtle:{notes:vwapSig.notes||[]},price,source:'live',sourceName:'mt5',sourceSymbol:jv.instrument||pair.id,timeframe:'M15',timezone:SCAN_TZ,strategyTag:'vwap_reclaim'};
+            bestVWAP=row;
+          }
+        }
+      }
+    }catch(e){pushDebug(`broker_err pair=${pair.id} tf=M15 vwap ${e.message}`)}
+  }
+  let bestSR=null;
+  if(planCfg.scanSRBreak){
+    try{
+      const rs=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M15',count:240,alignmentTimezone:SCAN_TZ})});
+      if(rs.ok){
+        const js=await rs.json();
+        if(Array.isArray(js.candles)&&js.candles.length>=45){
+          const candles=js.candles,trend=detectTrend(candles),srSig=detectSRBreakoutRetest(candles,trend);
+          if(srSig.action!=='WAIT'){
+            const pa=detectPASignals(candles),elliott=detectElliott(candles),price=candles[candles.length-1]?.c;
+            const row={pair,candles,trend,sig:{...srSig,crh:Math.max(...candles.slice(-24).map(c=>c.h)),crl:Math.min(...candles.slice(-24).map(c=>c.l)),pct:1.0},pa,elliott,turtle:{notes:srSig.notes||[]},price,source:'live',sourceName:'mt5',sourceSymbol:js.instrument||pair.id,timeframe:'M15',timezone:SCAN_TZ,strategyTag:'sr_breakout'};
+            bestSR=row;
+          }
+        }
+      }
+    }catch(e){pushDebug(`broker_err pair=${pair.id} tf=M15 sr ${e.message}`)}
+  }
+  const mode=String(planCfg.strategyMode||'hybrid');
+  if(!bestCore&&!bestTurtle){
+    const brief=dbg.turtleWaitNotes.slice(0,2).join(', ')||'no_signal';
+    pushDebug(`wait pair=${pair.id} coreErr=${dbg.coreErrors} turtleErr=${dbg.turtleErrors} why=${brief}`);
+  }
+  const pool=[bestCore,bestTurtle,bestVWAP,bestSR].filter(Boolean);
+  if(pool.length){
+    let best=pool[0];
+    for(const x of pool){if(weightedSignalQuality(x)>weightedSignalQuality(best))best=x;}
+    if(mode==='core')return bestCore||bestVWAP||bestSR||bestTurtle;
+    if(mode==='turtle_sopa')return bestTurtle||bestVWAP||bestSR||bestCore;
+    return best;
+  }
+  if(mode==='core')return bestCore;
+  if(mode==='turtle_sopa')return bestTurtle||bestCore;
+  if(bestCore&&bestTurtle)return weightedSignalQuality(bestTurtle)>=weightedSignalQuality(bestCore)?bestTurtle:bestCore;
+  return bestTurtle||bestCore;
+}
+async function refreshAll(){
+  if(isScanning)return;
+  isScanning=true;
+  const autoSkip={};
+  pill.textContent='Taranıyor...';
+  pill.className='pill ld';
+  MKT={};
+  sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';
+  if(!availablePairIds)await refreshAvailablePairs();
+  const scanPairs=(availablePairIds&&availablePairIds.size)?PAIRS.filter(p=>availablePairIds.has(String(p.id).toUpperCase())):PAIRS.filter(p=>!unavailablePairIds.has(String(p.id).toUpperCase()));
+  let done=0,src={mt5:0,unsupported:0};
+  for(const p of scanPairs){
+    done++;
+    pill.textContent=`Taranıyor... ${done}/${scanPairs.length} · ${p.label}`;
+    const row=await scanPairByIntervals(p);
+    if(row){MKT[p.id]=row;src.mt5++;}else src.unsupported++;
+    if(done%5===0)renderAll();
+    await new Promise(r=>setTimeout(r,120));
+  }
+  const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));
+  sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now();});
+  cleanupOldSignals();
+  try{await aiValidate(sigs);}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`);pushDebug(`ai_validate_failed ${e.message}`);}
+  const next={};
+  sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);
+  sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`);});
+  prevSignalMap=next;
+  upsertPassBacktestCandidates();
+  updatePassBacktestStatus();
+  savePassBacktest();
+  await runPositionManager();
+  await refreshTradeSnapshot();
+  renderAll();
+  pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;
+  pill.className='pill ok';
+  srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · aktif tarama:${scanPairs.length}/${PAIRS.length} · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;
+  pushDebug(`scan_done pairs=${Object.keys(MKT).length} signals=${sigs.length} verisiz=${src.unsupported} universe=${scanPairs.length}`);
+  if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;
+  if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);
+  pushDebug(`auto_state enabled=${tradeCfg.autoEnabled?'on':'off'} dry=${tradeCfg.dryRun?'on':'off'} health=${tradeCfg.lastHealth}`);
+  if(tradeCfg.autoEnabled){
+    if(tradeCfg.lastHealth!=='MT5 OK'){
+      pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade durdu: MT5 health uygun degil`);
+      autoSkip.health_not_ok=(autoSkip.health_not_ok||0)+1;
+    }else{
+      const ready=sigs.map(d=>({d,rec:safeRecommendation(d).rec}));
+      const allowBekle=String(planCfg.strategyProfile||'balanced')==='aggressive';
+      const ranked=ready.filter(x=>x.rec==='Hemen'||(allowBekle&&x.rec==='Bekle')).map(x=>x.d).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));
+      let executed=0;
+      pushDebug(`auto_candidates hemen=${ready.filter(x=>x.rec==='Hemen').length} bekle=${ready.filter(x=>x.rec==='Bekle').length} ranked=${ranked.length} mode=${allowBekle?'aggressive':'strict'}`);
+      for(const d of ranked){
+        if(executed>=planCfg.maxOpenPos)break;
+        const gate=canAutoExecute(d);
+        if(!gate.ok){
+          autoSkip[gate.reason]=(autoSkip[gate.reason]||0)+1;
+          upsertPassBacktestFromBlocked(d,`blocked:${gate.reason}`);
+          if(gate.reason!=='same_side_open_exists')pushFeed(`${new Date().toLocaleTimeString()} · Auto Skip ${d.pair.label}: ${gate.reason}`);
+          continue;
+        }
+        const lot=lotSuggestion(d);
+        if(!lot){
+          autoSkip.no_lot=(autoSkip.no_lot||0)+1;
+          upsertPassBacktestFromBlocked(d,'blocked:no_lot');
+          continue;
+        }
+        const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;
+        const lotAdj=Math.max(riskCfg.minLot,roundStep(Math.min(lot.lot,(budget/Math.max(planCfg.maxOpenPos,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),riskCfg.lotStep)).toFixed(2);
+        pushDebug(`lot_calc ${d.pair.id} side=${d.sig.action} riskUsd=${Number(lot.riskAmount||0).toFixed(2)} slUsd=${Number(lot.slUsd||0).toFixed(2)} lotRaw=${Number(lot.lot||0).toFixed(2)} lotFinal=${lotAdj}`);
+        const res=await executeSignalOrder(d,lotAdj);
+        if(res&&res.ok&&!res.skipped)executed++;
+        else upsertPassBacktestFromBlocked(d,`blocked:${res?.error||res?.detail||'order_failed'}`);
+      }
+      savePassBacktest();
+      pushDebug(`auto_executed ${executed}/${planCfg.maxOpenPos}`);
+    }
+  }
+  const skipTxt=Object.keys(autoSkip).map(k=>`${k}:${autoSkip[k]}`).join(', ');
+  if(skipTxt)pushDebug(`auto_skip_summary ${skipTxt}`);
+  isScanning=false;
+}
 function toggleAutoScan(el){autoScanOn=!autoScanOn;el.textContent=`Oto Tarama: ${autoScanOn?'Açık':'Kapalı'}`;el.classList.toggle('on',autoScanOn);if(autoScanOn)startAuto();else stopAuto()}
 function toggleAiFilter(el){aiFilterOn=!aiFilterOn;el.textContent=`AI Filtre: ${aiFilterOn?'Açık':'Kapalı'}`;el.classList.toggle('on',aiFilterOn);renderSignalCards()}
 function toggleNightTheme(el){document.body.classList.toggle('night-paper');const on=document.body.classList.contains('night-paper');el.textContent=`Gece Gazetesi: ${on?'Açık':'Kapalı'}`;el.classList.toggle('on',on)}
@@ -527,8 +1165,8 @@ function updateRiskConfig(){
   riskCfg.lotStep=Math.max(0.001,Number(lotStep.value||0.01));
   renderReviewCards();renderOrderPlan();
 }
-function updatePlanConfig(){planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||3));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||2)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||40)));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · profil:${planCfg.strategyProfile})`)}
+function updatePlanConfig(){planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||3));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||2)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||40)));planCfg.maxSpreadPts=Math.max(0,Number(maxSpreadPts.value||35));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||25));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk)`)}
 let autoT=null,countT=null;function tick(){if(!autoScanOn)return scanNote.textContent='Oto tarama kapalı';const ms=Math.max(0,AUTO_SCAN_MS-(Date.now()%AUTO_SCAN_MS));scanNote.textContent=`Sonraki tarama: ${Math.ceil(ms/1000)}sn`}function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterval(()=>refreshAll(),AUTO_SCAN_MS);countT=setInterval(tick,1000);tick()}function stopAuto(){clearInterval(autoT);clearInterval(countT)}
 async function runAI(){const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));const lines=sigs.map(d=>`${d.pair.label} ${d.sig.action} RR=${(d.sig.rr||0).toFixed(2)} TF=${recommendTF(d)}`).join('\n')||'Aktif sinyal yok';try{const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt:`CRT olarak değerlendir:\n${lines}`})});const j=await r.json();aio.textContent=(j.text||'Analiz alınamadı').toString()}catch(e){aio.textContent='AI hatası: '+e.message}}
-loadHistory();loadConfigs();renderHistory();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;maxMarginUse.value=planCfg.maxMarginUse;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyProfile.value=planCfg.strategyProfile||'balanced';tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';updatePlanConfig();checkHealth();refreshAll().then(()=>startAuto());
+loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;strategyProfile.value=planCfg.strategyProfile||'balanced';tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';updatePlanConfig();checkHealth();loadKnowledgeIndex();refreshDebugLog();refreshAll().then(()=>startAuto());
 </script>
