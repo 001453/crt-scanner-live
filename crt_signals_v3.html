@@ -208,8 +208,8 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
   <div class="tcard"><h3>Sinyal Sonuç / Sebep (İnceleme Alanı)</h3><div class="kgrid" id="reviewGrid"></div></div>
   <div class="tcard">
     <h3>Geçmiş Sinyaller (Kartlık Backtest)</h3>
-    <div class="reason">Her taramada sinyaller arşive alınır ve fiyat takibine göre durumları güncellenir.</div>
-    <div class="reason" id="historySummary">Durum Ozeti: Acik 0 · TP 0 · Stop 0</div>
+    <div class="reason">MT5 gercek acik pozisyonlar ve kapanan islemler listelenir (simulasyon degil).</div>
+    <div class="reason" id="historySummary">Gercek MT5 Ozeti: Acik 0 · TP 0 · Stop 0</div>
     <div class="hist-wrap">
       <div class="hist-col"><h4>Devam Eden</h4><div class="hist-list" id="histOpen"></div></div>
       <div class="hist-col"><h4>TP Olan</h4><div class="hist-list" id="histTp"></div></div>
@@ -221,12 +221,15 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 const PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
-const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
 let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
 let planCfg={dailyRiskPct:3,maxOpenPos:2,maxMarginUse:40,liveOrderUrl:'',signalTtlMin:45};
+const AI_CONFIRM_REQUIRED=true;
 let signalSeenAt={};
 let signalHistory=[];
+let realOpenPositions=[];
+let realClosedDeals=[];
 const HISTORY_KEY='crt_signal_history_v1';
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
@@ -268,26 +271,37 @@ function lotSuggestion(d){
 }
 function contractSizeFor(d){if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
 function marginUsagePct(d,lot){const entry=d.price||d.sig?.entry||0;if(!entry||!lot)return 0;const marginPerLot=(entry*contractSizeFor(d))/Math.max(riskCfg.leverage,1);return ((marginPerLot*lot)/Math.max(riskCfg.balance,1))*100}
-function safeRecommendation(d){const base=getRecommendation(d);const lot=lotSuggestion(d);if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};const m=marginUsagePct(d,lot.lot);if(m>planCfg.maxMarginUse)return{rec:'Pas',reason:`Marjin ${m.toFixed(1)}% > limit ${planCfg.maxMarginUse}%`};if((d.sig?.rr||0)<1.2)return{rec:'Pas',reason:'RR düşük'};if(base==='Hemen'&&m>planCfg.maxMarginUse*0.8)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};return{rec:base,reason:'Koşullar uygun'}}
+function safeRecommendation(d){const base=getRecommendation(d);if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{rec:'Pas',reason:'AI onayi yok'};const lot=lotSuggestion(d);if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};const m=marginUsagePct(d,lot.lot);if(m>planCfg.maxMarginUse)return{rec:'Pas',reason:`Marjin ${m.toFixed(1)}% > limit ${planCfg.maxMarginUse}%`};if((d.sig?.rr||0)<1.2)return{rec:'Pas',reason:'RR düşük'};if(base==='Hemen'&&m>planCfg.maxMarginUse*0.8)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};return{rec:base,reason:'Koşullar uygun'}}
 function buildLiveOrderLink(d,lot){if(!planCfg.liveOrderUrl)return'';const u=new URL(planCfg.liveOrderUrl);u.searchParams.set('symbol',d.pair.id);u.searchParams.set('side',d.sig.action);u.searchParams.set('entry',String(d.sig.entry));u.searchParams.set('sl',String(d.sig.sl));u.searchParams.set('tp',String(d.sig.tp));u.searchParams.set('lot',String(lot||0));return u.toString()}
 function cleanupOldSignals(){const now=Date.now(),ttl=Math.max(5,planCfg.signalTtlMin)*60000;Object.keys(signalSeenAt).forEach(k=>{if(now-signalSeenAt[k]>ttl)delete signalSeenAt[k]})}
-function activeOpenByPairSide(pairId, side){return signalHistory.filter(h=>h.status==='open'&&h.pairId===pairId&&h.side===side).length}
+function normalizeSymbol(s){return String(s||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase()}
+function activeOpenByPairSide(pairId, side){
+  const base=normalizeSymbol(pairId);
+  return realOpenPositions.filter(p=>normalizeSymbol(p.symbol).includes(base)&&p.side===side).length;
+}
 function isFreshSignal(d){const seenAt=signalSeenAt[d.pair.id]||0;const ttlMs=Math.max(5,planCfg.signalTtlMin)*60000;return seenAt>0&&(Date.now()-seenAt)<=ttlMs}
 function canAutoExecute(d){
   if(tradeCfg.lastHealth!=='MT5 OK')return{ok:false,reason:'health_not_ok'};
+  if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{ok:false,reason:'ai_not_confirmed'};
   if(!isFreshSignal(d))return{ok:false,reason:'signal_stale'};
   if(activeOpenByPairSide(d.pair.id,d.sig.action)>0)return{ok:false,reason:'same_side_open_exists'};
   return{ok:true,reason:'ok'};
+}
+function entryReasonText(d){
+  const safe=safeRecommendation(d);
+  const aiTxt=d.aiReason?`${d.aiStatus||'unknown'} (${d.aiReason})`:(d.aiStatus||'unknown');
+  return `Neden: ${signalReason(d)} · AI:${aiTxt} · Plan:${safe.rec} (${safe.reason})`;
 }
 function healthSummaryText(account='—',mode='—'){return `Health: ${tradeCfg.lastHealth} · account ${account} · mode ${mode} · auto ${tradeCfg.autoEnabled?'ON':'OFF'} · ${tradeCfg.dryRun?'DRY':'LIVE'} · target ${titleCaseAccount(tradeCfg.targetAccountType)}`}
 async function checkHealth(){try{const r=await fetch(HEALTH_URL);const j=await r.json();tradeCfg.lastHealth=j.mt5_ok&&j.terminal_connected?'MT5 OK':'MT5 OFF';document.getElementById('healthInfo').textContent=healthSummaryText(j.account||'—',j.trade_mode||'—')}catch(e){tradeCfg.lastHealth='ERROR';document.getElementById('healthInfo').textContent=healthSummaryText('—','—')}}
 async function executeSignalOrder(d,lotAdj){
   const key=`${historyKey(d)}:${lotAdj}`;
   if(tradeCfg.sentKeys[key])return {ok:true,skipped:true};
+  const reason=entryReasonText(d);
   const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(d.sig.sl),tp:Number(d.sig.tp),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
   const r=await fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   const j=await r.json();
-  if(j.ok){tradeCfg.sentKeys[key]=Date.now();pushFeed(`${new Date().toLocaleTimeString()} · Emir ${tradeCfg.dryRun?'DRY':'LIVE'} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · hesap:${tradeCfg.targetAccountType}`)}
+  if(j.ok){tradeCfg.sentKeys[key]=Date.now();pushFeed(`${new Date().toLocaleTimeString()} · Emir ${tradeCfg.dryRun?'DRY':'LIVE'} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · hesap:${tradeCfg.targetAccountType} · ${reason}`);await refreshTradeSnapshot()}
   else pushFeed(`${new Date().toLocaleTimeString()} · Emir HATA ${d.pair.label}: ${j.error||j.detail||'unknown'}`);
   return j;
 }
@@ -349,8 +363,10 @@ function upsertHistoryFromCurrent(){
     if(openSame)return;
     const recentSame=signalHistory.find(x=>x.key===key&&x.signature===signature&&((now-(x.closedAt||x.openedAt))<cooldownMs));
     if(!recentSame){
+      const safe=safeRecommendation(d);
       signalHistory.push({
         key,signature,pair:d.pair.label,pairId:d.pair.id,side:d.sig.action,entry:d.sig.entry,sl:d.sig.sl,tp:d.sig.tp,rr:d.sig.rr,
+        reason:signalReason(d),planRec:safe.rec,planReason:safe.reason,aiStatus:d.aiStatus||'unknown',
         openedAt:now,status:'open',closedAt:null,resultUsd:null
       });
     }
@@ -375,16 +391,26 @@ function cleanupHistoryTTL(){
   const now=Date.now();
   signalHistory=signalHistory.filter(h=>h.status==='open'||(now-(h.closedAt||h.openedAt))<ttl);
 }
+async function refreshTradeSnapshot(){
+  try{
+    const r=await fetch(SNAPSHOT_URL);
+    if(!r.ok)return;
+    const j=await r.json();
+    realOpenPositions=Array.isArray(j.open_positions)?j.open_positions:[];
+    realClosedDeals=Array.isArray(j.closed_deals)?j.closed_deals:[];
+  }catch(e){}
+}
 function renderHistory(){
-  const open=signalHistory.filter(x=>x.status==='open').slice(-80).reverse();
-  const tp=signalHistory.filter(x=>x.status==='tp').slice(-80).reverse();
-  const stop=signalHistory.filter(x=>x.status==='stop').slice(-80).reverse();
-  const draw=(arr)=>arr.length?arr.map(h=>`<div class="hist-card">${h.pair} ${h.side}<br>Entry ${Number(h.entry).toFixed(dp(h.pairId))} · RR ${Number(h.rr||0).toFixed(2)}<br>${h.status==='open'?'Açık':('Kapanış: '+new Date(h.closedAt).toLocaleString())}</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
-  document.getElementById('histOpen').innerHTML=draw(open);
-  document.getElementById('histTp').innerHTML=draw(tp);
-  document.getElementById('histStop').innerHTML=draw(stop);
+  const open=realOpenPositions.slice(0,80);
+  const tp=realClosedDeals.filter(x=>x.result==='tp').slice(0,80);
+  const stop=realClosedDeals.filter(x=>x.result==='stop').slice(0,80);
+  const drawOpen=(arr)=>arr.length?arr.map(h=>`<div class="hist-card">${h.symbol} ${h.side}<br>Entry ${Number(h.price_open||0).toFixed(2)} · Lot ${Number(h.volume||0).toFixed(2)}<br>Kar/Zarar: ${Number(h.profit||0).toFixed(2)}<br>Açık</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
+  const drawClosed=(arr)=>arr.length?arr.map(h=>`<div class="hist-card">${h.symbol} ${h.side}<br>Kapanış ${Number(h.price||0).toFixed(2)} · Lot ${Number(h.volume||0).toFixed(2)}<br>Kar/Zarar: ${Number(h.profit||0).toFixed(2)}<br>Kapanış: ${new Date((h.time||0)*1000).toLocaleString()}</div>`).join(''):'<div class="hist-card">Kayıt yok</div>';
+  document.getElementById('histOpen').innerHTML=drawOpen(open);
+  document.getElementById('histTp').innerHTML=drawClosed(tp);
+  document.getElementById('histStop').innerHTML=drawClosed(stop);
   const hs=document.getElementById('historySummary');
-  if(hs)hs.textContent=`Durum Ozeti: Acik ${open.length} · TP ${tp.length} · Stop ${stop.length}`;
+  if(hs)hs.textContent=`Gercek MT5 Ozeti: Acik ${open.length} · TP ${tp.length} · Stop ${stop.length}`;
 }
 const aiText=d=>d.aiStatus==='confirmed'?'AI Onaylı':d.aiStatus==='watch'?'AI Şüpheli':'AI Bekliyor';
 const aiClass=d=>d.aiStatus==='confirmed'?'ai-tag ai-ok':d.aiStatus==='watch'?'ai-tag ai-warn':'ai-tag ai-muted';
@@ -403,9 +429,9 @@ function renderReviewCards(){const root=document.getElementById('reviewGrid');if
 function renderOrderPlan(){const root=document.getElementById('planGrid');if(!root)return;const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return}const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);root.innerHTML=selected.map((d,idx)=>{const lot=lotSuggestion(d),safe=safeRecommendation(d);let lotAdj='—';if(lot){const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);lotAdj=Math.max(riskCfg.minLot,roundStep(scaled,riskCfg.lotStep)).toFixed(2)}const m=lotAdj!=='—'?marginUsagePct(d,Number(lotAdj)):0;const link=lotAdj!=='—'?buildLiveOrderLink(d,lotAdj):'';return`<div class="kcard"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>Önerilen Lot: <b>${lotAdj}</b><br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br>SL'de Zarar: $${lot&&lotAdj!=='—'?(lot.slUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>TP'de Kar: $${lot&&lotAdj!=='—'?(lot.tpUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Hedef Hesap: <b>${titleCaseAccount(tradeCfg.targetAccountType)}</b><br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}<br><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Gör</button> ${lotAdj!=='—'?`<button class="sbtn" onclick="executeSignalOrder(MKT['${d.pair.id}'],'${lotAdj}')">${titleCaseAccount(tradeCfg.targetAccountType)} Hesaba Emir Gönder</button>`:''}<br>${link?`<a href="${link}" target="_blank" rel="noopener">Canlı Emir Aç (Link)</a>`:'Canlı emir linki girilmedi'}</div></div>`}).join('')}
 function renderCategoryPanels(){kGrid.innerHTML=['forex','metals','crypto','indices'].map(c=>{const r=PAIRS.filter(p=>p.cat===c).map(p=>MKT[p.id]).filter(Boolean),s=r.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));return`<div class="kcard"><h4>${catLabel(c)} · ${r.length} ürün · ${s.length} sinyal</h4><div class="klist">${r.slice(0,30).map(d=>`${d.pair.label} · ${d.sig?.action||'WAIT'} · TF:${recommendTF(d)}`).join('<br>')||'Veri yok'}</div></div>`}).join('')}
 function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan();renderHistory()}
-async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend}));const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch"}]}\\nRule: rr<1.2 or zone>1.8 => watch.\\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:300,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]=x.status);items.forEach(d=>d.aiStatus=m[d.pair.id]==='confirmed'?'confirmed':m[d.pair.id]==='watch'?'watch':'unknown')}
+async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend,entry:+(d.sig.entry||0).toFixed(dp(d.pair.id)),sl:+(d.sig.sl||0).toFixed(dp(d.pair.id)),tp:+(d.sig.tp||0).toFixed(dp(d.pair.id))}));const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch","reason":"kisa neden"}]}.\nIslem giris checklisti:\n1) Trend uyumu: trend up->LONG, trend down->SHORT, range ise daha sikı filtre.\n2) Risk/odul: rr >= 1.4 olmali.\n3) Bolge kalitesi: zone <= 1.8 olmali.\n4) Seviye tutarliligi: LONG icin sl<entry<tp, SHORT icin tp<entry<sl.\nBu kurallardan biri bozuksa status=watch.\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:600,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]={status:x.status,reason:String(x.reason||'')});items.forEach(d=>{const rec=m[d.pair.id];d.aiStatus=rec?.status==='confirmed'?'confirmed':rec?.status==='watch'?'watch':'unknown';d.aiReason=rec?.reason||''})}
 async function scanPairByIntervals(pair){let best=null;for(const itv of SCAN_INTERVALS){try{const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:itv,count:180,alignmentTimezone:SCAN_TZ})});if(!r.ok)continue;const j=await r.json();if(!Array.isArray(j.candles)||j.candles.length<30)continue;const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,row={pair,candles,trend,sig,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ};if(sig&&['LONG','SHORT'].includes(sig.action)){if(!best||sig.rr>(best.sig?.rr||0))best=row}else if(!best&&itv==='H1')best=row}catch(e){}}return best}
-async function refreshAll(){if(isScanning)return;isScanning=true;pill.textContent='Taranıyor...';pill.className='pill ld';MKT={};sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';let done=0,src={mt5:0,unsupported:0};for(const p of PAIRS){done++;pill.textContent=`Taranıyor... ${done}/${PAIRS.length} · ${p.label}`;const row=await scanPairByIntervals(p);if(row){MKT[p.id]=row;src.mt5++}else src.unsupported++;if(done%5===0)renderAll();await new Promise(r=>setTimeout(r,120))}const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now()});cleanupOldSignals();try{await aiValidate(sigs)}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`)}const next={};sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`)});prevSignalMap=next;upsertHistoryFromCurrent();refreshHistoryStatus();cleanupHistoryTTL();saveHistory();renderAll();pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;pill.className='pill ok';srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);if(tradeCfg.autoEnabled){if(tradeCfg.lastHealth!=='MT5 OK'){pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade durdu: MT5 health uygun degil`)}else{const cand=sigs.filter(d=>safeRecommendation(d).rec==='Hemen').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);for(const d of cand){const gate=canAutoExecute(d);if(!gate.ok){if(gate.reason!=='same_side_open_exists')pushFeed(`${new Date().toLocaleTimeString()} · Auto Skip ${d.pair.label}: ${gate.reason}`);continue}const lot=lotSuggestion(d);if(!lot)continue;const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;const lotAdj=Math.max(riskCfg.minLot,roundStep(Math.min(lot.lot,(budget/Math.max(cand.length,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),riskCfg.lotStep)).toFixed(2);await executeSignalOrder(d,lotAdj)}}}isScanning=false}
+async function refreshAll(){if(isScanning)return;isScanning=true;pill.textContent='Taranıyor...';pill.className='pill ld';MKT={};sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';let done=0,src={mt5:0,unsupported:0};for(const p of PAIRS){done++;pill.textContent=`Taranıyor... ${done}/${PAIRS.length} · ${p.label}`;const row=await scanPairByIntervals(p);if(row){MKT[p.id]=row;src.mt5++}else src.unsupported++;if(done%5===0)renderAll();await new Promise(r=>setTimeout(r,120))}const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now()});cleanupOldSignals();try{await aiValidate(sigs)}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`)}const next={};sigs.forEach(d=>next[d.pair.id]=`${d.pair.id}:${d.sig.action}:${(d.sig.entry||0).toFixed(5)}`);sigs.forEach(d=>{if(prevSignalMap[d.pair.id]!==next[d.pair.id])pushFeed(`${new Date().toLocaleTimeString()} · ${d.pair.label} ${d.sig.action} · TF ${recommendTF(d)}`)});prevSignalMap=next;await refreshTradeSnapshot();renderAll();pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;pill.className='pill ok';srcNote.textContent=`Kaynak: mt5(${src.mt5}) · verisiz(${src.unsupported}) · TF kontrol: ${SCAN_INTERVALS.join('/')} · TZ:${SCAN_TZ}`;if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);if(tradeCfg.autoEnabled){if(tradeCfg.lastHealth!=='MT5 OK'){pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade durdu: MT5 health uygun degil`)}else{const cand=sigs.filter(d=>safeRecommendation(d).rec==='Hemen').sort((a,b)=>signalQuality(b)-signalQuality(a)).slice(0,planCfg.maxOpenPos);for(const d of cand){const gate=canAutoExecute(d);if(!gate.ok){if(gate.reason!=='same_side_open_exists')pushFeed(`${new Date().toLocaleTimeString()} · Auto Skip ${d.pair.label}: ${gate.reason}`);continue}const lot=lotSuggestion(d);if(!lot)continue;const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;const lotAdj=Math.max(riskCfg.minLot,roundStep(Math.min(lot.lot,(budget/Math.max(cand.length,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),riskCfg.lotStep)).toFixed(2);await executeSignalOrder(d,lotAdj)}}}isScanning=false}
 function toggleAutoScan(el){autoScanOn=!autoScanOn;el.textContent=`Oto Tarama: ${autoScanOn?'Açık':'Kapalı'}`;el.classList.toggle('on',autoScanOn);if(autoScanOn)startAuto();else stopAuto()}
 function toggleAiFilter(el){aiFilterOn=!aiFilterOn;el.textContent=`AI Filtre: ${aiFilterOn?'Açık':'Kapalı'}`;el.classList.toggle('on',aiFilterOn);renderSignalCards()}
 function toggleNightTheme(el){document.body.classList.toggle('night-paper');const on=document.body.classList.contains('night-paper');el.textContent=`Gece Gazetesi: ${on?'Açık':'Kapalı'}`;el.classList.toggle('on',on)}

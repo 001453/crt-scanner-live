@@ -225,6 +225,47 @@ async function handleHealth(_req, res) {
   }
 }
 
+async function handleTradeSnapshot(_req, res) {
+  try {
+    const pyCode = [
+      'import json, datetime',
+      'import MetaTrader5 as mt5',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok": False, "error":"mt5_initialize_failed", "detail": str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'now = datetime.datetime.now(datetime.timezone.utc)',
+      'from_dt = now - datetime.timedelta(days=7)',
+      'open_positions = mt5.positions_get() or []',
+      'open_rows = []',
+      'for p in open_positions:',
+      '  side = "LONG" if int(getattr(p, "type", -1)) == mt5.POSITION_TYPE_BUY else "SHORT"',
+      '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0)})',
+      'deals = mt5.history_deals_get(from_dt, now) or []',
+      'closed_rows = []',
+      'for d in deals:',
+      '  if int(getattr(d, "entry", -1)) != mt5.DEAL_ENTRY_OUT:',
+      '    continue',
+      '  reason = int(getattr(d, "reason", -1) or -1)',
+      '  reason_name = "other"',
+      '  if reason == int(getattr(mt5, "DEAL_REASON_TP", -999)):',
+      '    reason_name = "tp"',
+      '  elif reason == int(getattr(mt5, "DEAL_REASON_SL", -999)):',
+      '    reason_name = "sl"',
+      '  result = "tp" if reason_name == "tp" else ("stop" if reason_name == "sl" else ("profit" if float(getattr(d, "profit", 0) or 0) >= 0 else "loss"))',
+      '  side = "LONG" if int(getattr(d, "type", -1)) == mt5.ORDER_TYPE_SELL else "SHORT"',
+      '  closed_rows.append({"deal": int(getattr(d, "ticket", 0) or 0), "position_id": int(getattr(d, "position_id", 0) or 0), "symbol": str(getattr(d, "symbol", "") or ""), "side": side, "volume": float(getattr(d, "volume", 0) or 0), "price": float(getattr(d, "price", 0) or 0), "profit": float(getattr(d, "profit", 0) or 0), "reason": reason_name, "result": result, "time": int(getattr(d, "time", 0) or 0)})',
+      'closed_rows = sorted(closed_rows, key=lambda x: x["time"], reverse=True)[:300]',
+      'mt5.shutdown()',
+      'print(json.dumps({"ok": True, "open_positions": open_rows, "closed_deals": closed_rows}), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'trade_snapshot_failed', detail: err.message });
+  }
+}
+
 async function handleExecuteOrder(req, res) {
   try {
     const body = await readBody(req);
@@ -364,6 +405,10 @@ const server = http.createServer((req, res) => {
   }
   if (req.url === '/api/execute-order' && req.method === 'POST') {
     handleExecuteOrder(req, res);
+    return;
+  }
+  if (req.url === '/api/trade-snapshot' && req.method === 'GET') {
+    handleTradeSnapshot(req, res);
     return;
   }
 
