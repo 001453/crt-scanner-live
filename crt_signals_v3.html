@@ -292,6 +292,7 @@ let debugEnabled=true;
 const HISTORY_KEY='crt_signal_history_v1';
 const PASS_BACKTEST_KEY='crt_pass_backtest_v1';
 const CLOSED_CACHE_KEY='crt_closed_deals_cache_v1';
+const BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
 let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo'};
@@ -528,6 +529,7 @@ function activeOpenByPairSide(pairId, side){
 }
 function isFreshSignal(d){const seenAt=signalSeenAt[d.pair.id]||0;const ttlMs=Math.max(5,planCfg.signalTtlMin)*60000;return seenAt>0&&(Date.now()-seenAt)<=ttlMs}
 function canAutoExecute(d){
+  if(BLOCKED_TRADE_PAIRS.has(String(d.pair?.id||'').toUpperCase()))return{ok:false,reason:'pair_blocked'};
   if(tradeCfg.lastHealth!=='MT5 OK')return{ok:false,reason:'health_not_ok'};
   if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{ok:false,reason:'ai_not_confirmed'};
   const pairCooldownMs=Math.max(0,Number(planCfg.pairCooldownMin||0))*60000;
@@ -555,6 +557,10 @@ function entryReasonText(d){
 function healthSummaryText(account='—',mode='—'){return `Health: ${tradeCfg.lastHealth} · account ${account} · mode ${mode} · auto ${tradeCfg.autoEnabled?'ON':'OFF'} · ${tradeCfg.dryRun?'DRY':'LIVE'} · target ${titleCaseAccount(tradeCfg.targetAccountType)}`}
 async function checkHealth(){try{const r=await fetch(HEALTH_URL);const j=await r.json();tradeCfg.lastHealth=j.mt5_ok&&j.terminal_connected?'MT5 OK':'MT5 OFF';document.getElementById('healthInfo').textContent=healthSummaryText(j.account||'—',j.trade_mode||'—');pushDebug(`health ${tradeCfg.lastHealth} account=${j.account||'-'} mode=${j.trade_mode||'-'}`)}catch(e){tradeCfg.lastHealth='ERROR';document.getElementById('healthInfo').textContent=healthSummaryText('—','—');pushDebug(`health_error ${e.message}`)}}
 async function executeSignalOrder(d,lotAdj){
+  if(BLOCKED_TRADE_PAIRS.has(String(d.pair?.id||'').toUpperCase())){
+    pushDebug(`order_blocked ${d.pair?.id||'-'} pair_blocked`);
+    return {ok:false,error:'pair_blocked',detail:'blocked_pair'};
+  }
   const key=`${historyKey(d)}:${lotAdj}`;
   if(tradeCfg.sentKeys[key])return {ok:true,skipped:true};
   const reason=entryReasonText(d);
