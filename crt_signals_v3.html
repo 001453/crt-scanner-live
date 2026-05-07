@@ -333,16 +333,24 @@ function saveConfigs(){
     metaServer:tradeCfg.metaServer
   }));
 }
-function historyKey(d){return `${d.pair.id}:${d.sig.action}:${Number(d.sig.entry||0).toFixed(5)}`}
+function historyKey(d){return `${d.pair.id}:${d.sig.action}`}
+function historySignature(d){
+  const p=dp(d.pair.id);
+  return `${d.pair.id}:${d.sig.action}:${Number(d.sig.entry||0).toFixed(p)}:${Number(d.sig.sl||0).toFixed(p)}:${Number(d.sig.tp||0).toFixed(p)}`;
+}
 function upsertHistoryFromCurrent(){
   const now=Date.now();
+  const cooldownMs=Math.max(5,Number(planCfg.signalTtlMin||45))*60000;
   const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));
   sigs.forEach(d=>{
     const key=historyKey(d);
-    const ex=signalHistory.find(x=>x.key===key);
-    if(!ex){
+    const signature=historySignature(d);
+    const openSame=signalHistory.find(x=>x.status==='open'&&x.key===key);
+    if(openSame)return;
+    const recentSame=signalHistory.find(x=>x.key===key&&x.signature===signature&&((now-(x.closedAt||x.openedAt))<cooldownMs));
+    if(!recentSame){
       signalHistory.push({
-        key,pair:d.pair.label,pairId:d.pair.id,side:d.sig.action,entry:d.sig.entry,sl:d.sig.sl,tp:d.sig.tp,rr:d.sig.rr,
+        key,signature,pair:d.pair.label,pairId:d.pair.id,side:d.sig.action,entry:d.sig.entry,sl:d.sig.sl,tp:d.sig.tp,rr:d.sig.rr,
         openedAt:now,status:'open',closedAt:null,resultUsd:null
       });
     }
