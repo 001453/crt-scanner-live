@@ -266,6 +266,95 @@ async function handleTradeSnapshot(_req, res) {
   }
 }
 
+async function handleManagePositions(req, res) {
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const tp1R = Math.max(0.2, Number(payload.tp1_rr || 1.0));
+    const beAtR = Math.max(0.2, Number(payload.be_at_r || 1.0));
+    const trailAtR = Math.max(0.2, Number(payload.trail_at_r || 1.5));
+    const partialClosePct = Math.max(0, Math.min(100, Number(payload.partial_close_pct || 50)));
+    const pyCode = [
+      'import json,sys,sqlite3,os,datetime,math',
+      'import MetaTrader5 as mt5',
+      'p=json.loads(sys.argv[1])',
+      'db_path=sys.argv[2]',
+      'os.makedirs(os.path.dirname(db_path), exist_ok=True)',
+      'conn=sqlite3.connect(db_path)',
+      'cur=conn.cursor()',
+      'cur.execute("""CREATE TABLE IF NOT EXISTS manage_state (position_ticket INTEGER PRIMARY KEY, tp1_done INTEGER DEFAULT 0, updated_at TEXT)""")',
+      'tp1_r=float(p.get("tp1_rr",1.0) or 1.0)',
+      'be_at_r=float(p.get("be_at_r",1.0) or 1.0)',
+      'trail_at_r=float(p.get("trail_at_r",1.5) or 1.5)',
+      'partial_close_pct=float(p.get("partial_close_pct",50) or 50)',
+      'if not mt5.initialize():',
+      '  out={"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}',
+      '  conn.close()',
+      '  print(json.dumps(out), flush=True)',
+      '  raise SystemExit(0)',
+      'positions=mt5.positions_get() or []',
+      'actions=[]',
+      'for pos in positions:',
+      '  ticket=int(getattr(pos,"ticket",0) or 0)',
+      '  symbol=str(getattr(pos,"symbol","") or "")',
+      '  side="LONG" if int(getattr(pos,"type",-1))==mt5.POSITION_TYPE_BUY else "SHORT"',
+      '  volume=float(getattr(pos,"volume",0) or 0)',
+      '  entry=float(getattr(pos,"price_open",0) or 0)',
+      '  sl=float(getattr(pos,"sl",0) or 0)',
+      '  tp=float(getattr(pos,"tp",0) or 0)',
+      '  if not symbol or volume<=0:',
+      '    continue',
+      '  tick=mt5.symbol_info_tick(symbol)',
+      '  si=mt5.symbol_info(symbol)',
+      '  if tick is None or si is None:',
+      '    continue',
+      '  point=max(float(getattr(si,"point",0.00001) or 0.00001),0.00001)',
+      '  vol_step=float(getattr(si,"volume_step",0.01) or 0.01)',
+      '  vol_min=float(getattr(si,"volume_min",0.01) or 0.01)',
+      '  px=float(tick.bid if side=="LONG" else tick.ask)',
+      '  risk=abs(entry-sl)',
+      '  if risk<=point*2:',
+      '    continue',
+      '  r=(px-entry)/risk if side=="LONG" else (entry-px)/risk',
+      '  desired_sl=sl',
+      '  if r>=be_at_r:',
+      '    desired_sl=max(desired_sl,entry) if side=="LONG" else (min(desired_sl,entry) if desired_sl>0 else entry)',
+      '  if r>=trail_at_r:',
+      '    trail_dist=risk*0.6',
+      '    t_sl=(px-trail_dist) if side=="LONG" else (px+trail_dist)',
+      '    desired_sl=max(desired_sl,t_sl) if side=="LONG" else (min(desired_sl,t_sl) if desired_sl>0 else t_sl)',
+      '  improve=(desired_sl-sl)>(point*5) if side=="LONG" else ((sl-desired_sl)>(point*5) if sl>0 else True)',
+      '  if improve and desired_sl>0:',
+      '    req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(desired_sl),"tp":float(tp),"magic":20260506,"comment":"crt-manage"}',
+      '    rr=mt5.order_send(req)',
+      '    actions.append({"ticket":ticket,"symbol":symbol,"type":"sl_update","ok":bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED)),"retcode":int(getattr(rr,"retcode",0) or 0),"new_sl":float(desired_sl)})',
+      '  row=cur.execute("SELECT tp1_done FROM manage_state WHERE position_ticket=?",(ticket,)).fetchone()',
+      '  tp1_done=int(row[0]) if row else 0',
+      '  if r>=tp1_r and tp1_done==0 and partial_close_pct>0:',
+      '    close_vol=max(vol_min, math.floor((volume*(partial_close_pct/100.0))/vol_step)*vol_step)',
+      '    if close_vol>=vol_min and close_vol<volume:',
+      '      close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
+      '      close_price=float(tick.bid if close_type==mt5.ORDER_TYPE_SELL else tick.ask)',
+      '      req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(close_vol),"type":close_type,"position":ticket,"price":close_price,"deviation":20,"magic":20260506,"comment":"crt-tp1-partial","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
+      '      rr=mt5.order_send(req)',
+      '      ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
+      '      actions.append({"ticket":ticket,"symbol":symbol,"type":"tp1_partial_close","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"closed_volume":float(close_vol)})',
+      '      if ok:',
+      '        cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,updated_at) VALUES(?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET tp1_done=excluded.tp1_done, updated_at=excluded.updated_at",(ticket,1,datetime.datetime.utcnow().isoformat()))',
+      '  cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,updated_at) VALUES(?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET updated_at=excluded.updated_at",(ticket,tp1_done,datetime.datetime.utcnow().isoformat()))',
+      'conn.commit()',
+      'conn.close()',
+      'mt5.shutdown()',
+      'print(json.dumps({"ok":True,"managed_count":len(positions),"actions":actions}, ensure_ascii=False), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct }), DB_PATH]);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'manage_positions_failed', detail: err.message });
+  }
+}
+
 async function handleExecuteOrder(req, res) {
   try {
     const body = await readBody(req);
@@ -409,6 +498,10 @@ const server = http.createServer((req, res) => {
   }
   if (req.url === '/api/trade-snapshot' && req.method === 'GET') {
     handleTradeSnapshot(req, res);
+    return;
+  }
+  if (req.url === '/api/manage-positions' && req.method === 'POST') {
+    handleManagePositions(req, res);
     return;
   }
 
