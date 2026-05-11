@@ -494,6 +494,38 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
       </div>
     </details>
 
+    <details class="plan-section" id="planSec_telegram">
+      <summary><span class="plan-section-icon">📱</span> Telegram Bildirimleri <span class="plan-section-sub">Pending, fill, TP/SL, kapanış, kasa durumu</span></summary>
+      <div class="plan-body">
+        <div class="reason" style="margin-bottom:10px;line-height:1.5">
+          <b>Kurulum:</b> 1) Telegram'da <b>@BotFather</b>'a git, <code>/newbot</code> yaz, bot oluştur ve <b>Token</b>'ı al.
+          2) Yeni bot'una <b>/start</b> mesajı at (bildirim alabilmen için zorunlu).
+          3) <b>@userinfobot</b>'a <code>/start</code> yaz, Chat ID'ni al (grup için: bot'u gruba ekle, <code>@getidsbot</code> ile grup ID'sini öğren).
+          4) Aşağıya yapıştır, <b>Kaydet</b>, sonra <b>Test Gönder</b>.
+        </div>
+        <div class="risk-grid">
+          <label title="Telegram bildirimleri tamamen açık/kapalı. Kapalıysa hiçbir bildirim gitmez (Bot Token doldurulmuş olsa bile).">Telegram Aktif<input id="tgEnabled" type="checkbox"></label>
+          <label title="Sessiz Mod: Bildirimler gönderilir AMA Telegram'da ses çıkarmadan, titreşimsiz gelir. Geceleri uyumak için ideal.">Sessiz Mod<input id="tgQuiet" type="checkbox"></label>
+          <label title="BotFather'dan aldığın bot token. Örn: 1234567890:ABCdefGHIjkl... Şifre gibi sakla, kimseyle paylaşma!" style="grid-column:span 2">Bot Token<input id="tgBotToken" type="password" placeholder="1234567890:ABCdef..."></label>
+          <label title="Telegram Chat ID. Şahsi mesaj için pozitif sayı (örn: 123456789). Grup için negatif (-100xxxxxxxxx)." style="grid-column:span 2">Chat ID<input id="tgChatId" type="text" placeholder="123456789 veya -100xxxxxxxxx"></label>
+        </div>
+        <div class="reason" style="margin-top:14px;margin-bottom:6px"><b>Hangi olaylarda bildirim gelsin?</b></div>
+        <div class="risk-grid">
+          <label title="Yeni bekleyen (pending limit/stop) emir açıldığında bildirim gönder.">Pending Açıldı<input id="tgNotifyPendingOpen" type="checkbox" checked></label>
+          <label title="Pending emir iptal olduğunda bildirim gönder (TTL doldu, manuel iptal, fırsat kaçtı vb).">Pending İptal<input id="tgNotifyPendingCancel" type="checkbox" checked></label>
+          <label title="Pending emir dolduğunda veya market emir tetiklendiğinde (pozisyon açıldığında) bildirim gönder.">Emir Doldu (Fill)<input id="tgNotifyOrderFill" type="checkbox" checked></label>
+          <label title="Pozisyon kapandığında (TP, SL, manuel kapanış vb) bildirim gönder. PnL ve kasa durumu dahil edilir.">Poz. Kapandı<input id="tgNotifyPositionClose" type="checkbox" checked></label>
+          <label title="TP veya SL'ye dokunan kapanışlarda özel TP/SL bildirim ikonu kullan.">TP/SL Vurguları<input id="tgNotifyTpSlHit" type="checkbox" checked></label>
+          <label title="Trade kapanışından sonra günlük özet (W/L sayısı, net PnL, mevcut kasa, açık pozisyon) gönder.">Günlük Özet<input id="tgNotifyDailySummary" type="checkbox" checked></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="cb" onclick="saveTelegramCfg()" style="font-weight:700">💾 Kaydet</button>
+          <button class="cb" onclick="sendTelegramTest()">🧪 Test Gönder</button>
+          <button class="cb" onclick="sendTelegramAccountStatus()" title="Anlık hesap durumu (bakiye, equity, açık pozisyon sayısı) gönder">📊 Kasa Durumu Gönder</button>
+        </div>
+      </div>
+    </details>
+
     <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap">
       <button class="cb" onclick="updatePlanConfig()" style="font-weight:700;padding:8px 18px">💾 Planı Güncelle</button>
       <button class="cb" onclick="exportSettings()" title="Tüm ayarları JSON dosyası olarak indir (yedek)">⬇ Export</button>
@@ -612,6 +644,9 @@ const BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
 let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo',placement:'pending',pendingExpireMin:5,allowMarketFallback:false,autoAdjustPending:true,clientAutoCancelExpired:true,pendingPullbackPts:10};
+// Telegram bildirim konfigurasyonu
+let telegramCfg={enabled:false,botToken:'',chatId:'',notifyPendingOpen:true,notifyPendingCancel:true,notifyOrderFill:true,notifyPositionClose:true,notifyTpSlHit:true,notifyDailySummary:true,quietMode:false};
+const TELEGRAM_CFG_KEY='crt_telegram_cfg_v1';
 const catLabel=c=>({forex:'Forex',metals:'Metaller',crypto:'Kripto',indices:'Endeks'}[c]||c);
 const dp=id=>['BTCUSD'].includes(id)?0:['ETHUSD','BNBUSD'].includes(id)?2:['SOLUSD','XRPUSD','XAGUSD'].includes(id)?3:['XAUUSD','XPTUSD','XPDUSD','US30','US500','NAS100','UK100','DE40'].includes(id)?2:5;
 const titleCaseAccount=t=>(String(t||'demo').toLowerCase()==='live'?'Live':'Demo');
@@ -1545,6 +1580,7 @@ function loadConfigs(){
       tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number(tc.pendingPullbackPts??tradeCfg.pendingPullbackPts)));
     }
   }catch(e){}
+  loadTelegramCfg();
 }
 function saveConfigs(){
   localStorage.setItem(PLAN_CFG_KEY,JSON.stringify({
@@ -1606,6 +1642,121 @@ function saveConfigs(){
     clientAutoCancelExpired:tradeCfg.clientAutoCancelExpired,
     pendingPullbackPts:tradeCfg.pendingPullbackPts
   }));
+  try{localStorage.setItem(TELEGRAM_CFG_KEY,JSON.stringify(telegramCfg));}catch(_){ }
+}
+function loadTelegramCfg(){
+  try{const raw=localStorage.getItem(TELEGRAM_CFG_KEY);if(!raw)return;const tc=JSON.parse(raw);if(!tc||typeof tc!=='object')return;Object.keys(telegramCfg).forEach(k=>{if(k in tc)telegramCfg[k]=tc[k];});}catch(_){ }
+}
+// ============================================================
+// TELEGRAM NOTIFICATION HELPER
+// ============================================================
+async function sendTelegram(text, opts){
+  opts=opts||{};
+  if(!telegramCfg.enabled){return {skipped:'disabled'};}
+  if(!telegramCfg.botToken||!telegramCfg.chatId){return {skipped:'no_credentials'};}
+  if(telegramCfg.quietMode&&!opts.force){return {skipped:'quiet_mode'};}
+  try{
+    const r=await fetch(`${PROXY}/api/telegram-notify`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        bot_token:telegramCfg.botToken,
+        chat_id:telegramCfg.chatId,
+        text:String(text||'').slice(0,3800),
+        parse_mode:opts.parseMode||'HTML',
+        disable_notification:!!opts.silent
+      })
+    });
+    const j=await r.json();
+    if(!r.ok||!j.ok){pushDebug(`telegram_send_err ${j.error||r.status} ${j.detail||''}`);return {error:j.error||r.status};}
+    return {ok:true,messageId:j.message_id};
+  }catch(e){pushDebug(`telegram_send_fail ${e.message}`);return {error:e.message};}
+}
+function applyTelegramCfgToUI(){
+  try{
+    const _set=(id,v,prop)=>{const el=document.getElementById(id);if(!el)return;if(prop==='checked')el.checked=!!v;else el.value=(v==null?'':String(v));};
+    _set('tgEnabled',telegramCfg.enabled,'checked');
+    _set('tgQuiet',telegramCfg.quietMode,'checked');
+    _set('tgBotToken',telegramCfg.botToken);
+    _set('tgChatId',telegramCfg.chatId);
+    _set('tgNotifyPendingOpen',telegramCfg.notifyPendingOpen,'checked');
+    _set('tgNotifyPendingCancel',telegramCfg.notifyPendingCancel,'checked');
+    _set('tgNotifyOrderFill',telegramCfg.notifyOrderFill,'checked');
+    _set('tgNotifyPositionClose',telegramCfg.notifyPositionClose,'checked');
+    _set('tgNotifyTpSlHit',telegramCfg.notifyTpSlHit,'checked');
+    _set('tgNotifyDailySummary',telegramCfg.notifyDailySummary,'checked');
+  }catch(_){ }
+}
+function saveTelegramCfg(){
+  try{
+    const _get=(id,prop)=>{const el=document.getElementById(id);if(!el)return null;return prop==='checked'?!!el.checked:String(el.value||'').trim();};
+    telegramCfg.enabled=_get('tgEnabled','checked');
+    telegramCfg.quietMode=_get('tgQuiet','checked');
+    telegramCfg.botToken=_get('tgBotToken')||'';
+    telegramCfg.chatId=_get('tgChatId')||'';
+    telegramCfg.notifyPendingOpen=_get('tgNotifyPendingOpen','checked');
+    telegramCfg.notifyPendingCancel=_get('tgNotifyPendingCancel','checked');
+    telegramCfg.notifyOrderFill=_get('tgNotifyOrderFill','checked');
+    telegramCfg.notifyPositionClose=_get('tgNotifyPositionClose','checked');
+    telegramCfg.notifyTpSlHit=_get('tgNotifyTpSlHit','checked');
+    telegramCfg.notifyDailySummary=_get('tgNotifyDailySummary','checked');
+    localStorage.setItem(TELEGRAM_CFG_KEY,JSON.stringify(telegramCfg));
+    pushFeed(`${new Date().toLocaleTimeString()} · 💾 Telegram ayarları kaydedildi`,'tf-success');
+    const masterStatus=document.getElementById('tgEnabled');
+    if(telegramCfg.enabled){
+      if(!telegramCfg.botToken||!telegramCfg.chatId){
+        alert('⚠ Telegram aktif ama Bot Token veya Chat ID boş. Lütfen doldur.');
+        telegramCfg.enabled=false;
+        if(masterStatus)masterStatus.checked=false;
+        localStorage.setItem(TELEGRAM_CFG_KEY,JSON.stringify(telegramCfg));
+      }
+    }
+  }catch(e){alert('Telegram ayar kaydı hata: '+e.message);}
+}
+async function sendTelegramAccountStatus(){
+  if(!telegramCfg.botToken||!telegramCfg.chatId){alert('Once Bot Token ve Chat ID gir, kaydet.');return;}
+  const balance=Number(riskCfg.balance||0);
+  const eq=Number(riskCfg.equity||balance||0);
+  const today=new Date().toISOString().slice(0,10);
+  const dayDeals=(realClosedDeals||[]).filter(x=>String(x.time_close||'').slice(0,10)===today||String(x.time||'').slice(0,10)===today);
+  let dPnl=0,dW=0,dL=0;dayDeals.forEach(d=>{const p=Number(d.profit||0);dPnl+=p;if(p>0)dW++;else if(p<0)dL++;});
+  let openPnl=0;(realOpenPositions||[]).forEach(p=>{openPnl+=Number(p.profit||0);});
+  const text=`<b>📊 HESAP DURUMU</b>\n` +
+    `Hesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()} #${tradeCfg.metaLogin||'-'}\n` +
+    `Bakiye: <b>${balance.toFixed(2)} USD</b>\n` +
+    `Equity: <b>${eq.toFixed(2)} USD</b>\n` +
+    `\n<b>🎯 Bugün</b>\n` +
+    `İşlem: ${dW+dL} (✅ ${dW} · ❌ ${dL})\n` +
+    `Net PnL: <b>${dPnl>=0?'+':''}${dPnl.toFixed(2)} USD</b>\n` +
+    `\n<b>📌 Şu An Açık</b>\n` +
+    `Açık Pozisyon: <b>${(realOpenPositions||[]).length}</b>\n` +
+    `Bekleyen: <b>${(realPendingOrders||[]).length}</b>\n` +
+    `Açık PnL: <b>${openPnl>=0?'+':''}${openPnl.toFixed(2)} USD</b>\n` +
+    `\nStrateji: ${tradeCfg.autoEnabled?'AKTIF ✅':'DURDU 🛑'}\n` +
+    `${new Date().toLocaleString('tr-TR')}`;
+  const r=await sendTelegram(text,{force:true});
+  if(r.ok){pushFeed(`${new Date().toLocaleTimeString()} · 📊 Kasa durumu gönderildi`,'tf-success');}
+  else{alert('Gonderim hatasi: '+(r.error||'bilinmeyen'));}
+}
+async function sendTelegramTest(){
+  if(!telegramCfg.botToken||!telegramCfg.chatId){
+    alert('Once Bot Token ve Chat ID gir, kaydet, sonra test et.');
+    return;
+  }
+  const text=`<b>🧪 CRT Scanner Test Bildirimi</b>\n\n` +
+    `Hesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()}\n` +
+    `Bakiye: <b>${Number(riskCfg.balance||0).toFixed(0)} USD</b>\n` +
+    `Strateji: ${tradeCfg.autoEnabled?'AKTIF ✅':'DURDU 🛑'}\n` +
+    `Zaman: ${new Date().toLocaleString('tr-TR')}\n\n` +
+    `Bildirim sistemi calisiyor 🚀`;
+  const r=await sendTelegram(text,{force:true});
+  if(r.ok){
+    alert(`✅ Test bildirimi gonderildi (message_id: ${r.messageId})\n\nTelegram'da kontrol et.`);
+    pushFeed(`${new Date().toLocaleTimeString()} · 📱 Telegram test bildirimi gonderildi`,'tf-success');
+  }else{
+    alert(`❌ Test gonderilemedi: ${r.error||'bilinmeyen hata'}\n\nKontrol et:\n· Bot Token dogru mu?\n· Chat ID dogru mu? (negatif olmali grup icin, pozitif sadece sahsi icin)\n· Bot'a /start mesaji attin mi?`);
+    pushFeed(`${new Date().toLocaleTimeString()} · ⚠ Telegram test basarisiz: ${r.error}`,'tf-error');
+  }
 }
 function historyKey(d){return `${d.pair.id}:${d.sig.action}`}
 function historySignature(d){
@@ -1712,13 +1863,71 @@ async function refreshTradeSnapshot(){
     if(!r.ok)return;
     const j=await r.json();
     const prevClosedKeys=new Set((closedDealsCache||[]).map(x=>String(x.ticket||x.position_id||'')+':'+String(x.symbol||'')));
+    // Detayli prev state (Telegram bildirim diff'i icin)
+    const prevPendingMap=new Map((realPendingOrders||[]).map(x=>[String(x.ticket||''),x]));
+    const prevPositionMap=new Map((realOpenPositions||[]).map(x=>[String(x.ticket||''),x]));
     realOpenPositions=Array.isArray(j.open_positions)?j.open_positions:[];
-    const prevPendingKeys=new Set((realPendingOrders||[]).map(x=>String(x.ticket||'')));
+    const prevPendingKeys=new Set(prevPendingMap.keys());
     realPendingOrders=Array.isArray(j.pending_orders)?j.pending_orders:[];
     // Yeni iptal/dolan pending'leri feed e bildir
     if(tradeFeedReady){
       const curKeys=new Set(realPendingOrders.map(x=>String(x.ticket||'')));
       prevPendingKeys.forEach(k=>{if(k&&!curKeys.has(k))pushTradeFeed('info',`PENDING TAMAMLANDI/IPTAL · ticket:${k}`);});
+    }
+    // TELEGRAM DIFF DETECTION: pending acildi, iptal oldu, fill oldu; pozisyon acildi/kapandi
+    if(tradeFeedReady&&telegramCfg.enabled){
+      try{
+        const curPendingMap=new Map(realPendingOrders.map(x=>[String(x.ticket||''),x]));
+        const curPositionMap=new Map(realOpenPositions.map(x=>[String(x.ticket||''),x]));
+        const curPositionSymSet=new Set(realOpenPositions.map(x=>String(x.symbol||'')+':'+String(x.side||'').toUpperCase()));
+        // 1) Yeni pending'ler
+        curPendingMap.forEach((p,tk)=>{if(prevPendingMap.has(tk))return;if(!telegramCfg.notifyPendingOpen)return;
+          const sym=String(p.symbol||'-');
+          const side=String(p.side||'-').toUpperCase();
+          const price=Number(p.price_open||p.price||0).toFixed(5);
+          const sl=Number(p.sl||0).toFixed(5);
+          const tp=Number(p.tp||0).toFixed(5);
+          const lot=Number(p.volume||0).toFixed(2);
+          const emoji=side==='LONG'?'🟢':'🔴';
+          sendTelegram(`<b>${emoji} PENDING AÇILDI · ${sym} ${side}</b>\nLot: <b>${lot}</b>\nGiriş: <code>${price}</code>\nSL: <code>${sl}</code> · TP: <code>${tp}</code>\nTicket: <code>${tk}</code>\n${new Date().toLocaleTimeString('tr-TR')}`,{silent:true});
+        });
+        // 2) Kaybolan pending'ler → fill mi iptal mi?
+        prevPendingMap.forEach((p,tk)=>{if(curPendingMap.has(tk))return;
+          const sym=String(p.symbol||'-');
+          const side=String(p.side||'-').toUpperCase();
+          // Yeni acilan pozisyon var mi ayni sembol+side ile?
+          const matched=curPositionSymSet.has(sym+':'+side);
+          const matchedPos=Array.from(curPositionMap.values()).find(pp=>String(pp.symbol||'')===sym&&String(pp.side||'').toUpperCase()===side&&!prevPositionMap.has(String(pp.ticket||'')));
+          if(matched&&matchedPos){
+            if(!telegramCfg.notifyOrderFill)return;
+            const price=Number(matchedPos.price_open||0).toFixed(5);
+            const lot=Number(matchedPos.volume||0).toFixed(2);
+            const emoji=side==='LONG'?'🟢':'🔴';
+            sendTelegram(`<b>${emoji} FILL ✅ · ${sym} ${side}</b>\nLot: <b>${lot}</b>\nGiriş: <code>${price}</code>\nPending → Açık pozisyon\n${new Date().toLocaleTimeString('tr-TR')}`);
+          } else {
+            if(!telegramCfg.notifyPendingCancel)return;
+            sendTelegram(`<b>⚪ PENDING İPTAL · ${sym} ${side}</b>\nTicket: <code>${tk}</code>\n(süresi doldu veya manuel iptal)\n${new Date().toLocaleTimeString('tr-TR')}`,{silent:true});
+          }
+        });
+        // 3) Yeni pozisyonlar (pending olmadan direkt market emir vs.)
+        curPositionMap.forEach((p,tk)=>{
+          if(prevPositionMap.has(tk))return;
+          // Eger ayni sembol+side ile pending-fill diff'inde yakalandiysa bu zaten gonderildi
+          const sym=String(p.symbol||'-');
+          const side=String(p.side||'-').toUpperCase();
+          const k=sym+':'+side;
+          // Eger prev pending'de ayni sembol+side vardi ise (pending-fill case), tekrar gonderme
+          const wasInPrevPending=Array.from(prevPendingMap.values()).some(pp=>String(pp.symbol||'')===sym&&String(pp.side||'').toUpperCase()===side&&!curPendingMap.has(String(pp.ticket||'')));
+          if(wasInPrevPending)return;
+          if(!telegramCfg.notifyOrderFill)return;
+          const price=Number(p.price_open||0).toFixed(5);
+          const sl=Number(p.sl||0).toFixed(5);
+          const tpv=Number(p.tp||0).toFixed(5);
+          const lot=Number(p.volume||0).toFixed(2);
+          const emoji=side==='LONG'?'🟢':'🔴';
+          sendTelegram(`<b>${emoji} POZİSYON AÇILDI · ${sym} ${side}</b>\nLot: <b>${lot}</b>\nGiriş: <code>${price}</code>\nSL: <code>${sl}</code> · TP: <code>${tpv}</code>\nTicket: <code>${tk}</code>\n${new Date().toLocaleTimeString('tr-TR')}`);
+        });
+      }catch(e){pushDebug(`tg_diff_err ${e.message}`);}
     }
     // Client-side oto iptal: 2 sebep — (1) TTL doldu, (2) fiyat TP/SL'ye dokundu (firsat kacti)
     try{
@@ -1787,6 +1996,7 @@ async function refreshTradeSnapshot(){
     saveClosedDealsCache();
     realClosedDeals=closedDealsCache.slice();
     if(tradeFeedReady){
+      let tgDailyPnL=0,tgDailyWins=0,tgDailyLosses=0;
       realClosedDeals.forEach(x=>{
         const k=String(x.ticket||x.position_id||'')+':'+String(x.symbol||'');
         if(prevClosedKeys.has(k))return;
@@ -1798,7 +2008,44 @@ async function refreshTradeSnapshot(){
         const lot=Number(x.volume||0);
         const tag=pnl>=0?'success':'error';
         pushTradeFeed(tag,`POZ. KAPANDI · ${sym} ${side} · ${result} · PnL: ${pnl.toFixed(2)} USD · lot:${lot.toFixed(2)} · kapanis:${price}`);
+        // Telegram kapanis bildirimi
+        if(telegramCfg.enabled&&telegramCfg.notifyPositionClose){
+          const isTP=/tp|profit|take/i.test(result);
+          const isSL=/sl|stop|loss/i.test(result);
+          let resultEmoji='⚪',resultLabel=result;
+          if(isTP){resultEmoji='🎯';resultLabel='TP HIT';}
+          else if(isSL){resultEmoji='🛑';resultLabel='SL HIT';}
+          else if(pnl>0){resultEmoji='✅';resultLabel='KÂR';}
+          else if(pnl<0){resultEmoji='❌';resultLabel='ZARAR';}
+          const sideEmoji=side==='LONG'?'🟢':side==='SHORT'?'🔴':'⚫';
+          const balance=Number(riskCfg.balance||0);
+          const pnlPct=balance>0?(pnl/balance*100):0;
+          // TP/SL'e ozel filtre: eger sadece TP/SL bildirim acik, diger kapanislari atla
+          const onlyTpSl=telegramCfg.notifyTpSlHit&&!telegramCfg.notifyPositionClose;
+          if(!onlyTpSl||isTP||isSL){
+            sendTelegram(`<b>${resultEmoji} POZ. KAPANDI · ${sym} ${sideEmoji} ${side}</b>\nSonuç: <b>${resultLabel}</b>\nPnL: <b>${pnl>=0?'+':''}${pnl.toFixed(2)} USD</b> (${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%)\nLot: ${lot.toFixed(2)} · Kapanış: <code>${price}</code>\nTicket: <code>${x.ticket||x.position_id||'-'}</code>\n${new Date().toLocaleTimeString('tr-TR')}`);
+          }
+          tgDailyPnL+=pnl;if(pnl>0)tgDailyWins++;else if(pnl<0)tgDailyLosses++;
+        }
       });
+      // Eger bu cycle'da kapanan trade varsa ve gunluk ozet aktifse, kasa durumu gonder
+      if(telegramCfg.enabled&&telegramCfg.notifyDailySummary&&(tgDailyWins+tgDailyLosses)>0){
+        try{
+          const today=new Date().toISOString().slice(0,10);
+          const dayDeals=realClosedDeals.filter(x=>String(x.time_close||'').slice(0,10)===today||String(x.time||'').slice(0,10)===today);
+          let dPnl=0,dW=0,dL=0;dayDeals.forEach(d=>{const p=Number(d.profit||0);dPnl+=p;if(p>0)dW++;else if(p<0)dL++;});
+          const balance=Number(riskCfg.balance||0);
+          const eq=balance+dPnl;
+          // Sadece kapanis sonrasi tek ozet (her closed deal icin tekrar tekrar gonderme)
+          if(!window._tgLastSummaryKey)window._tgLastSummaryKey='';
+          const sumKey=`${today}:${realClosedDeals.length}`;
+          if(window._tgLastSummaryKey!==sumKey){
+            window._tgLastSummaryKey=sumKey;
+            const emoji=dPnl>=0?'📈':'📉';
+            sendTelegram(`<b>${emoji} GÜNLÜK ÖZET (${today})</b>\nİşlem: <b>${dW+dL}</b> · ✅ ${dW} · ❌ ${dL}\nNet PnL: <b>${dPnl>=0?'+':''}${dPnl.toFixed(2)} USD</b>\nKasa: <b>${eq.toFixed(2)} USD</b>\nAçık Pozisyon: <b>${realOpenPositions.length}</b>\nBekleyen: <b>${realPendingOrders.length}</b>`,{silent:true});
+          }
+        }catch(e){pushDebug(`tg_summary_err ${e.message}`);}
+      }
     }
     tradeFeedReady=true;
     const perf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
@@ -2591,6 +2838,11 @@ async function toggleStrategyMaster(){
     const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=false;
     saveConfigs();updateStatusBanner();updateMasterStrategyBar();
     pushFeed(`${new Date().toLocaleTimeString()} · 🛑 STRATEJİ DURDURULDU (auto-trade KAPALI, scan devam · acik pozlar etkilenmedi)`,'tf-error');
+    if(telegramCfg.enabled){
+      const acctTxt=tradeCfg.targetAccountType==='live'?'LIVE':'DEMO';
+      const balance=Number(riskCfg.balance||0).toFixed(2);
+      sendTelegram(`<b>🛑 STRATEJİ DURDURULDU</b>\nHesap: ${acctTxt} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nAçık pozisyon: ${(realOpenPositions||[]).length}\nBekleyen: ${(realPendingOrders||[]).length}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+    }
     return;
   }
   // Start: ayarlari kontrol et
@@ -2617,6 +2869,10 @@ async function toggleStrategyMaster(){
   saveConfigs();updateStatusBanner();updateMasterStrategyBar();
   const acctTxt=tradeCfg.targetAccountType==='live'?'LIVE ⚠':'DEMO';
   pushFeed(`${new Date().toLocaleTimeString()} · ✅ STRATEJİ BAŞLADI (${acctTxt} · dry=${tradeCfg.dryRun?'on':'off'} · scan+auto acik)`,'tf-success');
+  if(telegramCfg.enabled){
+    const balance=Number(riskCfg.balance||0).toFixed(2);
+    sendTelegram(`<b>✅ STRATEJİ BAŞLADI</b>\nHesap: ${acctTxt} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nDry-run: ${tradeCfg.dryRun?'AÇIK (simülasyon)':'KAPALI (gerçek emir)'}\nGünlük risk: %${planCfg.dailyRiskPct||'-'}\nMax açık: ${planCfg.maxOpenPos||'-'}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+  }
 }
 function preStartValidation(){
   const issues=[];
@@ -3699,7 +3955,7 @@ loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDe
 tradeCfg.autoEnabled=false;autoScanOn=false;
 const _autoChk=document.getElementById('autoTradeChk');if(_autoChk)_autoChk.checked=false;
 const _autoBtn=document.getElementById('autoBtn');if(_autoBtn){_autoBtn.textContent='Oto Tarama: Kapalı';_autoBtn.classList.remove('on');}
-updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }
+updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }try{applyTelegramCfgToUI();}catch(_){ }
 // Sembol cache'i + 1 kez manuel tarama yap (kullanici sinyalleri gorur), ama auto-scan ve auto-trade KAPALI.
 // User "STRATEJIYI BASLAT"a basinca otomatik scan + auto-trade aktif olur.
 loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>{

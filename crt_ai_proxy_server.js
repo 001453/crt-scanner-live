@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const { execFile } = require('child_process');
 const { promisify } = require('util');
 const fs = require('fs');
@@ -1082,6 +1083,75 @@ async function handleManagePositions(req, res) {
   }
 }
 
+// Telegram bot bildirimi gonder. Frontend bot_token + chat_id ve message ile cagirir.
+// Body: {bot_token, chat_id, text, parse_mode?, disable_notification?}
+// Bot olusturma: BotFather'da /newbot, token al. Chat ID icin @userinfobot'a /start at.
+function postHttps(url, body, headers) {
+  return new Promise((resolve, reject) => {
+    try {
+      const u = new URL(url);
+      const opts = {
+        method: 'POST',
+        hostname: u.hostname,
+        port: u.port || (u.protocol === 'https:' ? 443 : 80),
+        path: u.pathname + u.search,
+        headers: Object.assign({ 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }, headers || {}),
+        timeout: 8000
+      };
+      const lib = u.protocol === 'https:' ? https : http;
+      const req = lib.request(opts, (resp) => {
+        let chunks = '';
+        resp.on('data', (c) => { chunks += c.toString(); });
+        resp.on('end', () => resolve({ status: resp.statusCode || 0, body: chunks }));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(new Error('telegram_timeout')); });
+      req.write(body);
+      req.end();
+    } catch (e) { reject(e); }
+  });
+}
+
+async function handleTelegramNotify(req, res) {
+  const startedAt = Date.now();
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const botToken = String(payload.bot_token || process.env.TELEGRAM_BOT_TOKEN || '').trim();
+    const chatId = String(payload.chat_id || process.env.TELEGRAM_CHAT_ID || '').trim();
+    const text = String(payload.text || '').trim();
+    if (!botToken || !chatId) {
+      writeJson(res, 400, { ok: false, error: 'missing_credentials', detail: 'bot_token ve chat_id gerekli' });
+      return;
+    }
+    if (!text) {
+      writeJson(res, 400, { ok: false, error: 'missing_text' });
+      return;
+    }
+    const tgUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const reqBody = JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: payload.parse_mode || 'HTML',
+      disable_notification: !!payload.disable_notification,
+      disable_web_page_preview: true
+    });
+    const resp = await postHttps(tgUrl, reqBody, {});
+    let tgJson = {};
+    try { tgJson = JSON.parse(resp.body || '{}'); } catch (_) {}
+    if (resp.status >= 200 && resp.status < 300 && tgJson && tgJson.ok) {
+      writeJson(res, 200, { ok: true, message_id: tgJson.result && tgJson.result.message_id });
+      logEvent('info', 'telegram_notify.ok', { elapsed_ms: Date.now() - startedAt, text_len: text.length });
+    } else {
+      writeJson(res, 502, { ok: false, error: 'telegram_api_error', status: resp.status, detail: tgJson.description || resp.body.slice(0, 200) });
+      logEvent('warn', 'telegram_notify.api_error', { status: resp.status, detail: tgJson.description });
+    }
+  } catch (err) {
+    logEvent('error', 'telegram_notify.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'telegram_notify_failed', detail: err.message });
+  }
+}
+
 // Tum portfoy + kategori trail state'lerini sifirla. Frontend, tum pozisyonlar kapandiginda cagirir.
 async function handleResetPortfolioState(req, res) {
   const startedAt = Date.now();
@@ -1442,6 +1512,10 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/reset-portfolio-state' && req.method === 'POST') {
     handleResetPortfolioState(req, res);
+    return;
+  }
+  if (routePath === '/api/telegram-notify' && req.method === 'POST') {
+    handleTelegramNotify(req, res);
     return;
   }
   if (routePath === '/api/debug-log' && req.method === 'GET') {
