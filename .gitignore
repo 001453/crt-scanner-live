@@ -6,3 +6,5 @@ node_modules/
 __pycache__/
 *.pyc
 *.log
+# GitHub 100MB tek dosya limitini asan referans materyalleri
+knowledge/idoc.pub_*.pdf

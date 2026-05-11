@@ -25,6 +25,8 @@ body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:#F4F7FB;color
 .sc-pair{font-size:15px;font-weight:700;color:#111827}
 .sc-cat{font-size:11px;color:#6B7280;margin-top:2px}
 .live-tag,.ai-tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;margin-left:6px}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#2E7D32;margin-right:6px;vertical-align:middle;animation:livePulse 1.4s ease-in-out infinite}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
 .live-tag{background:#E8F5E9;color:#1B5E20}
 .ai-ok{background:#E8F5E9;color:#1B5E20}.ai-warn{background:#FFF4E5;color:#92400E}.ai-muted{background:#EEF2F7;color:#475569}
 .badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px}
@@ -42,7 +44,23 @@ body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:#F4F7FB;color
 .sbtn{font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer}
 .wait-msg{text-align:center;padding:2rem;color:#6B7280;font-size:13px;grid-column:1/-1}
 .chartbox,.tcard,.aip{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:1rem}
-.chartbox h3,.tcard h3,.aip h3{font-size:14px;font-weight:700;color:#374151;margin-bottom:8px}
+.chartbox h3,.tcard h3,.aip h3{font-size:14px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tcard.collapsed,.aip.collapsed{padding:10px 14px}
+.tcard.collapsed > *:not(h3),.aip.collapsed > *:not(h3){display:none !important}
+.tcard.collapsed h3,.aip.collapsed h3{margin-bottom:0}
+.coll-btn{font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer;color:#374151;font-weight:500;white-space:nowrap}
+.coll-btn:hover{background:#f3f4f6}
+.coll-btn.collapsed{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.status-banner{background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#312e81;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-family:ui-monospace,Menlo,Consolas,monospace}
+.status-banner b{color:#1e1b4b}
+.status-banner .stat-live{color:#9a2020;font-weight:700}
+.status-banner .stat-demo{color:#16a34a;font-weight:700}
+.alert-banner{background:#fee2e2;border:1px solid #dc2626;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:#7f1d1d;font-weight:600;display:flex;gap:10px;align-items:center}
+body.night-paper .status-banner{background:rgba(214,201,178,0.18);border-color:rgba(214,201,178,0.4);color:#3a2f1a}
+.estop-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:2px solid #dc2626;background:#fee2e2;color:#7f1d1d;font-weight:700;cursor:pointer;transition:all .15s}
+.estop-btn:hover{background:#dc2626;color:#fff;transform:scale(1.03)}
+.estop-btn.active{background:#dc2626;color:#fff;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.7)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
 .feed,.chartmeta,.src{font-size:12px;color:#6B7280;margin-bottom:8px}
 .level-readout{font-size:12px;color:#5f513d;margin-bottom:8px}
 .chartacts{display:flex;gap:8px;align-items:center;margin-bottom:8px}
@@ -154,10 +172,54 @@ body.night-paper td{color:#e8decb;border-bottom-color:#544734}
 body.night-paper .tcard table tr:hover td{background:rgba(230,205,160,0.08)}
 body.night-paper .live-tag{background:#6d5c45;color:#f4e9d4}
 body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
+.trade-feed-card{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:1rem}
+.trade-feed-card h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;color:#374151}
+.trade-feed-card .tf-stats{font-size:12px;color:#6B7280;margin-left:auto;font-weight:normal}
+.trade-feed-card .tf-stats b{color:#374151}
+.trade-feed-card .tf-clr{font-size:11px;padding:4px 10px;border:1px solid #d1d5db;background:#f3f4f6;border-radius:6px;cursor:pointer;color:#374151}
+.trade-feed-card .tf-clr:hover{background:#e5e7eb}
+.trade-feed{max-height:300px;overflow-y:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;padding:8px}
+.trade-feed .tf-empty{color:#9ca3af;text-align:center;padding:20px 0}
+.tf-line{display:flex;gap:8px;padding:5px 8px;border-left:3px solid #d1d5db;margin-bottom:3px;background:#fff;border-radius:0 6px 6px 0}
+.tf-line .tf-time{color:#6b7280;font-weight:600;flex-shrink:0;font-size:11px;padding-top:1px}
+.tf-line .tf-msg{flex:1;color:#1f2937;word-break:break-word}
+.tf-success{border-left-color:#16a34a;background:#f0fdf4}
+.tf-success .tf-msg{color:#14532d}
+.tf-error{border-left-color:#dc2626;background:#fef2f2}
+.tf-error .tf-msg{color:#7f1d1d}
+.tf-manage{border-left-color:#7c3aed;background:#faf5ff}
+.tf-manage .tf-msg{color:#4c1d95}
+.tf-skip{border-left-color:#f59e0b;background:#fffbeb}
+.tf-skip .tf-msg{color:#78350f}
+.tf-info{border-left-color:#3b82f6;background:#eff6ff}
+.tf-info .tf-msg{color:#1e3a8a}
+body.night-paper .trade-feed-card{background:#3a3126;border-color:#62533d}
+body.night-paper .trade-feed-card h3{color:#efe4cf}
+body.night-paper .trade-feed-card .tf-stats{color:#cdb892}
+body.night-paper .trade-feed-card .tf-stats b{color:#f4e9d4}
+body.night-paper .trade-feed-card .tf-clr{background:#4a3f31;border-color:#776347;color:#efe4cf}
+body.night-paper .trade-feed-card .tf-clr:hover{background:#5b4d3a}
+body.night-paper .trade-feed{background:#2b241c;border-color:#544734}
+body.night-paper .tf-empty{color:#8b7e6a}
+body.night-paper .tf-line{background:#3a3126;border-left-color:#62533d}
+body.night-paper .tf-line .tf-time{color:#cdb892}
+body.night-paper .tf-line .tf-msg{color:#efe4cf}
+body.night-paper .tf-success{background:rgba(34,197,94,0.12);border-left-color:#22c55e}
+body.night-paper .tf-success .tf-msg{color:#bbf7d0}
+body.night-paper .tf-error{background:rgba(239,68,68,0.14);border-left-color:#f87171}
+body.night-paper .tf-error .tf-msg{color:#fecaca}
+body.night-paper .tf-manage{background:rgba(168,85,247,0.14);border-left-color:#a78bfa}
+body.night-paper .tf-manage .tf-msg{color:#e9d5ff}
+body.night-paper .tf-skip{background:rgba(245,158,11,0.14);border-left-color:#fbbf24}
+body.night-paper .tf-skip .tf-msg{color:#fde68a}
+body.night-paper .tf-info{background:rgba(59,130,246,0.14);border-left-color:#60a5fa}
+body.night-paper .tf-info .tf-msg{color:#bfdbfe}
 </style>
 <div class="db">
   <div class="hdr"><div><h2>CRT Scanner</h2><p>Candle Range Theory · İşlem Adayları</p></div><span class="pill ld" id="pill">Taranıyor...</span></div>
   <div class="src" id="srcNote">—</div>
+  <div id="statusBanner" class="status-banner">Sistem hazirlaniyor...</div>
+  <div id="alertBanner" class="alert-banner" style="display:none"></div>
   <div class="ctrl">
     <button class="cb on" onclick="setCat('all',this)">Tümü</button><button class="cb" onclick="setCat('forex',this)">Forex</button><button class="cb" onclick="setCat('metals',this)">Metaller</button><button class="cb" onclick="setCat('crypto',this)">Kripto</button><button class="cb" onclick="setCat('indices',this)">Endeksler</button>
     <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)">AI Filtre: Açık</button>
@@ -165,33 +227,63 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
     <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)">Gece Gazetesi: Kapalı</button>
     <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
     <button class="rbtn" onclick="refreshAll()">Tara</button>
+    <button class="estop-btn" id="estopBtn" onclick="emergencyStop()" title="Tüm pending iptal + auto kapat (Acil Dur)">🛑 ACİL DUR</button>
   </div>
-  <div class="mg"><div class="mc"><div class="lb">Taranan</div><div class="vl muted" id="m0">—</div></div><div class="mc"><div class="lb">Long</div><div class="vl pos" id="m1">—</div></div><div class="mc"><div class="lb">Short</div><div class="vl neg" id="m2">—</div></div><div class="mc"><div class="lb">Yatay Bölge</div><div class="vl muted" id="m3">—</div></div></div>
+  <div class="mg"><div class="mc"><div class="lb">Taranan</div><div class="vl muted" id="m0">—</div></div><div class="mc"><div class="lb">Long</div><div class="vl pos" id="m1">—</div></div><div class="mc"><div class="lb">Short</div><div class="vl neg" id="m2">—</div></div><div class="mc"><div class="lb">Yatay Bölge</div><div class="vl muted" id="m3">—</div></div><div class="mc"><div class="lb">Yönetimde</div><div class="vl" id="m4" style="color:#7c3aed">—</div></div><div class="mc"><div class="lb">Bekleyen</div><div class="vl" id="m5" style="color:#0891b2">—</div></div></div>
   <div class="sig-grid" id="sigGrid"><div class="wait-msg">Tarama başlatılıyor...</div></div>
   <div class="chartbox"><h3>Canlı Grafik (Seçili Sinyal)</h3><div class="feed" id="sigFeed">Yeni sinyaller burada akacak...</div><div class="chartmeta" id="chartMeta">Karttan "Grafikte Aç" seçin.</div><div class="level-readout" id="levelReadout">ENTRY: — · SL: — · TP: —</div><div class="chartacts"><button class="pinbtn" id="pinBtn" onclick="togglePin()">Sabitle: Kapalı</button><span class="scan-note" id="pinInfo">Seçili parite otomatik değişebilir.</span></div><div id="chart"></div></div>
-  <div class="tcard"><h3>Kategori Bazlı Tarama (Hepsi)</h3><div class="kgrid" id="kGrid"></div></div>
+  <div class="trade-feed-card">
+    <h3>Canlı İşlem Akışı<span class="tf-stats" id="tfStats">Emir: <b>0</b> · Başarılı: <b>0</b> · Hata: <b>0</b> · Yönetim: <b>0</b></span><button class="tf-clr" onclick="clearTradeFeed()">Temizle</button></h3>
+    <div class="trade-feed" id="tradeFeed"><div class="tf-empty">Henüz işlem hareketi yok. Otomatik emir veya pozisyon yönetim olaylari burada gorunecek.</div></div>
+  </div>
+  <div class="trade-feed-card" id="managedCard" style="display:none">
+    <h3>Yönetilen İşlemler<span class="tf-stats" id="managedCount">0 adet</span></h3>
+    <div id="managedList" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></div>
+  </div>
+  <div class="trade-feed-card" id="pendingCard" style="display:none">
+    <h3>Bekleyen Pending Emirler<span class="tf-stats" id="pendingCount">0 adet</span></h3>
+    <div id="pendingList" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px"></div>
+  </div>
+  <div class="tcard" id="catScanCard"><h3>Kategori Bazlı Tarama (Hepsi) <button class="coll-btn" onclick="toggleCard('catScanCard',this)">Gizle</button></h3><div class="kgrid" id="kGrid"></div></div>
   <div class="tcard">
     <h3>Kasa / Lot Yönetimi</h3>
     <div class="reason">Forex için varsayılan kaldıraç: 1:200. Önerilen lot, risk tutarı ve marjin sınırı birlikte dikkate alınarak hesaplanır.</div>
     <div class="risk-grid">
-      <label>Bakiye (USD)<input id="accBal" type="number" step="10" value="1000"></label>
-      <label>Risk % (işlem başı)<input id="riskPct" type="number" step="0.1" value="1"></label>
-      <label>Risk USD (işlem başı)<input id="riskUsd" type="number" step="1" value="20"></label>
+      <label>Bakiye (USD)<input id="accBal" type="number" step="10" value="1000" oninput="syncRiskFromBalance()"></label>
+      <label>Risk % (işlem başı)<input id="riskPct" type="number" step="0.1" min="0.05" max="10" value="1" oninput="syncRiskFromPct()"></label>
+      <label>Risk USD (işlem başı)<input id="riskUsd" type="number" step="1" min="1" value="10" oninput="syncRiskFromUsd()"></label>
       <label>Kaldıraç<input id="levVal" type="number" step="1" value="200"></label>
       <label>Min Lot<input id="minLot" type="number" step="0.01" value="0.01"></label>
       <label>Max Lot<input id="maxLot" type="number" step="0.01" value="5"></label>
       <label>Lot Adımı<input id="lotStep" type="number" step="0.01" value="0.01"></label>
     </div>
+    <div class="reason" id="riskSummary" style="margin-top:6px">İşlem başı zarar tahmini: —</div>
     <button class="cb" style="margin-top:8px" onclick="updateRiskConfig()">Lot Hesabını Güncelle</button>
   </div>
   <div class="tcard">
     <h3>Tek Tık Emir Planı</h3>
     <div class="risk-grid">
-      <label>Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="3"></label>
-      <label>Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="2"></label>
-      <label>Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="40"></label>
-      <label>Max Spread (point)<input id="maxSpreadPts" type="number" step="0.1" value="35"></label>
-      <label>Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="25"></label>
+      <label>Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="2"></label>
+      <label>Max Günlük Trade Sayısı<input id="maxTradesPerDay" type="number" step="1" min="1" max="50" value="10"></label>
+      <label>Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="1"></label>
+      <label title="Aynı yönde (LONG veya SHORT) maksimum acik+pending pozisyon. 0=sinirsiz">Aynı Yön Max (LONG/SHORT)<input id="maxSameDirection" type="number" step="1" min="0" max="20" value="3"></label>
+      <label title="Korelasyon bazli net maruziyet limiti. Faktor basina (USD/EUR/RISK_ON/JPY/METAL/CRYPTO vb) |net|>X iken o yonu kotulestiren sinyaller reddedilir, dengeleyiciler kabul edilir. 0=kapali. ONERILEN: 2">Korelasyon Limiti (faktör başı)<input id="maxCorrelatedExposure" type="number" step="1" min="0" max="20" value="2"></label>
+      <label title="ESKI: Basit |LONG-SHORT| farki limiti. Korelasyon kullanmaz, sayisaldir. 0=kapali (onerilen, Korelasyon Limiti daha akilli).">Basit Net Yön (|L−S|) Max<input id="maxNetExposureCount" type="number" step="1" min="0" max="20" value="0"></label>
+      <label>Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="30"></label>
+      <label>Max Spread (point, pending=3x)<input id="maxSpreadPts" type="number" step="1" min="5" max="300" value="60"></label>
+      <label>Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="40"></label>
+      <label>Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
+      <label>Seans Baslangic (UTC saat)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
+      <label>Seans Bitis (UTC saat)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
+      <label title="UTC saatleri, virgülle ayır (örn: 08:30, 12:30, 14:00). Bu saatlerden ±buffer dakika içinde auto-execute durur">Haber Blackout (UTC HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
+      <label>Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
+      <label>A+ Modu<input id="aPlusMode" type="checkbox" checked></label>
+      <label>Gunluk Zarar Limiti %<input id="maxDailyLossPct" type="number" step="0.1" min="0.1" value="1.5"></label>
+      <label>Zayif Stratejiyi Ele<input id="disableWeakStrategies" type="checkbox" checked></label>
+      <label>Institutional Mod<input id="institutionalMode" type="checkbox" checked></label>
+      <label>Institutional Min RR<input id="institutionalMinRR" type="number" step="0.1" min="1" value="1.8"></label>
+      <label>Turtle Scalp'a Izin Ver<input id="allowTurtleScalp" type="checkbox"></label>
+      <label>Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
       <label>Canlı Emir Linki<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
       <label>Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
       <label>Strateji Modu
@@ -209,6 +301,7 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
           <label><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
         </div>
       </label>
+      <label>Hisse CFD (stocks) tara<input id="scanStocks" type="checkbox" title="Hisse CFD'lerini taramaya dahil et (her sembol icin ek mum istegi; oynaklik ve gap riski farkli)"></label>
       <label>Strateji Profili
         <select id="strategyProfile">
           <option value="conservative">Conservative</option>
@@ -216,10 +309,12 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
           <option value="aggressive">Aggressive</option>
         </select>
       </label>
+      <label>Standart R:R (TP/SL, 0=kapali)<input id="standardRR" type="number" step="0.1" min="0" max="10" value="3.0"></label>
       <label>TP1 (R)<input id="tp1RR" type="number" step="0.1" value="1.0"></label>
       <label>TP2 (R)<input id="tp2RR" type="number" step="0.1" value="2.0"></label>
       <label>Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
       <label>Trailing Baslangic (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
+      <label title="Bu USD kar esigi asilirsa BE + TP1 partial + Trailing hepsi aninda devreye girer. 0=kapali">Erken Yonetim (USD kar)<input id="earlyManageUsd" type="number" step="1" min="0" value="13"></label>
       <label>Auto Trade<input id="autoTradeChk" type="checkbox"></label>
       <label>Dry Run<input id="dryRunChk" type="checkbox" checked></label>
       <label>Emir Hesabı
@@ -228,6 +323,16 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
           <option value="live">Live</option>
         </select>
       </label>
+      <label>Emir Tipi
+        <select id="placementType">
+          <option value="pending" selected>Pending (Limit/Stop)</option>
+          <option value="market">Market (Anlık)</option>
+        </select>
+      </label>
+      <label>Pending Süresi (dk, 0=GTC)<input id="pendingExpireMin" type="number" step="1" min="0" max="1440" value="5"></label>
+      <label>Pending Geri Çekme (point)<input id="pendingPullbackPts" type="number" step="1" min="0" max="500" value="10"></label>
+      <label>Çok yakınsa Pending'i kaydır<input id="autoAdjustPending" type="checkbox" checked></label>
+      <label>Pending olmuyorsa Market'a düş<input id="allowMarketFallback" type="checkbox"></label>
       <label>Meta Login<input id="metaLogin" type="number" step="1" placeholder="demo hesap no"></label>
       <label>Meta Şifre<input id="metaPass" type="password" placeholder="şifre"></label>
       <label>Meta Server<input id="metaServer" type="text" placeholder="broker-demo server"></label>
@@ -238,9 +343,9 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
     <div class="kgrid" id="planGrid" style="margin-top:10px"></div>
   </div>
   <div class="tcard"><h3>Tüm Tarama Sonuçları</h3><div class="reason">Not: <b>Bölge %</b> sinyalden sonraki değişim değil, sinyal anındaki range genişliğidir. Formül: <code>(CRH-CRL)/Mid * 100</code>.</div><table><thead><tr><th>Parite</th><th>Fiyat</th><th>Trend</th><th>Sinyal</th><th>Giriş</th><th>SL</th><th>TP</th><th>R:R</th><th>Takip TF</th><th>CRH</th><th>CRL</th><th>Bölge%</th></tr></thead><tbody id="tbl"></tbody></table></div>
-  <div class="tcard"><h3>Sinyal Sonuç / Sebep (İnceleme Alanı)</h3><div class="kgrid" id="reviewGrid"></div></div>
-  <div class="tcard">
-    <h3>Geçmiş Sinyaller (Kartlık Backtest)</h3>
+  <div class="tcard" id="reviewCard"><h3>Sinyal Sonuç / Sebep (İnceleme Alanı) <button class="coll-btn" onclick="toggleCard('reviewCard',this)">Gizle</button></h3><div class="kgrid" id="reviewGrid"></div></div>
+  <div class="tcard" id="historyCard">
+    <h3>Geçmiş Sinyaller (Kartlık Backtest) <button class="coll-btn" onclick="toggleCard('historyCard',this)">Gizle</button></h3>
     <div class="reason">MT5 gercek acik pozisyonlar ve kapanan islemler listelenir (simulasyon degil).</div>
     <div class="reason" id="historySummary">Gercek MT5 Ozeti: Acik 0 · TP 0 · Stop 0</div>
     <div class="hist-wrap">
@@ -249,8 +354,8 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
       <div class="hist-col"><h4>Stop Olan</h4><div class="hist-list" id="histStop"></div></div>
     </div>
   </div>
-  <div class="tcard">
-    <h3>Pas Gecenler (Hipotetik Backtest)</h3>
+  <div class="tcard" id="passCard">
+    <h3>Pas Gecenler (Hipotetik Backtest) <button class="coll-btn" onclick="toggleCard('passCard',this)">Gizle</button></h3>
     <div class="reason">Sistem "Pas/Bekle" dedigi sinyaller girilseydi, sonraki fiyat akisina gore TP/Stop/Devam olarak izlenir.</div>
     <div class="reason" id="passSummary">Pas Backtest: Devam 0 · TP 0 · Stop 0</div>
     <div class="hist-wrap">
@@ -259,12 +364,15 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
       <div class="hist-col"><h4>Stop Olan</h4><div class="hist-list" id="passStop"></div></div>
     </div>
   </div>
-  <div class="aip"><h3>AI Analiz (OpenAI)</h3><div class="feed" id="aio">Tarama sonrası analiz alabilirsiniz.</div><button class="cb" onclick="runAI()">Analiz Et</button></div>
+  <div class="aip" id="aiCard"><h3>AI Analiz (OpenAI) <button class="coll-btn" onclick="toggleCard('aiCard',this)">Gizle</button></h3><div class="feed" id="aio">Tarama sonrası analiz alabilirsiniz.</div><button class="cb" onclick="runAI()">Analiz Et</button></div>
   <div class="dbg-box">
     <h3>Debug / Log</h3>
     <div class="dbg-actions">
       <button class="cb" id="dbgToggleBtn" onclick="toggleDebugPanel()">Debug: Açık</button>
       <button class="cb" onclick="refreshDebugLog()">Log Yenile</button>
+      <button class="cb" onclick="exportSettings()">Ayar Yedekle (JSON)</button>
+      <button class="cb" onclick="importSettings()">Ayar Geri Yükle</button>
+      <button class="cb" onclick="exportTradesCsv()">Trades CSV İndir</button>
       <span class="scan-note" id="dbgInfo">Hazır</span>
     </div>
     <div class="dbg-log" id="dbgLog">Debug log bekleniyor...</div>
@@ -272,15 +380,50 @@ body.night-paper .ai-muted{background:#5d4f3d;color:#ebdfc8}
 </div>
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
-const PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
-const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+let PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
+const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const ALL_SYMBOLS_CACHE_KEY='crtAllSymbolsCache_v5';
+const ALL_SYMBOLS_TTL_MS=24*60*60*1000;
+// Sentetik (broker icinde uretilen XAUEUR/GAUUSD vb. — gercek likidite olmadan) ve stocks bu sete dahil degil.
+// Stocks scanStocks ayariyla runtime'da aktive edilir (buildPairsFromSymbols icinde).
+const SCAN_CATEGORIES=new Set(['forex','metals','indices','crypto','energies','commodities','bonds']);
+// Kategori basina max pair: 100'e cikarildi (broker zaten kendisi filtreler). Buyuk tarama icin gerekli.
+const MAX_SYMBOLS_PER_CATEGORY=100;
 let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
+let chartLiveTimer=null,chartLiveBusy=false,chartLivePair=null,chartLiveTF='M15',chartLastTickMs=0;
+const CHART_LIVE_INTERVAL_MS=5000;
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
-let planCfg={dailyRiskPct:3,maxOpenPos:2,maxMarginUse:40,maxSpreadPts:35,pairCooldownMin:25,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,strategyProfile:'balanced',tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5};
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,newsBlackoutTimes:'',newsBlackoutBufferMin:15};
 const AI_CONFIRM_REQUIRED=true;
 let signalSeenAt={};
 let signalHistory=[];
 let realOpenPositions=[];
+let realPendingOrders=[];
+const pendingCancelInFlight=new Set();
+const pendingCancelAttempts=new Map();
+const managedActionsByTicket=new Map();
+const DAILY_STATE_KEY='crt-daily-state-v1';
+function utcDayString(d=new Date()){return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;}
+let dailyState={day:utcDayString(),tradeCount:0,startingBalance:0,pnlSeed:0,pnlResetTs:0};
+function loadDailyState(){
+  try{
+    const s=JSON.parse(localStorage.getItem(DAILY_STATE_KEY)||'null');
+    if(s&&s.day===utcDayString()){dailyState={...dailyState,...s};}
+    else{dailyState={day:utcDayString(),tradeCount:0,startingBalance:0,pnlSeed:0};saveDailyState();}
+  }catch(_){ }
+}
+function saveDailyState(){try{localStorage.setItem(DAILY_STATE_KEY,JSON.stringify(dailyState));}catch(_){ }}
+function checkDailyRollover(){
+  const today=utcDayString();
+  if(dailyState.day!==today){
+    const prevDay=dailyState.day;const prevCnt=dailyState.tradeCount;
+    dailyState={day:today,tradeCount:0,startingBalance:0,pnlSeed:0};
+    saveDailyState();
+    if(typeof pushTradeFeed==='function')pushTradeFeed('info',`📅 Yeni gun (UTC) · ${prevDay} → ${today} · onceki gun ${prevCnt} trade`);
+    if(typeof pushDebug==='function')pushDebug(`daily_rollover from=${prevDay} to=${today} prevTrades=${prevCnt}`);
+  }
+}
+function incDailyTradeCount(){checkDailyRollover();dailyState.tradeCount=(dailyState.tradeCount||0)+1;saveDailyState();}
 let realClosedDeals=[];
 let closedDealsCache=[];
 let passBacktest=[];
@@ -295,7 +438,7 @@ const CLOSED_CACHE_KEY='crt_closed_deals_cache_v1';
 const BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
-let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo'};
+let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo',placement:'pending',pendingExpireMin:5,allowMarketFallback:false,autoAdjustPending:true,clientAutoCancelExpired:true,pendingPullbackPts:10};
 const catLabel=c=>({forex:'Forex',metals:'Metaller',crypto:'Kripto',indices:'Endeks'}[c]||c);
 const dp=id=>['BTCUSD'].includes(id)?0:['ETHUSD','BNBUSD'].includes(id)?2:['SOLUSD','XRPUSD','XAGUSD'].includes(id)?3:['XAUUSD','XPTUSD','XPDUSD','US30','US500','NAS100','UK100','DE40'].includes(id)?2:5;
 const titleCaseAccount=t=>(String(t||'demo').toLowerCase()==='live'?'Live':'Demo');
@@ -356,35 +499,44 @@ function aggregateCandles(candles,factor){
   return out;
 }
 function detectTurtleSopa(candles,trend){
-  if(!Array.isArray(candles)||candles.length<35)return{action:'WAIT',notes:['insufficient_data']};
-  const recent=candles.slice(-30);
-  const b=recent[recent.length-2],c=recent[recent.length-1];
-  const ref=recent.slice(0,recent.length-2);
+  if(!Array.isArray(candles)||candles.length<45)return{action:'WAIT',notes:['insufficient_data']};
+  const recent=candles.slice(-36);
+  const a=recent[recent.length-4],b=recent[recent.length-3],c=recent[recent.length-2],d=recent[recent.length-1];
+  const ref=recent.slice(0,recent.length-4);
   const swingHigh=Math.max(...ref.map(x=>x.h));
   const swingLow=Math.min(...ref.map(x=>x.l));
   const avgRange=ref.reduce((s,x)=>s+(x.h-x.l),0)/Math.max(ref.length,1);
   const avgVol=ref.reduce((s,x)=>s+Number(x.v||0),0)/Math.max(ref.length,1);
-  const volOk=avgVol>0?(Number(c.v||0)>=avgVol*1.2):true;
-  const rangeBreakOk=(c.h-c.l)>=avgRange*1.1;
+  const body=v=>Math.abs(v.c-v.o);
+  const range=v=>Math.max(0.00001,v.h-v.l);
+  const upperW=v=>v.h-Math.max(v.o,v.c);
+  const lowerW=v=>Math.min(v.o,v.c)-v.l;
   const grabUp=b.h>swingHigh&&b.c<swingHigh;
   const grabDn=b.l<swingLow&&b.c>swingLow;
-  const breakDown=c.c<b.l;
-  const breakUp=c.c>b.h;
-  if((trend==='up'||trend==='range')&&grabUp&&breakDown&&volOk&&rangeBreakOk){
-    const entry=c.c,sl=b.h,tp=entry-Math.abs(sl-entry)*2;
-    return{action:'SHORT',entry,sl,tp,rr:Math.abs(entry-tp)/Math.max(Math.abs(sl-entry),0.00001),notes:['liq_grab_up','volume_break_down']};
+  const dispShort=c.c<b.l&&body(c)>=avgRange*0.45&&range(c)>=avgRange*1.05;
+  const dispLong=c.c>b.h&&body(c)>=avgRange*0.45&&range(c)>=avgRange*1.05;
+  const retestShort=d.h>=c.c&&d.c<c.c&&upperW(d)>=body(d)*0.8;
+  const retestLong=d.l<=c.c&&d.c>c.c&&lowerW(d)>=body(d)*0.8;
+  const structShort=d.h<=c.h&&d.l<c.l;
+  const structLong=d.l>=c.l&&d.h>c.h;
+  const volOk=avgVol>0?(Math.max(Number(c.v||0),Number(d.v||0))>=avgVol*1.15):true;
+  if((trend==='down'||trend==='range'||trend==='up')&&grabUp&&dispShort&&retestShort&&structShort&&volOk){
+    const entry=d.c,sl=Math.max(b.h,d.h),tp=entry-Math.abs(sl-entry)*2.2;
+    return{action:'SHORT',entry,sl,tp,rr:Math.abs(entry-tp)/Math.max(Math.abs(sl-entry),0.00001),notes:['liq_grab_up','bear_displacement','retest_reject','lower_high_lower_low']};
   }
-  if((trend==='down'||trend==='range')&&grabDn&&breakUp&&volOk&&rangeBreakOk){
-    const entry=c.c,sl=b.l,tp=entry+Math.abs(entry-sl)*2;
-    return{action:'LONG',entry,sl,tp,rr:Math.abs(tp-entry)/Math.max(Math.abs(entry-sl),0.00001),notes:['liq_grab_down','volume_break_up']};
+  if((trend==='up'||trend==='range'||trend==='down')&&grabDn&&dispLong&&retestLong&&structLong&&volOk){
+    const entry=d.c,sl=Math.min(b.l,d.l),tp=entry+Math.abs(entry-sl)*2.2;
+    return{action:'LONG',entry,sl,tp,rr:Math.abs(tp-entry)/Math.max(Math.abs(entry-sl),0.00001),notes:['liq_grab_down','bull_displacement','retest_reject','higher_low_higher_high']};
   }
   const fail=[];
-  if(!(trend==='up'||trend==='range'||trend==='down'))fail.push('trend_unknown');
   if(!grabUp&&!grabDn)fail.push('no_liquidity_grab');
-  if(grabUp&&!breakDown)fail.push('no_bear_break_confirm');
-  if(grabDn&&!breakUp)fail.push('no_bull_break_confirm');
+  if(grabUp&&!dispShort)fail.push('no_bear_displacement');
+  if(grabDn&&!dispLong)fail.push('no_bull_displacement');
+  if(grabUp&&dispShort&&!retestShort)fail.push('no_retest_reject_short');
+  if(grabDn&&dispLong&&!retestLong)fail.push('no_retest_reject_long');
+  if(grabUp&&dispShort&&retestShort&&!structShort)fail.push('no_lh_ll_confirm');
+  if(grabDn&&dispLong&&retestLong&&!structLong)fail.push('no_hl_hh_confirm');
   if(!volOk)fail.push('low_volume_break');
-  if(!rangeBreakOk)fail.push('weak_break_candle');
   return{action:'WAIT',notes:fail.length?fail:['no_turtle_sopa_confirmation']};
 }
 function detectVWAPReclaim(candles,trend){
@@ -467,28 +619,75 @@ function signalQuality(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))r
 function getRecommendation(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'Pas';const rr=d.sig.rr||0,p=d.sig.pct||99,t=strategyThresholds(),score=confluenceScore(d);if(d.aiStatus==='confirmed'&&rr>=t.rrNow&&p<=t.zoneNow&&score>=t.scoreNow)return'Hemen';if(rr>=t.rrWatch&&p<=t.zoneWatch&&score>=t.scoreWatch)return'Bekle';return'Pas'}
 function invalidationRule(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return'—';return d.sig.action==='LONG'?`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) altı`:`H1 kapanış SL (${fp(d.sig.sl,d.pair.id)}) üstü`}
 function roundStep(v,step){if(step<=0)return v;return Math.floor(v/step)*step}
+// Bir lot icin SL hedefi vurulursa hesabin (account currency) kac USD kaybedecegini hesaplar.
+// Once broker'in MT5 tick_value/tick_size'ini kullanir (en dogru); yoksa kategori bazli fallback yapar.
+function lossPerLot(pair,stopDist,price){
+  const tv=Number(pair?.tickValue||0);
+  const ts=Number(pair?.tickSize||0);
+  if(tv>0&&ts>0&&stopDist>0){
+    // MT5 standardi: stopDist kadar fiyat hareketinde 1 lot icin kayip = (stopDist / tickSize) * tickValue
+    return (stopDist/ts)*tv;
+  }
+  // Fallback: kategori bazli yaklasik (broker metadata gelmediyse)
+  const cat=pair?.cat||'forex';
+  let contractSize=Number(pair?.contractSize||0);
+  if(!contractSize){
+    if(cat==='metals')contractSize=100;
+    else if(cat==='crypto')contractSize=1;
+    else if(cat==='indices')contractSize=10;
+    else contractSize=100000;
+  }
+  let r=stopDist*contractSize;
+  // Forex'te kar para birimi USD degilse, fiyatla bol (kaba JPY duzeltmesi; cross paritelerde sapma olabilir)
+  const id=String(pair?.id||'').toUpperCase();
+  const profitCcy=String(pair?.currencyProfit||'').toUpperCase();
+  if(cat==='forex'&&!id.endsWith('USD')&&profitCcy!=='USD'){
+    r=r/Math.max(price||1,0.00001);
+  }
+  return r;
+}
 function lotSuggestion(d){
   if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return null;
   const entry=d.sig.entry,sl=d.sig.sl,price=d.price||entry||0;
   const stopDist=Math.abs((entry||0)-(sl||0));
   if(!stopDist||!price)return null;
-  const riskAmount=Math.max(1,Number(riskCfg.riskUsd||0))>0?Number(riskCfg.riskUsd):((riskCfg.balance*riskCfg.riskPct)/100);
-  let contractSize=100000;
-  if(d.pair.cat==='metals')contractSize=100;
-  if(d.pair.cat==='crypto')contractSize=1;
-  if(d.pair.cat==='indices')contractSize=10;
-  let riskPerLot=stopDist*contractSize;
-  if(d.pair.cat==='forex'&&!d.pair.id.endsWith('USD'))riskPerLot=riskPerLot/Math.max(price,0.00001);
-  const lotByRisk=riskAmount/Math.max(riskPerLot,0.00001);
-  const marginPerLot=(price*contractSize)/Math.max(riskCfg.leverage,1);
+  // Risk tutari: iki kaynak senkron (UI auto-sync). Ikisi de pozitif ise minimum (guvenli).
+  let riskAmount=0;
+  const usd=Number(riskCfg.riskUsd||0);
+  const pctUsd=(Number(riskCfg.balance||0)*Number(riskCfg.riskPct||0))/100;
+  if(usd>0&&pctUsd>0){riskAmount=Math.min(usd,pctUsd);}
+  else if(usd>0){riskAmount=usd;}
+  else if(pctUsd>0){riskAmount=pctUsd;}
+  else{riskAmount=Math.max(1,(riskCfg.balance||0)*0.01);}
+  const lossPer1Lot=lossPerLot(d.pair,stopDist,price);
+  if(!(lossPer1Lot>0))return null;
+  const lotByRisk=riskAmount/lossPer1Lot;
+  // Margin sinir: brokerin order_calc_margin sonucunu kullan (en dogru)
+  const marginPerLot=marginPerLotUsd(d);
+  const contractSize=Number(d.pair?.contractSize||0)||(d.pair.cat==='metals'?100:(d.pair.cat==='crypto'?1:(d.pair.cat==='indices'?10:100000)));
   const maxByMargin=(riskCfg.balance*0.9)/Math.max(marginPerLot,0.00001);
-  let lot=Math.min(lotByRisk,maxByMargin,riskCfg.maxLot);
-  lot=Math.max(riskCfg.minLot,lot);
-  lot=roundStep(lot,riskCfg.lotStep);
-  const oneLotNotional=price*contractSize;
-  const slUsd=riskPerLot*lot;
+  // Lot adimi/min/max: brokerin volume_min/volume_step'i varsa onu kullan (daha dogru)
+  const vMin=Number(d.pair?.volumeMin||0)||Number(riskCfg.minLot||0.01);
+  const vStep=Number(d.pair?.volumeStep||0)||Number(riskCfg.lotStep||0.01);
+  let lot=Math.min(lotByRisk,maxByMargin,Number(riskCfg.maxLot||1000));
+  lot=roundStep(lot,vStep);
+  lot=Math.max(vMin,lot);
+  // Min lot yukari yuvarlamasi nedeniyle risk asimini hesapla
+  const slUsd=lossPer1Lot*lot;
   const tpUsd=slUsd*Math.max(d.sig.rr||0,0);
-  return {lot:Number(lot.toFixed(2)),riskAmount:Number(riskAmount.toFixed(2)),maxByMargin:Number(maxByMargin.toFixed(2)),oneLotNotional:Number(oneLotNotional.toFixed(2)),slUsd:Number(slUsd.toFixed(2)),tpUsd:Number(tpUsd.toFixed(2))};
+  const oneLotNotional=price*contractSize;
+  const overRiskPct=riskAmount>0?((slUsd-riskAmount)/riskAmount)*100:0;
+  return {
+    lot:Number(lot.toFixed(3)),
+    riskAmount:Number(riskAmount.toFixed(2)),
+    maxByMargin:Number(maxByMargin.toFixed(2)),
+    oneLotNotional:Number(oneLotNotional.toFixed(2)),
+    slUsd:Number(slUsd.toFixed(2)),
+    tpUsd:Number(tpUsd.toFixed(2)),
+    lossPerLot:Number(lossPer1Lot.toFixed(2)),
+    overRiskPct:Number(overRiskPct.toFixed(1)),
+    minLotApplied:lot<=vMin+1e-9
+  };
 }
 function buildExitPlan(d){
   if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return null;
@@ -502,11 +701,119 @@ function buildExitPlan(d){
   const trailTrigger=e+sign*risk*Number(planCfg.trailAtR||1.5);
   return {tp1,tp2,beTrigger,trailTrigger,riskR:risk};
 }
-function contractSizeFor(d){if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
-function marginUsagePct(d,lot){const entry=d.price||d.sig?.entry||0;if(!entry||!lot)return 0;const marginPerLot=(entry*contractSizeFor(d))/Math.max(riskCfg.leverage,1);return ((marginPerLot*lot)/Math.max(riskCfg.balance,1))*100}
-function safeRecommendation(d){const base=getRecommendation(d);if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{rec:'Pas',reason:'AI onayi yok'};const lot=lotSuggestion(d);if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};const m=marginUsagePct(d,lot.lot);if(m>planCfg.maxMarginUse)return{rec:'Pas',reason:`Marjin ${m.toFixed(1)}% > limit ${planCfg.maxMarginUse}%`};const t=strategyThresholds();if((d.sig?.rr||0)<t.rrWatch)return{rec:'Pas',reason:'RR düşük'};if(base==='Hemen'&&m>planCfg.maxMarginUse*t.maxMarginFactor)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};return{rec:base,reason:'Koşullar uygun'}}
+function contractSizeFor(d){const c=Number(d?.pair?.contractSize||0);if(c>0)return c;if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
+function marginPerLotUsd(d){
+  // 1) Broker'in kendi hesabi (en dogru, cross/JPY/index/metal hepsi icin)
+  const bm=Number(d?.pair?.marginPerLot||0);
+  if(bm>0)return bm;
+  // 2) Fallback: USD-quoted icin price*contractSize/leverage
+  const entry=d?.price||d?.sig?.entry||0;
+  if(!entry)return 0;
+  const cs=contractSizeFor(d);
+  const lev=Math.max(riskCfg.leverage,1);
+  const id=String(d?.pair?.id||'').toUpperCase();
+  const profitCcy=String(d?.pair?.currencyProfit||'').toUpperCase();
+  // Forex base'i USD ise notional zaten USD: contractSize/leverage
+  if(d?.pair?.cat==='forex'&&id.startsWith('USD'))return cs/lev;
+  // Forex quote'u USD ise: entry * contractSize / leverage
+  if(d?.pair?.cat==='forex'&&(id.endsWith('USD')||profitCcy==='USD'))return (entry*cs)/lev;
+  // Metals/indices/crypto: genellikle USD notional
+  return (entry*cs)/lev;
+}
+function marginUsagePct(d,lot){if(!lot)return 0;const mpl=marginPerLotUsd(d);return ((mpl*lot)/Math.max(riskCfg.balance,1))*100;}
+function marginCapLot(d,maxPctRaw){
+  // Verilen marjin yuzdesi limitine uyacak en buyuk lot (lotStep'e yuvarlanmis)
+  const entry=d.price||d.sig?.entry||0;
+  if(!entry)return 0;
+  const maxPct=Math.max(0.5,Number(maxPctRaw||30));
+  const marginBudget=(Math.max(riskCfg.balance,0)*maxPct)/100;
+  const marginPerLot=marginPerLotUsd(d);
+  if(marginPerLot<=0)return 0;
+  let lot=marginBudget/marginPerLot;
+  // Step yuvarlama (asagi) ile guvenli kal
+  const step=Math.max(0.01,Number(riskCfg.lotStep||0.01));
+  lot=Math.floor(lot/step)*step;
+  return Number(Math.max(0,lot).toFixed(2));
+}
+function safeRecommendation(d){
+  const base=getRecommendation(d);
+  if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{rec:'Pas',reason:'AI onayi yok'};
+  const lot=lotSuggestion(d);
+  if(!lot)return{rec:'Pas',reason:'Lot hesaplanamadı'};
+  const m=marginUsagePct(d,lot.lot);
+  if(m>planCfg.maxMarginUse){
+    const cap=marginCapLot(d,planCfg.maxMarginUse);
+    if(cap>=Number(riskCfg.minLot||0.01)){
+      return{rec:base,reason:`Lot kuculultuldu: marjin %${m.toFixed(1)} → cap lot ${cap.toFixed(2)}`,adjustedLot:cap,marginAdjusted:true};
+    }
+    return{rec:'Pas',reason:`Marjin %${m.toFixed(1)} > %${planCfg.maxMarginUse} ve minLot dahi sigmiyor`};
+  }
+  const t=strategyThresholds();
+  if((d.sig?.rr||0)<t.rrWatch)return{rec:'Pas',reason:'RR düşük'};
+  if(base==='Hemen'&&m>planCfg.maxMarginUse*t.maxMarginFactor)return{rec:'Bekle',reason:'Marjin yüksek, daha düşük lot bekle'};
+  return{rec:base,reason:'Koşullar uygun'};
+}
 function strategyWeight(tag){const t=String(tag||'core');const p=strategyPerf[t]||{score:1};return Math.max(0.7,Math.min(1.5,Number(p.score||1)))}
 function weightedSignalQuality(d){return signalQuality(d)*strategyWeight(d.strategyTag||'core')}
+function strategyIsWeak(tag){
+  const t=String(tag||'core');
+  const p=strategyPerf[t]||{trades:0,wins:0,score:1,pnl:0};
+  if(!planCfg.disableWeakStrategies)return false;
+  // Avoid over-blocking early. Require a broader sample first.
+  if(Number(p.trades||0)<15)return false;
+  const wr=Number(p.wins||0)/Math.max(1,Number(p.trades||0));
+  const score=Number(p.score||1);
+  const pnl=Number(p.pnl||0);
+  // Block only when multiple weakness signals align.
+  return (score<0.8 && wr<0.38 && pnl<0);
+}
+function isAPlusSignal(d){
+  if(!planCfg.aPlusMode)return true;
+  const rr=Number(d?.sig?.rr||0);
+  const sq=weightedSignalQuality(d);
+  const t=strategyThresholds();
+  // Optimized: keep quality filter, but avoid over-blocking valid setups.
+  const minRR=Math.max(1.6,t.rrNow+0.1);
+  const minSQ=62;
+  return d.aiStatus==='confirmed'&&rr>=minRR&&sq>=minSQ;
+}
+function isInstitutionalQualified(d){
+  if(!planCfg.institutionalMode)return true;
+  // Kategori filtresi YOK — forex/indices/metals/crypto hepsi gecebilir.
+  // institutional mode RR ve trend uyumu sikilastirir.
+  const tag=String(d?.strategyTag||'core');
+  const rr=Number(d?.sig?.rr||0);
+  const trend=String(d?.trend||'').toLowerCase();
+  const minRR=Math.max(1,Number(planCfg.institutionalMinRR||2));
+  if(tag==='turtle_sopa'){
+    if(!planCfg.allowTurtleScalp)return false;
+    const sq=weightedSignalQuality(d);
+    return rr>=Math.max(1,Number(planCfg.turtleScalpMinRR||1.6))&&sq>=70;
+  }
+  // CRT (core) ve VWAP reclaim stratejileri range piyasalarda calisir.
+  // Trend ters olursa (up trend + SHORT veya down trend + LONG) bloke et,
+  // range ise CRT/VWAP icin gecerlidir (daha yuksek RR + AI confirmed sart).
+  const side=String(d?.sig?.action||'').toUpperCase();
+  if(trend==='up'&&side==='SHORT')return false;
+  if(trend==='down'&&side==='LONG')return false;
+  if(trend==='range'){
+    if(d?.aiStatus!=='confirmed')return false;
+    return rr>=Math.max(minRR,1.8);
+  }
+  return rr>=minRR;
+}
+function currentDayLossUsd(){
+  const now=new Date();
+  const y=now.getUTCFullYear(),m=now.getUTCMonth(),dd=now.getUTCDate();
+  const resetTs=Number(dailyState?.pnlResetTs||0);
+  return realClosedDeals.filter(x=>{
+    const t=Number(x?.time||0);
+    if(!t)return false;
+    if(resetTs>0&&t<resetTs)return false;
+    const d=new Date(t*1000);
+    return d.getUTCFullYear()===y&&d.getUTCMonth()===m&&d.getUTCDate()===dd;
+  }).reduce((acc,x)=>acc+Math.min(0,Number(x?.profit||0)),0);
+}
 function syncStrategyModeFromChecks(){
   const c=!!scanCore.checked,t=!!scanTurtle.checked,v=!!scanVWAP.checked,s=!!scanSRBreak.checked;
   if(!c&&!t&&!v&&!s){scanCore.checked=true;}
@@ -527,11 +834,195 @@ function activeOpenByPairSide(pairId, side){
   const base=normalizeSymbol(pairId);
   return realOpenPositions.filter(p=>normalizeSymbol(p.symbol).includes(base)&&p.side===side).length;
 }
-function isFreshSignal(d){const seenAt=signalSeenAt[d.pair.id]||0;const ttlMs=Math.max(5,planCfg.signalTtlMin)*60000;return seenAt>0&&(Date.now()-seenAt)<=ttlMs}
+function countBySide(side){
+  const S=String(side||'').toUpperCase();
+  const openN=(realOpenPositions||[]).filter(p=>String(p.side||'').toUpperCase()===S).length;
+  const pendN=(realPendingOrders||[]).filter(o=>String(o.side||'').toUpperCase()===S).length;
+  return {open:openN,pending:pendN,total:openN+pendN};
+}
+// Factor decomposition: bir pariteyi long alirsan hangi faktorlere maruz kalirsin?
+// sign=+1 => LONG bu faktoru artirir, sign=-1 => LONG bu faktoru azaltir
+function pairFactors(symbol){
+  const s=String(symbol||'').toUpperCase().replace(/[._\-#]/g,'');
+  const facs=[];
+  // Hisse endeks sepeti (risk-on aile: NAS, SP500, DAX, DJ, CAC, FTSE, Nikkei...)
+  if(/^(NAS100|US100|NDX|SPX|US500|SP500|DJ30|US30|GER30|GER40|DE30|DE40|DAX|CAC40|FRA40|UK100|FTSE|JP225|JPN225|NIKKEI|AUS200|ASX200|HK50|HSI|CHINA50|EU50|STOXX50)/.test(s)){
+    facs.push({tag:'RISK_ON',sign:+1});
+  }
+  // FX bazli faktorler
+  const ccyMatch=s.match(/^([A-Z]{3})([A-Z]{3})$/);
+  if(ccyMatch){
+    const base=ccyMatch[1],quote=ccyMatch[2];
+    // USD ekseni: LONG XXXUSD => USD azalir, LONG USDXXX => USD artar
+    if(base==='USD')facs.push({tag:'USD',sign:+1});
+    else if(quote==='USD')facs.push({tag:'USD',sign:-1});
+    // EUR
+    if(base==='EUR')facs.push({tag:'EUR',sign:+1});
+    else if(quote==='EUR')facs.push({tag:'EUR',sign:-1});
+    // GBP
+    if(base==='GBP')facs.push({tag:'GBP',sign:+1});
+    else if(quote==='GBP')facs.push({tag:'GBP',sign:-1});
+    // JPY (safe haven; XXXJPY long => JPY zayiflar)
+    if(base==='JPY')facs.push({tag:'JPY',sign:+1});
+    else if(quote==='JPY')facs.push({tag:'JPY',sign:-1});
+    // AUD/NZD (risk-on commodity FX, gevseyebilir ama yine de takip edelim)
+    if(base==='AUD'||base==='NZD')facs.push({tag:'COMMODITY_FX',sign:+1});
+    else if(quote==='AUD'||quote==='NZD')facs.push({tag:'COMMODITY_FX',sign:-1});
+    // CHF (safe haven)
+    if(base==='CHF')facs.push({tag:'CHF',sign:+1});
+    else if(quote==='CHF')facs.push({tag:'CHF',sign:-1});
+  }
+  // Metaller (genellikle USD ters): XAUUSD long => USD zayif (-1), METAL+1
+  if(/^XAU/.test(s)){facs.push({tag:'METAL',sign:+1});facs.push({tag:'USD',sign:-1});}
+  else if(/^XAG/.test(s)){facs.push({tag:'METAL',sign:+1});facs.push({tag:'USD',sign:-1});}
+  // Kripto
+  if(/^(BTC|ETH|XRP|LTC|ADA|SOL|DOGE|DOT|BNB|MATIC|AVAX)(USD|USDT)?/.test(s)){
+    facs.push({tag:'CRYPTO',sign:+1});
+  }
+  // Petrol/enerji
+  if(/^(WTI|BRENT|XBR|XTI|UKOIL|USOIL|OIL)/.test(s)){
+    facs.push({tag:'ENERGY',sign:+1});
+  }
+  return facs;
+}
+// Tum acik+pending pozisyonlarin faktor bazli net maruziyetini hesapla
+function effectiveExposure(){
+  const exp={};
+  const all=[...(realOpenPositions||[]),...(realPendingOrders||[])];
+  for(const p of all){
+    const sideSign=(String(p.side||'').toUpperCase()==='LONG')?+1:-1;
+    const facs=pairFactors(p.symbol||'');
+    for(const f of facs){
+      exp[f.tag]=(exp[f.tag]||0)+f.sign*sideSign;
+    }
+  }
+  return exp;
+}
+function topExposureSummary(maxTags=3){
+  const exp=effectiveExposure();
+  const arr=Object.entries(exp).filter(([_t,v])=>v!==0).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,maxTags);
+  return arr.map(([t,v])=>`${t}:${v>=0?'+':''}${v}`).join(' · ')||'denge';
+}
+function hasAnyOpenPosition(pairId){
+  const base=normalizeSymbol(pairId);
+  if(!base)return false;
+  const inOpen=realOpenPositions.some(p=>{
+    const sym=normalizeSymbol(p.symbol);
+    return sym===base||sym.includes(base)||base.includes(sym);
+  });
+  if(inOpen)return true;
+  const inPending=(realPendingOrders||[]).some(o=>{
+    const sym=normalizeSymbol(o.symbol);
+    return sym===base||sym.includes(base)||base.includes(sym);
+  });
+  return inPending;
+}
+function openPositionInfoFor(pairId){
+  const base=normalizeSymbol(pairId);
+  if(!base)return null;
+  const open=realOpenPositions.find(p=>{
+    const sym=normalizeSymbol(p.symbol);
+    return sym===base||sym.includes(base)||base.includes(sym);
+  });
+  if(open)return {...open,_kind:'open'};
+  const pending=(realPendingOrders||[]).find(o=>{
+    const sym=normalizeSymbol(o.symbol);
+    return sym===base||sym.includes(base)||base.includes(sym);
+  });
+  if(pending){
+    // openPosition formuna uyarla, _kind=pending
+    return {
+      ticket:pending.ticket,
+      symbol:pending.symbol,
+      side:pending.side,
+      volume:pending.volume,
+      price_open:pending.price_open,
+      sl:pending.sl,
+      tp:pending.tp,
+      profit:0,
+      _kind:'pending',
+      _type:pending.type
+    };
+  }
+  return null;
+}
+function tfDurationMin(tf){
+  const m={M1:1,M3:3,M5:5,M15:15,M30:30,H1:60,H4:240,D1:1440};
+  return m[String(tf||'M15').toUpperCase()]||15;
+}
+function signalBarCloseMs(d){
+  // Sinyalin uretildigi son mumun KAPANIS zamani (ms). MT5 bar.t = bar acilis (saniye).
+  const c=Array.isArray(d?.candles)?d.candles:[];
+  const last=c[c.length-1];
+  if(!last||!Number.isFinite(Number(last.t)))return 0;
+  const openMs=Number(last.t)*1000;
+  const tfMs=tfDurationMin(d?.timeframe||'M15')*60000;
+  return openMs+tfMs; // bar kapanis tahmini
+}
+function signalAgeMin(d){
+  const closeMs=signalBarCloseMs(d);
+  if(!closeMs)return Infinity;
+  const dt=Date.now()-closeMs;
+  return Math.max(0,dt/60000);
+}
+function isBarFresh(d){
+  // Sinyal cubugu son ${maxBars} TF biriminden daha eski olmasin.
+  const tfMin=tfDurationMin(d?.timeframe||'M15');
+  const ageMin=signalAgeMin(d);
+  const maxBars=tfMin<=15?3:(tfMin<=60?2:2); // M1/M3/M5/M15: 3 bar, H1: 2 bar, H4: 2 bar
+  return ageMin<=tfMin*maxBars;
+}
+function isPriceStillValid(d){
+  // Sinyal uretildikten sonra fiyat girise kiyasla cok uzaklasmissa "kacirilmis" sinyaldir.
+  // LONG icin fiyat entry+0.4R'i gectiyse, SHORT icin entry-0.4R'i gectiyse pas.
+  const sig=d?.sig;
+  if(!sig||!['LONG','SHORT'].includes(sig.action))return false;
+  const entry=Number(sig.entry||0);
+  const sl=Number(sig.sl||0);
+  const px=Number(d?.price||entry);
+  const r=Math.abs(entry-sl);
+  if(!Number.isFinite(r)||r<=0)return true; // R yoksa pas geciremeyiz
+  if(sig.action==='LONG'){
+    if(px<sl)return false; // SL altina dustu, sinyal cokmus
+    if(px-entry>r*0.4)return false; // entry+0.4R'i gecmis, gec kalindi
+    return true;
+  }else{
+    if(px>sl)return false;
+    if(entry-px>r*0.4)return false;
+    return true;
+  }
+}
+function freshnessReason(d){
+  if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 'no_signal';
+  if(!isBarFresh(d))return `bar_stale_${signalAgeMin(d).toFixed(0)}min`;
+  if(!isPriceStillValid(d))return 'price_drifted_past_entry';
+  return 'ok';
+}
+function isFreshSignal(d){
+  if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return false;
+  if(!isBarFresh(d))return false;
+  if(!isPriceStillValid(d))return false;
+  return true;
+}
+function isSessionOpen(nowTs=Date.now()){
+  if(!planCfg.sessionEnabled)return true;
+  const sh=Math.max(0,Math.min(23,Number(planCfg.sessionStartHour||0)));
+  const eh=Math.max(0,Math.min(23,Number(planCfg.sessionEndHour||23)));
+  const h=new Date(nowTs).getUTCHours();
+  if(sh===eh)return true; // 24h
+  if(sh<eh)return h>=sh&&h<eh;
+  return h>=sh||h<eh; // overnight window
+}
 function canAutoExecute(d){
   if(BLOCKED_TRADE_PAIRS.has(String(d.pair?.id||'').toUpperCase()))return{ok:false,reason:'pair_blocked'};
   if(tradeCfg.lastHealth!=='MT5 OK')return{ok:false,reason:'health_not_ok'};
   if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{ok:false,reason:'ai_not_confirmed'};
+  if(!isInstitutionalQualified(d))return{ok:false,reason:'institutional_filter'};
+  if(strategyIsWeak(d.strategyTag||'core'))return{ok:false,reason:'weak_strategy_blocked'};
+  if(!isAPlusSignal(d))return{ok:false,reason:'aplus_not_qualified'};
+  if(!isSessionOpen())return{ok:false,reason:'session_closed'};
+  const dailyLossLimitUsd=Math.max(1,(riskCfg.balance*Number(planCfg.maxDailyLossPct||2))/100);
+  if(Math.abs(currentDayLossUsd())>=dailyLossLimitUsd)return{ok:false,reason:'daily_loss_limit_reached'};
   const pairCooldownMs=Math.max(0,Number(planCfg.pairCooldownMin||0))*60000;
   if(pairCooldownMs>0){
     const now=Date.now();
@@ -542,8 +1033,40 @@ function canAutoExecute(d){
   // Keep strict action gate only for Turtle. For core/vwap/sr,
   // AI + risk filters are enough to avoid missing good entries.
   if((d.strategyTag==='turtle_sopa')&&!actionState.ready)return{ok:false,reason:`action_wait:${actionState.reason}`};
-  if(!isFreshSignal(d))return{ok:false,reason:'signal_stale'};
-  if(activeOpenByPairSide(d.pair.id,d.sig.action)>0)return{ok:false,reason:'same_side_open_exists'};
+  if(!isFreshSignal(d))return{ok:false,reason:`signal_stale:${freshnessReason(d)}`};
+  if(hasAnyOpenPosition(d.pair.id))return{ok:false,reason:'pair_has_open_position'};
+  const sameDirCap=Math.max(0,Number(planCfg.maxSameDirection||0));
+  if(sameDirCap>0){
+    const sideCounts=countBySide(d.sig.action);
+    if(sideCounts.total>=sameDirCap)return{ok:false,reason:`same_direction_cap:${d.sig.action} ${sideCounts.total}/${sameDirCap}`};
+  }
+  const netCap=Math.max(0,Number(planCfg.maxNetExposureCount||0));
+  if(netCap>0){
+    const longT=countBySide('LONG').total;
+    const shortT=countBySide('SHORT').total;
+    const curDelta=longT-shortT;
+    const newDelta=d.sig.action==='LONG'?curDelta+1:curDelta-1;
+    const wouldWorsen=Math.abs(newDelta)>Math.abs(curDelta);
+    if(wouldWorsen&&Math.abs(newDelta)>netCap){
+      return{ok:false,reason:`net_exposure_cap:L${longT}/S${shortT} delta=${curDelta>=0?'+':''}${curDelta}->${newDelta>=0?'+':''}${newDelta} > ±${netCap}`};
+    }
+  }
+  // Korelasyon bazli akilli filtre: yeni sinyalin faktor maruziyetlerini hesapla,
+  // mevcut net maruziyeti kotulestirip limiti asarsa engelle. Dengeleyenler her zaman izinli.
+  const corrCap=Math.max(0,Number(planCfg.maxCorrelatedExposure||0));
+  if(corrCap>0){
+    const exp=effectiveExposure();
+    const sideSign=(String(d.sig.action||'').toUpperCase()==='LONG')?+1:-1;
+    const facs=pairFactors(d.pair?.id||'');
+    for(const f of facs){
+      const cur=Number(exp[f.tag]||0);
+      const next=cur+f.sign*sideSign;
+      const wouldWorsen=Math.abs(next)>Math.abs(cur);
+      if(wouldWorsen&&Math.abs(next)>corrCap){
+        return{ok:false,reason:`corr_exposure_cap:${f.tag} ${cur>=0?'+':''}${cur}→${next>=0?'+':''}${next} > ±${corrCap}`};
+      }
+    }
+  }
   return{ok:true,reason:'ok'};
 }
 function entryReasonText(d){
@@ -555,20 +1078,191 @@ function entryReasonText(d){
   return `Neden: ${signalReason(d)} · PA:${paNotes} · Elliott:${ew} · Turtle:${ts} · AI:${aiTxt} · Plan:${safe.rec} (${safe.reason})`;
 }
 function healthSummaryText(account='—',mode='—'){return `Health: ${tradeCfg.lastHealth} · account ${account} · mode ${mode} · auto ${tradeCfg.autoEnabled?'ON':'OFF'} · ${tradeCfg.dryRun?'DRY':'LIVE'} · target ${titleCaseAccount(tradeCfg.targetAccountType)}`}
-async function checkHealth(){try{const r=await fetch(HEALTH_URL);const j=await r.json();tradeCfg.lastHealth=j.mt5_ok&&j.terminal_connected?'MT5 OK':'MT5 OFF';document.getElementById('healthInfo').textContent=healthSummaryText(j.account||'—',j.trade_mode||'—');pushDebug(`health ${tradeCfg.lastHealth} account=${j.account||'-'} mode=${j.trade_mode||'-'}`)}catch(e){tradeCfg.lastHealth='ERROR';document.getElementById('healthInfo').textContent=healthSummaryText('—','—');pushDebug(`health_error ${e.message}`)}}
+let healthFailStreak=0;
+const HEALTH_FAIL_THRESHOLD=2;
+function showAlertBanner(message,type='error'){
+  const el=document.getElementById('alertBanner');if(!el)return;
+  if(!message){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='flex';
+  el.style.background=type==='warn'?'#fef3c7':'#fee2e2';
+  el.style.borderColor=type==='warn'?'#f59e0b':'#dc2626';
+  el.style.color=type==='warn'?'#92400e':'#7f1d1d';
+  el.innerHTML=message;
+}
+async function checkHealth(){
+  try{
+    const r=await fetch(HEALTH_URL,{cache:'no-store'});
+    const j=await r.json();
+    const ok=j.mt5_ok&&j.terminal_connected;
+    tradeCfg.lastHealth=ok?'MT5 OK':'MT5 OFF';
+    const hi=document.getElementById('healthInfo');
+    if(hi)hi.textContent=healthSummaryText(j.account||'—',j.trade_mode||'—');
+    pushDebug(`health ${tradeCfg.lastHealth} account=${j.account||'-'} mode=${j.trade_mode||'-'}`);
+    if(ok){
+      if(healthFailStreak>=HEALTH_FAIL_THRESHOLD){
+        pushTradeFeed('success',`🟢 MT5 BAGLANTI GERI GELDI · account=${j.account||'-'}`);
+      }
+      healthFailStreak=0;
+      showAlertBanner('');
+    } else {
+      healthFailStreak++;
+      if(healthFailStreak===HEALTH_FAIL_THRESHOLD){
+        pushTradeFeed('error',`🔴 MT5 BAGLANTI KOPTU · ${HEALTH_FAIL_THRESHOLD} ardisik basarisiz health · oto retry sürüyor`);
+        showAlertBanner('🔴 <b>MT5 BAĞLANTI YOK</b> — proxy veya terminal düşmüş olabilir. Auto-execute durduruldu. <button class="cb" onclick="checkHealth()">Tekrar Dene</button>','error');
+      }
+      // Adaptif retry: hizla yeniden dene (kademeli backoff)
+      const delay=Math.min(30000,1500*Math.pow(1.6,Math.min(8,healthFailStreak)));
+      setTimeout(()=>checkHealth(),delay);
+    }
+  }catch(e){
+    tradeCfg.lastHealth='ERROR';
+    const hi=document.getElementById('healthInfo');if(hi)hi.textContent=healthSummaryText('—','—');
+    pushDebug(`health_error ${e.message}`);
+    healthFailStreak++;
+    if(healthFailStreak===HEALTH_FAIL_THRESHOLD){
+      pushTradeFeed('error',`🔴 PROXY ULAŞILAMIYOR · ${e.message}`);
+      showAlertBanner('🔴 <b>PROXY ULAŞILAMIYOR</b> — backend kapalı veya port erişilemez. <button class="cb" onclick="checkHealth()">Tekrar Dene</button>','error');
+    }
+    const delay=Math.min(30000,1500*Math.pow(1.6,Math.min(8,healthFailStreak)));
+    setTimeout(()=>checkHealth(),delay);
+  }
+}
+const MT5_RETCODE_TR={
+  10004:'REQUOTE (fiyat degisti)',
+  10006:'REJECT (red)',
+  10007:'CANCEL (iptal)',
+  10008:'PLACED (yerlesti)',
+  10009:'DONE (basarili)',
+  10010:'DONE_PARTIAL (kismi dolum)',
+  10011:'ERROR (genel hata)',
+  10013:'INVALID (gecersiz istek)',
+  10014:'INVALID_VOLUME (gecersiz lot)',
+  10015:'INVALID_PRICE (gecersiz fiyat)',
+  10016:'INVALID_STOPS (SL/TP brokerin izin verdigi mesafeden dar)',
+  10017:'TRADE_DISABLED (islem devre disi)',
+  10018:'MARKET_CLOSED (piyasa kapali)',
+  10019:'NO_MONEY (yetersiz marjin)',
+  10020:'PRICE_CHANGED (fiyat degisti)',
+  10021:'PRICE_OFF (fiyat alinmadi)',
+  10027:'CLIENT_DISABLES_AT (client izin vermedi)',
+  10030:'INVALID_FILL (dolum modu uyumsuz)',
+  10031:'CONNECTION (broker baglanti hatasi)',
+  10040:'LIMIT_POSITIONS (max poz sayisi asildi)'
+};
+function translateRetcode(rc){return MT5_RETCODE_TR[Number(rc)]||String(rc||'');}
+const orderInFlight=new Set();
+const orderTelemetry={count:0,okCount:0,failCount:0,latencySumMs:0,slipSumPts:0,slipMaxPts:0,latencyMaxMs:0};
+function telemetryUpdate(latencyMs,slipPts,ok){
+  orderTelemetry.count++;
+  if(ok)orderTelemetry.okCount++;else orderTelemetry.failCount++;
+  if(Number.isFinite(latencyMs)){orderTelemetry.latencySumMs+=latencyMs;if(latencyMs>orderTelemetry.latencyMaxMs)orderTelemetry.latencyMaxMs=latencyMs;}
+  if(Number.isFinite(slipPts)){orderTelemetry.slipSumPts+=Math.abs(slipPts);if(Math.abs(slipPts)>orderTelemetry.slipMaxPts)orderTelemetry.slipMaxPts=Math.abs(slipPts);}
+}
+function telemetrySummary(){
+  if(orderTelemetry.count===0)return 'telemetri: emir yok';
+  const avgL=Math.round(orderTelemetry.latencySumMs/orderTelemetry.count);
+  const avgS=(orderTelemetry.slipSumPts/orderTelemetry.count).toFixed(1);
+  return `telemetri: ${orderTelemetry.count} emir · OK ${orderTelemetry.okCount}/FAIL ${orderTelemetry.failCount} · avg lat ${avgL}ms (max ${orderTelemetry.latencyMaxMs}) · avg slip ${avgS}pt (max ${orderTelemetry.slipMaxPts})`;
+}
 async function executeSignalOrder(d,lotAdj){
   if(BLOCKED_TRADE_PAIRS.has(String(d.pair?.id||'').toUpperCase())){
     pushDebug(`order_blocked ${d.pair?.id||'-'} pair_blocked`);
     return {ok:false,error:'pair_blocked',detail:'blocked_pair'};
   }
+  const symKey=String(d.sourceSymbol||d.pair?.id||'').toUpperCase()+':'+String(d.sig?.action||'');
+  if(orderInFlight.has(symKey)){
+    pushDebug(`order_skip_inflight ${symKey}`);
+    return {ok:false,error:'order_inflight',detail:`mutex_locked ${symKey}`,skipped:true};
+  }
   const key=`${historyKey(d)}:${lotAdj}`;
   if(tradeCfg.sentKeys[key])return {ok:true,skipped:true};
+  orderInFlight.add(symKey);
+  try{
+  return await _executeSignalOrderInner(d,lotAdj,key);
+  }finally{orderInFlight.delete(symKey);}
+}
+async function _executeSignalOrderInner(d,lotAdj,key){
   const reason=entryReasonText(d);
-  const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(d.sig.sl),tp:Number(d.sig.tp),max_spread_points:Number(planCfg.maxSpreadPts||0),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,strategy_tag:String(d.strategyTag||'core'),meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
-  const r=await fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  const j=await r.json();
-  if(j.ok){tradeCfg.sentKeys[key]=Date.now();pushFeed(`${new Date().toLocaleTimeString()} · Emir ${tradeCfg.dryRun?'DRY':'LIVE'} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · hesap:${tradeCfg.targetAccountType} · ${reason}`);pushDebug(`order_ok ${d.pair.id} ${d.sig.action} lot=${lotAdj} dry=${tradeCfg.dryRun}`);await refreshTradeSnapshot()}
-  else {pushFeed(`${new Date().toLocaleTimeString()} · Emir HATA ${d.pair.label}: ${j.error||j.detail||'unknown'}`);pushDebug(`order_error ${d.pair.id} ${j.error||j.detail||'unknown'}`)}
+  const placement=(tradeCfg.placement==='market')?'market':'pending';
+  const expireMin=Math.max(0,Number(tradeCfg.pendingExpireMin||0));
+  // Pending geri çekme: pending modda LONG için entry/SL/TP'yi aşağı, SHORT için yukarı kaydır.
+  // Risk mesafesi (entry-SL) ve RR (TP-entry) korunur çünkü üçü birden eşit kaydırılır.
+  const symForPt=String(d.sourceSymbol||d.pair.id);
+  const pt=pointSizeFor(symForPt);
+  const pullbackPts=(placement==='pending')?Math.max(0,Number(tradeCfg.pendingPullbackPts||0)):0;
+  const offset=pullbackPts*pt;
+  const signed=(d.sig.action==='LONG')?-1:1;
+  const sigEntry=Number(d.sig.entry||0);
+  const sigSL=Number(d.sig.sl||0);
+  const sigTP=Number(d.sig.tp||0);
+  const adjEntry=sigEntry+signed*offset;
+  const adjSL=sigSL+signed*offset;
+  const adjTP=sigTP+signed*offset;
+  const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(adjSL),tp:Number(adjTP),max_spread_points:Number(planCfg.maxSpreadPts||0),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,strategy_tag:String(d.strategyTag||'core'),placement,desired_entry:Number(adjEntry),entry_offset_pts:0,expire_min:expireMin,allow_market_fallback:!!tradeCfg.allowMarketFallback,auto_adjust_pending:tradeCfg.autoAdjustPending!==false,meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
+  const dpx=dp(d.pair.id);
+  const pullbackTxt=(placement==='pending'&&pullbackPts>0)?` · geri çek:${pullbackPts}pt (${sigEntry.toFixed(dpx)}→${adjEntry.toFixed(dpx)}, SL ${sigSL.toFixed(dpx)}→${adjSL.toFixed(dpx)})`:'';
+  pushTradeFeed('info',`EMİR GÖNDERİLİYOR · ${d.pair.label} ${d.sig.action} · lot:${lotAdj} · niyet:${adjEntry.toFixed(dpx)} · mod:${placement}${expireMin?` (${expireMin}dk TTL)`:' (GTC)'} · max_spread:${planCfg.maxSpreadPts}pt · strateji:${d.strategyTag||'core'}${pullbackTxt}`);
+  const t0=Date.now();
+  let r,j;
+  try{
+    r=await fetch(EXEC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    j=await r.json();
+  }catch(e){
+    const msg=`Proxy baglanti hatasi: ${e.message}`;
+    pushTradeFeed('error',`EMİR İLETİLEMEDİ · ${d.pair.label} ${d.sig.action} · ${msg}`);
+    pushDebug(`order_fetch_error ${d.pair.id} ${e.message}`);
+    return {ok:false,error:'proxy_unreachable',detail:e.message};
+  }
+  const elapsed=Date.now()-t0;
+  const dp2=dp(d.pair.id);
+  if(j.ok){
+    tradeCfg.sentKeys[key]=Date.now();
+    const mode=tradeCfg.dryRun?'DRY':'LIVE';
+    const ticket=j.ticket?` · ticket:${j.ticket}`:'';
+    const spread=Number.isFinite(j.spread_points)?` · spread:${j.spread_points}pt`:'';
+    const fillPx=Number(j.entry||j.fill_price||d.sig.entry||0);
+    const intentPx=Number(d.sig.entry||0);
+    const slipPts=intentPx>0?Math.round(Math.abs(fillPx-intentPx)/Math.max(0.00001,Math.pow(10,-dp2))):0;
+    const slipTxt=slipPts>0?` · slip:${slipPts}pt`:'';
+    const rcTxt=j.retcode?` · rc:${j.retcode} ${translateRetcode(j.retcode)}`:'';
+    const pl=String(j.placement||'market').toUpperCase();
+    const isPending=pl.includes('LIMIT')||pl.includes('STOP');
+    const statusLabel=isPending?'EMİR YERLEŞTİRİLDİ':'EMİR AÇIK';
+    const verb=isPending?'Pending':'Emir';
+    let adjTxt='';
+    if(j.pending_adjusted&&Number(j.original_target)>0){
+      adjTxt=` · KAYDIRILDI ${Number(j.original_target).toFixed(dp2)}→${fillPx.toFixed(dp2)} (broker min mesafe)`;
+    }
+    const ttlTxt=Number(j.expire_min)>0?` · TTL:${j.expire_min}dk`:' · TTL:GTC';
+    pushFeed(`${new Date().toLocaleTimeString()} · ${verb} ${mode} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · tip:${pl}${j.pending_adjusted?' (kaydirildi)':''} · hesap:${tradeCfg.targetAccountType}`);
+    const finalSL=Number(j.sl||adjSL||d.sig.sl||0);
+    const finalTP=Number(j.tp||adjTP||d.sig.tp||0);
+    pushTradeFeed('success',`${statusLabel} ${mode} · ${d.pair.label} ${d.sig.action} · tip:${pl}${ttlTxt} · lot:${lotAdj} · ${isPending?'tetik':'giris'}:${fillPx.toFixed(dp2)} · SL:${finalSL.toFixed(dp2)} · TP:${finalTP.toFixed(dp2)}${adjTxt} · hesap:${tradeCfg.targetAccountType}${ticket}${spread}${slipTxt}${rcTxt} · ${elapsed}ms`);
+    pushDebug(`order_ok ${d.pair.id} ${d.sig.action} ${pl} lot=${lotAdj} dry=${tradeCfg.dryRun} px=${fillPx} slip=${slipPts}pt rc=${j.retcode||0}`);
+    telemetryUpdate(elapsed,slipPts,true);
+    await refreshTradeSnapshot();
+  }
+  else {
+    const errCode=j.error||'unknown';
+    const errDetail=j.detail||'';
+    const rcTxt=j.retcode?` · rc:${j.retcode} ${translateRetcode(j.retcode)}`:'';
+    const spread=Number.isFinite(j.spread_points)?` · spread:${j.spread_points.toFixed(1)}pt`:'';
+    const errMap={
+      'pending_too_close':`Pending hedef anlik fiyata cok yakin (gap:${Number(j.gap_points||0).toFixed(1)}pt < min:${Number(j.stops_level_pts||0).toFixed(1)}pt). Strateji entry'si piyasa seviyesinde, market fallback kapali.`,
+      'pending_blocked':'Bu paritede zaten bekleyen pending emir var',
+      'duplicate_pending_blocked':'Bu paritede ayni yonde pending emir var',
+      'duplicate_position_blocked':'Bu paritede ayni yonde acik pozisyon var',
+      'spread_too_wide':`Spread cok genis (${Number(j.spread_points||0).toFixed(1)}pt > ${Number(j.max_spread_points||0).toFixed(1)}pt limit)`,
+      'stops_too_tight':`SL/TP brokerin min mesafe kuralina uymadi: ${errDetail}`,
+      'symbol_select_failed':'Sembol broker tarafindan secilemedi',
+      'tick_unavailable':'Anlik fiyat alinamadi'
+    };
+    const friendly=errMap[errCode]||`${errCode}${errDetail?' '+errDetail:''}`;
+    pushFeed(`${new Date().toLocaleTimeString()} · Emir HATA ${d.pair.label}: ${errCode}`);
+    pushTradeFeed('error',`EMİR REDDEDİLDİ · ${d.pair.label} ${d.sig.action} · lot:${lotAdj} · sebep: ${friendly}${rcTxt}${spread} · ${elapsed}ms`);
+    pushDebug(`order_error ${d.pair.id} ${errCode} ${errDetail} rc=${j.retcode||0}`);
+    telemetryUpdate(elapsed,null,false);
+  }
   return j;
 }
 function loadHistory(){try{signalHistory=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch(e){signalHistory=[]}}
@@ -600,9 +1294,24 @@ function loadConfigs(){
     if(pc&&typeof pc==='object'){
       planCfg.dailyRiskPct=Math.max(0.1,Number(pc.dailyRiskPct||planCfg.dailyRiskPct));
       planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(pc.maxOpenPos||planCfg.maxOpenPos)));
+      planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number(pc.maxTradesPerDay??planCfg.maxTradesPerDay)));
+      planCfg.newsBlackoutTimes=String(pc.newsBlackoutTimes??planCfg.newsBlackoutTimes);
+      planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number(pc.newsBlackoutBufferMin??planCfg.newsBlackoutBufferMin)));
       planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(pc.maxMarginUse||planCfg.maxMarginUse)));
-      planCfg.maxSpreadPts=Math.max(0,Number(pc.maxSpreadPts??planCfg.maxSpreadPts));
+      planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(pc.maxSpreadPts??planCfg.maxSpreadPts)));
+      // Migration: 30 ve altina sikismis eski degerleri 60'a tasi (kullanici daha sonra ayar yapabilir)
+      if(planCfg.maxSpreadPts<=30){planCfg.maxSpreadPts=60;}
       planCfg.pairCooldownMin=Math.max(0,Number(pc.pairCooldownMin??planCfg.pairCooldownMin));
+      planCfg.sessionEnabled=('sessionEnabled' in pc)?!!pc.sessionEnabled:planCfg.sessionEnabled;
+      planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(pc.sessionStartHour??planCfg.sessionStartHour)));
+      planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(pc.sessionEndHour??planCfg.sessionEndHour)));
+      planCfg.aPlusMode=('aPlusMode' in pc)?!!pc.aPlusMode:planCfg.aPlusMode;
+      planCfg.maxDailyLossPct=Math.max(0.1,Number(pc.maxDailyLossPct??planCfg.maxDailyLossPct));
+      planCfg.disableWeakStrategies=('disableWeakStrategies' in pc)?!!pc.disableWeakStrategies:planCfg.disableWeakStrategies;
+      planCfg.institutionalMode=('institutionalMode' in pc)?!!pc.institutionalMode:planCfg.institutionalMode;
+      planCfg.institutionalMinRR=Math.max(1,Number(pc.institutionalMinRR??planCfg.institutionalMinRR));
+      planCfg.allowTurtleScalp=('allowTurtleScalp' in pc)?!!pc.allowTurtleScalp:planCfg.allowTurtleScalp;
+      planCfg.turtleScalpMinRR=Math.max(1,Number(pc.turtleScalpMinRR??planCfg.turtleScalpMinRR));
       planCfg.liveOrderUrl=String(pc.liveOrderUrl||planCfg.liveOrderUrl||'').trim();
       planCfg.signalTtlMin=Math.max(5,Number(pc.signalTtlMin||planCfg.signalTtlMin));
       planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(pc.strategyMode||''))?String(pc.strategyMode):planCfg.strategyMode;
@@ -610,11 +1319,17 @@ function loadConfigs(){
       planCfg.scanTurtle=('scanTurtle' in pc)?!!pc.scanTurtle:planCfg.scanTurtle;
       planCfg.scanVWAP=('scanVWAP' in pc)?!!pc.scanVWAP:planCfg.scanVWAP;
       planCfg.scanSRBreak=('scanSRBreak' in pc)?!!pc.scanSRBreak:planCfg.scanSRBreak;
+      planCfg.scanStocks=('scanStocks' in pc)?!!pc.scanStocks:planCfg.scanStocks;
       planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(pc.strategyProfile||''))?String(pc.strategyProfile):planCfg.strategyProfile;
+      planCfg.standardRR=Math.max(0,Math.min(10,Number(pc.standardRR??planCfg.standardRR)));
       planCfg.tp1RR=Math.max(0.2,Number(pc.tp1RR||planCfg.tp1RR));
       planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(pc.tp2RR||planCfg.tp2RR));
       planCfg.breakEvenAtR=Math.max(0.2,Number(pc.breakEvenAtR||planCfg.breakEvenAtR));
       planCfg.trailAtR=Math.max(0.2,Number(pc.trailAtR||planCfg.trailAtR));
+      planCfg.earlyManageUsd=Math.max(0,Number(('earlyManageUsd' in pc)?pc.earlyManageUsd:planCfg.earlyManageUsd));
+      planCfg.maxSameDirection=Math.max(0,Math.min(20,Number(('maxSameDirection' in pc)?pc.maxSameDirection:planCfg.maxSameDirection)));
+      planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number(('maxNetExposureCount' in pc)?pc.maxNetExposureCount:planCfg.maxNetExposureCount)));
+      planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number(('maxCorrelatedExposure' in pc)?pc.maxCorrelatedExposure:planCfg.maxCorrelatedExposure)));
     }
   }catch(e){}
   try{
@@ -626,6 +1341,16 @@ function loadConfigs(){
       tradeCfg.metaLogin=String(tc.metaLogin||'').trim();
       tradeCfg.metaPass=String(tc.metaPass||'');
       tradeCfg.metaServer=String(tc.metaServer||'').trim();
+      tradeCfg.placement=(String(tc.placement||'pending').toLowerCase()==='market'?'market':'pending');
+      tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number(tc.pendingExpireMin??tradeCfg.pendingExpireMin)));
+      // Migration: eski 180/3dk degerlerini yeni 5dk default'una yukselt (yeni clientAutoCancelExpired alani yoksa)
+      if(!('clientAutoCancelExpired' in tc)){
+        if(tradeCfg.pendingExpireMin===180||tradeCfg.pendingExpireMin===3){tradeCfg.pendingExpireMin=5;}
+      }
+      tradeCfg.allowMarketFallback=('allowMarketFallback' in tc)?!!tc.allowMarketFallback:tradeCfg.allowMarketFallback;
+      tradeCfg.autoAdjustPending=('autoAdjustPending' in tc)?!!tc.autoAdjustPending:tradeCfg.autoAdjustPending;
+      tradeCfg.clientAutoCancelExpired=('clientAutoCancelExpired' in tc)?!!tc.clientAutoCancelExpired:tradeCfg.clientAutoCancelExpired;
+      tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number(tc.pendingPullbackPts??tradeCfg.pendingPullbackPts)));
     }
   }catch(e){}
 }
@@ -633,9 +1358,22 @@ function saveConfigs(){
   localStorage.setItem(PLAN_CFG_KEY,JSON.stringify({
     dailyRiskPct:planCfg.dailyRiskPct,
     maxOpenPos:planCfg.maxOpenPos,
+    maxTradesPerDay:planCfg.maxTradesPerDay,
+    newsBlackoutTimes:planCfg.newsBlackoutTimes,
+    newsBlackoutBufferMin:planCfg.newsBlackoutBufferMin,
     maxMarginUse:planCfg.maxMarginUse,
     maxSpreadPts:planCfg.maxSpreadPts,
     pairCooldownMin:planCfg.pairCooldownMin,
+    sessionEnabled:planCfg.sessionEnabled,
+    sessionStartHour:planCfg.sessionStartHour,
+    sessionEndHour:planCfg.sessionEndHour,
+    aPlusMode:planCfg.aPlusMode,
+    maxDailyLossPct:planCfg.maxDailyLossPct,
+    disableWeakStrategies:planCfg.disableWeakStrategies,
+    institutionalMode:planCfg.institutionalMode,
+    institutionalMinRR:planCfg.institutionalMinRR,
+    allowTurtleScalp:planCfg.allowTurtleScalp,
+    turtleScalpMinRR:planCfg.turtleScalpMinRR,
     liveOrderUrl:planCfg.liveOrderUrl,
     signalTtlMin:planCfg.signalTtlMin,
     strategyMode:planCfg.strategyMode,
@@ -644,10 +1382,15 @@ function saveConfigs(){
     scanVWAP:planCfg.scanVWAP,
     scanSRBreak:planCfg.scanSRBreak,
     strategyProfile:planCfg.strategyProfile,
+    standardRR:planCfg.standardRR,
     tp1RR:planCfg.tp1RR,
     tp2RR:planCfg.tp2RR,
     breakEvenAtR:planCfg.breakEvenAtR,
-    trailAtR:planCfg.trailAtR
+    trailAtR:planCfg.trailAtR,
+    earlyManageUsd:planCfg.earlyManageUsd,
+    maxSameDirection:planCfg.maxSameDirection,
+    maxNetExposureCount:planCfg.maxNetExposureCount,
+    maxCorrelatedExposure:planCfg.maxCorrelatedExposure
   }));
   localStorage.setItem(TRADE_CFG_KEY,JSON.stringify({
     autoEnabled:tradeCfg.autoEnabled,
@@ -655,7 +1398,13 @@ function saveConfigs(){
     targetAccountType:tradeCfg.targetAccountType,
     metaLogin:tradeCfg.metaLogin,
     metaPass:tradeCfg.metaPass,
-    metaServer:tradeCfg.metaServer
+    metaServer:tradeCfg.metaServer,
+    placement:tradeCfg.placement,
+    pendingExpireMin:tradeCfg.pendingExpireMin,
+    allowMarketFallback:tradeCfg.allowMarketFallback,
+    autoAdjustPending:tradeCfg.autoAdjustPending,
+    clientAutoCancelExpired:tradeCfg.clientAutoCancelExpired,
+    pendingPullbackPts:tradeCfg.pendingPullbackPts
   }));
 }
 function historyKey(d){return `${d.pair.id}:${d.sig.action}`}
@@ -762,11 +1511,96 @@ async function refreshTradeSnapshot(){
     const r=await fetch(SNAPSHOT_URL);
     if(!r.ok)return;
     const j=await r.json();
+    const prevClosedKeys=new Set((closedDealsCache||[]).map(x=>String(x.ticket||x.position_id||'')+':'+String(x.symbol||'')));
     realOpenPositions=Array.isArray(j.open_positions)?j.open_positions:[];
+    const prevPendingKeys=new Set((realPendingOrders||[]).map(x=>String(x.ticket||'')));
+    realPendingOrders=Array.isArray(j.pending_orders)?j.pending_orders:[];
+    // Yeni iptal/dolan pending'leri feed e bildir
+    if(tradeFeedReady){
+      const curKeys=new Set(realPendingOrders.map(x=>String(x.ticket||'')));
+      prevPendingKeys.forEach(k=>{if(k&&!curKeys.has(k))pushTradeFeed('info',`PENDING TAMAMLANDI/IPTAL · ticket:${k}`);});
+    }
+    // Client-side oto iptal: 2 sebep — (1) TTL doldu, (2) fiyat TP/SL'ye dokundu (firsat kacti)
+    try{
+      const expireMin=Math.max(0,Number(tradeCfg.pendingExpireMin||0));
+      const nowS=Math.floor(Date.now()/1000);
+      const graceS=15;
+      const triggerCancel=(p,reasonLabel,debugReason)=>{
+        const tk=String(p?.ticket||'');
+        if(!tk)return;
+        if(pendingCancelInFlight.has(tk))return;
+        const attempts=Number(pendingCancelAttempts.get(tk)||0);
+        if(attempts>=3)return;
+        pendingCancelInFlight.add(tk);
+        pendingCancelAttempts.set(tk,attempts+1);
+        pushTradeFeed('warn',`PENDING IPTAL TETIK · ${p.symbol||'-'} ticket:${tk} · ${reasonLabel} (deneme ${attempts+1}/3)`);
+        pushDebug(`pending_auto_cancel ticket=${tk} sym=${p.symbol||'-'} reason=${debugReason}`);
+        fetch(`${PROXY}/api/cancel-pending`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:Number(tk)})})
+          .then(r=>r.json().catch(()=>({})))
+          .then(j2=>{
+            if(j2&&j2.ok){
+              pushTradeFeed('success',`PENDING IPTAL EDILDI · ticket:${tk} · ${reasonLabel}`);
+              realPendingOrders=(realPendingOrders||[]).filter(x=>String(x.ticket||'')!==tk);
+              renderPendingOrders();
+              renderMetrics();
+              pendingCancelAttempts.delete(tk);
+            } else {
+              pushTradeFeed('error',`PENDING IPTAL HATA · ticket:${tk} · ${(j2&&(j2.error||j2.detail))||'unknown'}`);
+            }
+          })
+          .catch(e=>{pushTradeFeed('error',`PENDING IPTAL HATA · ticket:${tk} · ${e.message||e}`);})
+          .finally(()=>{pendingCancelInFlight.delete(tk);});
+      };
+      (realPendingOrders||[]).forEach(p=>{
+        const tk=String(p?.ticket||'');
+        if(!tk)return;
+        const setup=Number(p.time_setup||0);
+        const ageS=setup?(nowS-setup):0;
+        const expS=Number(p.time_expiration||0);
+        const ttlExpired=expS>0&&nowS>=expS;
+        const clientExpired=tradeCfg.clientAutoCancelExpired!==false&&expireMin>0&&setup&&ageS>=expireMin*60+graceS;
+        if(ttlExpired||clientExpired){
+          const ageMin=Math.round(ageS/60);
+          triggerCancel(p,`SURE DOLDU · yas:${ageMin}dk`,`expired age=${ageS}s`);
+          return;
+        }
+        // Firsat kacti: fiyat dolmadan TP veya SL bolgesine ulasti — pending iptal
+        const tp=Number(p.tp||0);
+        const sl=Number(p.sl||0);
+        const bid=Number(p.bid||0);
+        const ask=Number(p.ask||0);
+        if(bid>0||ask>0){
+          const isLong=String(p.side||'').toUpperCase()==='LONG';
+          if(tp>0){
+            if(isLong&&bid>=tp){triggerCancel(p,`FIRSAT KACTI · TP'ye dokunuldu (bid:${bid.toFixed(5)} ≥ TP:${tp.toFixed(5)})`,`tp_hit bid=${bid} tp=${tp}`);return;}
+            if(!isLong&&ask>0&&ask<=tp){triggerCancel(p,`FIRSAT KACTI · TP'ye dokunuldu (ask:${ask.toFixed(5)} ≤ TP:${tp.toFixed(5)})`,`tp_hit ask=${ask} tp=${tp}`);return;}
+          }
+          if(sl>0){
+            if(isLong&&bid<=sl){triggerCancel(p,`KURULUM BOZULDU · SL bolgesi vuruldu (bid:${bid.toFixed(5)} ≤ SL:${sl.toFixed(5)})`,`sl_hit bid=${bid} sl=${sl}`);return;}
+            if(!isLong&&ask>0&&ask>=sl){triggerCancel(p,`KURULUM BOZULDU · SL bolgesi vuruldu (ask:${ask.toFixed(5)} ≥ SL:${sl.toFixed(5)})`,`sl_hit ask=${ask} sl=${sl}`);return;}
+          }
+        }
+      });
+    }catch(e){pushDebug(`pending_auto_cancel_error ${e.message||e}`);}
     const incomingClosed=Array.isArray(j.closed_deals)?j.closed_deals:[];
     mergeClosedDeals(incomingClosed);
     saveClosedDealsCache();
     realClosedDeals=closedDealsCache.slice();
+    if(tradeFeedReady){
+      realClosedDeals.forEach(x=>{
+        const k=String(x.ticket||x.position_id||'')+':'+String(x.symbol||'');
+        if(prevClosedKeys.has(k))return;
+        const pnl=Number(x.profit||0);
+        const sym=String(x.symbol||'-');
+        const side=String(x.side||'-');
+        const result=String(x.result||(pnl>0?'profit':pnl<0?'loss':'flat')).toUpperCase();
+        const price=Number(x.price||0);
+        const lot=Number(x.volume||0);
+        const tag=pnl>=0?'success':'error';
+        pushTradeFeed(tag,`POZ. KAPANDI · ${sym} ${side} · ${result} · PnL: ${pnl.toFixed(2)} USD · lot:${lot.toFixed(2)} · kapanis:${price}`);
+      });
+    }
+    tradeFeedReady=true;
     const perf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
     realClosedDeals.forEach(x=>{
       const t=String(x?.strategy_tag||'core');
@@ -786,19 +1620,60 @@ async function refreshTradeSnapshot(){
     strategyPerf=perf;
     pushDebug(`snapshot open=${realOpenPositions.length} closed=${realClosedDeals.length}`);
     pushDebug(`perf core(${strategyPerf.core.trades}) s=${strategyPerf.core.score.toFixed(2)} turtle(${strategyPerf.turtle_sopa.trades}) s=${strategyPerf.turtle_sopa.score.toFixed(2)}`);
+    // Snapshot her geldiginde tablo/pending/managed panellerini taze datayla yeniden ciz —
+    // pending fill/iptal degisiklikleri taramayi beklemeden gorunsun.
+    try{renderTable();}catch(_){ }
+    try{renderPendingOrders();}catch(_){ }
+    try{renderManagedPositions();}catch(_){ }
+    try{updateStatusBanner();}catch(_){ }
   }catch(e){}
 }
 async function runPositionManager(){
-  if(!tradeCfg.autoEnabled||tradeCfg.dryRun)return;
+  // Acik pozisyon varsa yonetimi her durumda calistir (auto ve dry'dan bagimsiz).
+  // Boylece manuel acilan veya SL/TP'siz pozisyonlar da sahiplenilir ve takip edilir.
+  if(!Array.isArray(realOpenPositions)||realOpenPositions.length===0)return;
   try{
-    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50};
+    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50,early_manage_usd:Number(planCfg.earlyManageUsd||0)};
     const r=await fetch(MANAGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok)return;
+    if(!r.ok){pushDebug(`manage_http_error status=${r.status}`);return;}
     const j=await r.json();
-    if(Array.isArray(j.actions)&&j.actions.length){
-      j.actions.slice(0,3).forEach(a=>pushFeed(`${new Date().toLocaleTimeString()} · Manage ${a.symbol} ${a.type} ${a.ok?'OK':'FAIL'} rc:${a.retcode||0}`));
-    }
-  }catch(e){}
+    if(!Array.isArray(j.actions)||!j.actions.length)return;
+    j.actions.slice(0,8).forEach(a=>{
+      const sym=String(a.symbol||'-');
+      const type=String(a.type||'').toLowerCase();
+      const rc=Number(a.retcode||0);
+      const ok=!!a.ok;
+      const tk=Number(a.ticket||a.position_ticket||0);
+      if(tk){
+        const prev=managedActionsByTicket.get(tk)||{};
+        const entry={ts:Date.now(),type,ok,rc,new_sl:Number(a.new_sl||0),new_tp:Number(a.new_tp||0),closed_volume:Number(a.closed_volume||0),detail:String(a.detail||'')};
+        const merged={...prev,lastAction:entry};
+        if(type==='adopt'&&ok){merged.adopted=true;}
+        if(type==='sl_update'&&ok){merged.beOrTrail=true;}
+        if(type==='tp1_partial_close'&&ok){merged.tp1Done=true;}
+        managedActionsByTicket.set(tk,merged);
+      }
+      pushFeed(`${new Date().toLocaleTimeString()} · Manage ${sym} ${type} ${ok?'OK':'FAIL'} rc:${rc}`);
+      pushDebug(`manage_action sym=${sym} type=${type} ok=${ok} rc=${rc}`);
+      try{renderManagedPositions();}catch(_){ }
+      if(type==='adopt'){
+        const sl=Number(a.new_sl||0).toFixed(5);
+        const tp=Number(a.new_tp||0).toFixed(5);
+        pushTradeFeed(ok?'info':'error',`SAHIPLENILDI · ${sym} ${a.side||'-'} · SL/TP atandi · yeni SL:${sl} · yeni TP:${tp}${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else if(type==='sl_update'){
+        const sl=Number(a.new_sl||0).toFixed(5);
+        pushTradeFeed(ok?'manage':'error',`SL GUNCEL · ${sym} · yeni SL:${sl} (BE/Trailing)${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else if(type==='tp1_partial_close'){
+        const v=Number(a.closed_volume||0).toFixed(2);
+        pushTradeFeed(ok?'manage':'error',`PARSIYEL TP · ${sym} · kapanan lot:${v}${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else{
+        const label={be:"BE'ye cekildi",trail:'Trailing guncellendi',partial:'Parsiyel TP',close:'Pozisyon kapatildi'}[type]||type;
+        pushTradeFeed(ok?'manage':'error',`YONETIM · ${sym} · ${label}${rc?` · rc:${rc}`:''}${a.detail?` · ${a.detail}`:''}`);
+      }
+    });
+  }catch(e){
+    pushDebug(`manage_exception ${e.message}`);
+  }
 }
 function renderHistory(){
   const open=realOpenPositions.slice(0,80);
@@ -818,6 +1693,39 @@ const recommendTF=d=>!d?.sig||!['LONG','SHORT'].includes(d.sig.action)?'—':(d.
 function filtered(){return PAIRS.filter(p=>activeCat==='all'||p.cat===activeCat).map(p=>MKT[p.id]).filter(Boolean)}
 function setCat(c,el){activeCat=c;document.querySelectorAll('.ctrl .cb').forEach(b=>b.classList.remove('on'));el.classList.add('on');renderAll()}
 function pushFeed(m){const el=document.getElementById('sigFeed');const cur=el.textContent==='Yeni sinyaller burada akacak...'?'':el.textContent+'\n';el.textContent=(cur+m).split('\n').slice(-8).join('\n')}
+const tradeFeedStats={order:0,success:0,error:0,manage:0};
+let tradeFeedReady=false;
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function pushTradeFeed(type,msg){
+  const el=document.getElementById('tradeFeed');
+  if(!el)return;
+  const empty=el.querySelector('.tf-empty');
+  if(empty)empty.remove();
+  const cls={success:'tf-success',error:'tf-error',info:'tf-info',manage:'tf-manage',skip:'tf-skip'}[type]||'tf-info';
+  const t=new Date().toLocaleTimeString();
+  const wrap=document.createElement('div');
+  wrap.className=`tf-line ${cls}`;
+  wrap.innerHTML=`<span class="tf-time">${t}</span><span class="tf-msg">${escHtml(msg)}</span>`;
+  el.appendChild(wrap);
+  const lines=el.querySelectorAll('.tf-line');
+  if(lines.length>50){for(let i=0;i<lines.length-50;i++)lines[i].remove();}
+  el.scrollTop=el.scrollHeight;
+  if(type==='success'){tradeFeedStats.order++;tradeFeedStats.success++;}
+  else if(type==='error'){tradeFeedStats.order++;tradeFeedStats.error++;}
+  else if(type==='manage'){tradeFeedStats.manage++;}
+  updateTradeFeedStats();
+}
+function updateTradeFeedStats(){
+  const s=document.getElementById('tfStats');
+  if(!s)return;
+  s.innerHTML=`Emir: <b>${tradeFeedStats.order}</b> · Başarılı: <b>${tradeFeedStats.success}</b> · Hata: <b>${tradeFeedStats.error}</b> · Yönetim: <b>${tradeFeedStats.manage}</b>`;
+}
+function clearTradeFeed(){
+  const el=document.getElementById('tradeFeed');
+  if(el)el.innerHTML='<div class="tf-empty">Henüz işlem hareketi yok. Otomatik emir veya pozisyon yönetim olaylari burada gorunecek.</div>';
+  tradeFeedStats.order=0;tradeFeedStats.success=0;tradeFeedStats.error=0;tradeFeedStats.manage=0;
+  updateTradeFeedStats();
+}
 function pushDebug(m){
   if(!debugEnabled)return;
   const el=document.getElementById('dbgLog');
@@ -834,6 +1742,100 @@ function toggleDebugPanel(){
     b.classList.toggle('on',debugEnabled);
   }
   pushDebug(`debug_${debugEnabled?'enabled':'disabled'}`);
+}
+const SETTINGS_KEYS=['crt_plan_cfg_v1','crt_trade_cfg_v1','crt_signal_history_v1','crt_pass_backtest_v1','crt_closed_deals_cache_v1','crtAllSymbolsCache_v1','crt-collapsed-cards-v1','crt-daily-state-v1'];
+function exportSettings(){
+  try{
+    const bundle={meta:{exported_at:new Date().toISOString(),version:'crt-scanner-v3'},entries:{}};
+    SETTINGS_KEYS.forEach(k=>{const v=localStorage.getItem(k);if(v!==null){try{bundle.entries[k]=JSON.parse(v);}catch(_){bundle.entries[k]=v;}}});
+    const blob=new Blob([JSON.stringify(bundle,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`crt-settings-${utcDayString()}-${new Date().getUTCHours()}${String(new Date().getUTCMinutes()).padStart(2,'0')}.json`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    pushTradeFeed('success',`📦 Ayar yedegi indirildi · ${Object.keys(bundle.entries).length} anahtar`);
+  }catch(e){pushTradeFeed('error',`Ayar yedek hatasi: ${e.message}`);}
+}
+function importSettings(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=async(ev)=>{
+    const file=ev.target.files&&ev.target.files[0];if(!file)return;
+    try{
+      const txt=await file.text();
+      const bundle=JSON.parse(txt);
+      if(!bundle||typeof bundle.entries!=='object')throw new Error('Geçersiz dosya yapisi');
+      if(!confirm(`Ayar dosyasi yuklensin mi? ${Object.keys(bundle.entries).length} anahtar uygulanacak. (Eslesen mevcut ayarlar uzerine yazilir; sayfa yenilenecek)`)) return;
+      Object.entries(bundle.entries).forEach(([k,v])=>{
+        if(!SETTINGS_KEYS.includes(k))return;
+        try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));}catch(_){ }
+      });
+      pushTradeFeed('success',`📥 Ayarlar yuklendi · ${Object.keys(bundle.entries).length} anahtar · sayfa yenilenecek`);
+      setTimeout(()=>location.reload(),900);
+    }catch(e){alert(`Ayar geri yukleme hatasi: ${e.message}`);}
+  };
+  inp.click();
+}
+function exportTradesCsv(){
+  try{
+    const closed=Array.isArray(realClosedDeals)?realClosedDeals:[];
+    if(!closed.length){alert('Kapali deal yok.');return;}
+    const hdr=['time_utc','symbol','side','volume','price','profit','reason','result','strategy_tag','ticket','position_id','comment'];
+    const rows=closed.map(x=>[
+      new Date(Number(x.time||0)*1000).toISOString(),
+      String(x.symbol||''),
+      String(x.side||''),
+      Number(x.volume||0).toFixed(4),
+      Number(x.price||0).toFixed(5),
+      Number(x.profit||0).toFixed(2),
+      String(x.reason||''),
+      String(x.result||''),
+      String(x.strategy_tag||''),
+      String(x.ticket||x.deal||''),
+      String(x.position_id||''),
+      String((x.comment||'').replace(/[\r\n,;]/g,' '))
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+    const csv=hdr.join(',')+'\n'+rows.join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=`crt-trades-${utcDayString()}.csv`;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    pushTradeFeed('success',`📤 ${closed.length} trade CSV indirildi`);
+  }catch(e){pushTradeFeed('error',`CSV export hatasi: ${e.message}`);}
+}
+const COLLAPSED_CARDS_KEY='crt-collapsed-cards-v1';
+function getCollapsedSet(){
+  try{return new Set(JSON.parse(localStorage.getItem(COLLAPSED_CARDS_KEY)||'[]'));}catch(_){return new Set();}
+}
+function saveCollapsedSet(s){
+  try{localStorage.setItem(COLLAPSED_CARDS_KEY,JSON.stringify(Array.from(s)));}catch(_){ }
+}
+function toggleCard(cardId,btnEl){
+  const card=document.getElementById(cardId);
+  if(!card)return;
+  const set=getCollapsedSet();
+  const isCollapsed=card.classList.toggle('collapsed');
+  if(isCollapsed)set.add(cardId); else set.delete(cardId);
+  saveCollapsedSet(set);
+  if(btnEl){btnEl.textContent=isCollapsed?'Göster':'Gizle';btnEl.classList.toggle('collapsed',isCollapsed);}
+}
+function applyCollapsedFromStorage(){
+  const set=getCollapsedSet();
+  document.querySelectorAll('.tcard[id], .aip[id]').forEach(card=>{
+    const id=card.id;
+    if(!id)return;
+    const btn=card.querySelector('.coll-btn');
+    if(set.has(id)){
+      card.classList.add('collapsed');
+      if(btn){btn.textContent='Göster';btn.classList.add('collapsed');}
+    }else{
+      card.classList.remove('collapsed');
+      if(btn){btn.textContent='Gizle';btn.classList.remove('collapsed');}
+    }
+  });
 }
 async function refreshDebugLog(){
   const info=document.getElementById('dbgInfo');
@@ -870,6 +1872,101 @@ async function loadKnowledgeIndex(){
   }catch(e){
     pushDebug(`knowledge_index_failed ${e.message}`);
   }
+}
+function labelForBrokerSymbol(name,cat){
+  const n=String(name||'').toUpperCase();
+  // Forex 6-harf icin EUR/USD formatlamasi
+  if(cat==='forex'&&/^[A-Z]{6}$/.test(n))return `${n.slice(0,3)}/${n.slice(3,6)}`;
+  // Sik kullanilan kisaltmalar icin temiz etiket
+  if(n==='XAUUSD')return 'GOLD';
+  if(n==='XAGUSD')return 'SILVER';
+  if(n==='XPTUSD')return 'PLATIN';
+  if(n==='XPDUSD')return 'PALADYUM';
+  return n;
+}
+function loadCachedAllSymbols(){
+  try{
+    const raw=localStorage.getItem(ALL_SYMBOLS_CACHE_KEY);
+    if(!raw)return null;
+    const j=JSON.parse(raw);
+    if(!j||!Array.isArray(j.symbols)||!j.ts)return null;
+    if(Date.now()-Number(j.ts)>ALL_SYMBOLS_TTL_MS)return null;
+    return j.symbols;
+  }catch(e){return null;}
+}
+function saveCachedAllSymbols(symbols){
+  try{localStorage.setItem(ALL_SYMBOLS_CACHE_KEY,JSON.stringify({ts:Date.now(),symbols}));}catch(e){}
+}
+function buildPairsFromSymbols(rawSymbols){
+  const byCat=new Map();
+  const allowStocks=!!planCfg.scanStocks;
+  rawSymbols.forEach(s=>{
+    const cat=String(s.category||'other').toLowerCase();
+    if(cat==='stocks'){if(!allowStocks)return;}
+    else if(!SCAN_CATEGORIES.has(cat))return;
+    const name=String(s.name||'').toUpperCase();
+    if(!name)return;
+    if(!byCat.has(cat))byCat.set(cat,[]);
+    byCat.get(cat).push({
+      id:name,
+      label:labelForBrokerSymbol(name,cat),
+      cat,
+      brokerSymbol:name,
+      digits:Number(s.digits||5),
+      point:Number(s.point||0.00001),
+      spread:Number(s.spread||0),
+      description:String(s.description||''),
+      tickValue:Number(s.tick_value||0),
+      tickSize:Number(s.tick_size||0),
+      stopsLevel:Number(s.stops_level||0),
+      volumeMin:Number(s.volume_min||0.01),
+      volumeStep:Number(s.volume_step||0.01),
+      currencyProfit:String(s.currency_profit||''),
+      marginPerLot:Number(s.margin_per_lot||0),
+      contractSize:Number(s.contract_size||100000)
+    });
+  });
+  const out=[];
+  for(const [,arr] of byCat){
+    // Spread'i dusuk olanlar onde (broker daha iyi quotelar)
+    arr.sort((a,b)=>(a.spread||0)-(b.spread||0));
+    out.push(...arr.slice(0,MAX_SYMBOLS_PER_CATEGORY));
+  }
+  return out;
+}
+async function loadAllBrokerSymbols(){
+  let pairs=null;
+  // 1) Cache
+  const cached=loadCachedAllSymbols();
+  if(cached&&cached.length){
+    pairs=buildPairsFromSymbols(cached);
+    if(pairs.length){pushDebug(`all_symbols cached=${cached.length} pairs=${pairs.length}`);}
+  }
+  // 2) Live fetch (cache varsa da arka planda guncelle)
+  try{
+    const r=await fetch(LIST_ALL_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    if(r.ok){
+      const j=await r.json();
+      if(j&&Array.isArray(j.symbols)&&j.symbols.length){
+        saveCachedAllSymbols(j.symbols);
+        pairs=buildPairsFromSymbols(j.symbols);
+        const catCounts={};
+        pairs.forEach(p=>{catCounts[p.cat]=(catCounts[p.cat]||0)+1;});
+        const catTxt=Object.entries(catCounts).map(([k,v])=>`${k}:${v}`).join(' ');
+        pushDebug(`all_symbols live total=${j.count} loaded=${pairs.length} (${catTxt})`);
+      }
+    }else{
+      pushDebug(`all_symbols_http_error status=${r.status}`);
+    }
+  }catch(e){
+    pushDebug(`all_symbols_fetch_error ${e.message}`);
+  }
+  if(pairs&&pairs.length){
+    PAIRS=pairs;
+    return true;
+  }
+  pushDebug('all_symbols fallback to hardcoded PAIRS');
+  return false;
 }
 async function refreshAvailablePairs(){
   try{
@@ -915,13 +2012,33 @@ function showOnChart(id){
   initChart();
   const d=MKT[id];
   if(!d||!candleSeries)return;
+  const changed=(selectedPairId!==id);
   selectedPairId=id;
+  chartLivePair=id;
+  chartLiveTF=(d.timeframe&&d.timeframe!=='-')?d.timeframe:(SCAN_INTERVALS[0]||'M15');
+  if(!chartLiveTimer)startChartLive();
+  if(changed){chartLiveTick();} // pariteyi degistirince hemen tazele
   const prec=dp(d.pair.id);
   candleSeries.applyOptions({priceFormat:{type:'price',precision:prec,minMove:Math.pow(10,-prec)}});
   candleSeries.setData(d.candles.map(c=>({time:c.t,open:c.o,high:c.h,low:c.l,close:c.c})));
   lines.forEach(l=>candleSeries.removePriceLine(l));lines=[];
   const markers=[];
   const last=d.candles[d.candles.length-1];
+  // Acik pozisyon veya pending varsa seviyelerini ciz
+  const base=String(d.pair.id||'').toUpperCase();
+  const matchingOpen=(realOpenPositions||[]).filter(p=>{const s=String(p.symbol||'').toUpperCase();return s===base||s.includes(base)||base.includes(s);});
+  const matchingPending=(realPendingOrders||[]).filter(p=>{const s=String(p.symbol||'').toUpperCase();return s===base||s.includes(base)||base.includes(s);});
+  matchingOpen.forEach(op=>{
+    const sideTxt=String(op.side||'-');
+    if(Number(op.price_open)>0)lines.push(candleSeries.createPriceLine({price:Number(op.price_open),color:'#7c3aed',title:`AÇIK ${sideTxt} #${op.ticket} @${fp(op.price_open,d.pair.id)}`,lineStyle:0,lineWidth:2}));
+    if(Number(op.sl)>0)lines.push(candleSeries.createPriceLine({price:Number(op.sl),color:'#dc2626',title:`SL #${op.ticket} ${fp(op.sl,d.pair.id)}`,lineStyle:0,lineWidth:2}));
+    if(Number(op.tp)>0)lines.push(candleSeries.createPriceLine({price:Number(op.tp),color:'#16a34a',title:`TP #${op.ticket} ${fp(op.tp,d.pair.id)}`,lineStyle:0,lineWidth:2}));
+  });
+  matchingPending.forEach(o=>{
+    if(Number(o.price_open)>0)lines.push(candleSeries.createPriceLine({price:Number(o.price_open),color:'#0891b2',title:`PENDING ${o.type||''} #${o.ticket} @${fp(o.price_open,d.pair.id)}`,lineStyle:3,lineWidth:2}));
+    if(Number(o.sl)>0)lines.push(candleSeries.createPriceLine({price:Number(o.sl),color:'#fb7185',title:`P-SL #${o.ticket} ${fp(o.sl,d.pair.id)}`,lineStyle:3,lineWidth:1}));
+    if(Number(o.tp)>0)lines.push(candleSeries.createPriceLine({price:Number(o.tp),color:'#86efac',title:`P-TP #${o.ticket} ${fp(o.tp,d.pair.id)}`,lineStyle:3,lineWidth:1}));
+  });
   if(d.sig&&['LONG','SHORT'].includes(d.sig.action)){
     lines.push(candleSeries.createPriceLine({price:d.sig.entry,color:'#185FA5',title:`ENTRY ${fp(d.sig.entry,d.pair.id)}`,lineStyle:2,lineWidth:2}));
     lines.push(candleSeries.createPriceLine({price:d.sig.sl,color:'#A32D2D',title:`SL ${fp(d.sig.sl,d.pair.id)}`,lineStyle:2,lineWidth:2}));
@@ -966,28 +2083,532 @@ function showOnChart(id){
   renderSignalCards();
 }
 function togglePin(){const b=document.getElementById('pinBtn'),i=document.getElementById('pinInfo');if(pinnedPairId){pinnedPairId=null;b.textContent='Sabitle: Kapalı';b.classList.remove('on');i.textContent='Seçili parite otomatik değişebilir.';return}if(!selectedPairId||!MKT[selectedPairId])return;i.textContent=`Sabit parite: ${MKT[selectedPairId].pair.label}`;pinnedPairId=selectedPairId;b.textContent='Sabitle: Açık';b.classList.add('on')}
-function renderMetrics(){const a=Object.values(MKT),s=a.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));m0.textContent=a.length;m1.textContent=s.filter(d=>d.sig.action==='LONG').length;m2.textContent=s.filter(d=>d.sig.action==='SHORT').length;m3.textContent=a.filter(d=>d.sig&&d.sig.pct<2).length}
+async function chartLiveTick(){
+  if(chartLiveBusy)return;
+  const id=selectedPairId;
+  if(!id||!MKT[id]||!candleSeries){return;}
+  const pair=MKT[id].pair;
+  if(!pair)return;
+  const tf=chartLiveTF||'M15';
+  chartLiveBusy=true;
+  try{
+    const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:tf,count:120,alignmentTimezone:SCAN_TZ})});
+    if(!r.ok){chartLiveBusy=false;return;}
+    const j=await r.json();
+    if(!j||!Array.isArray(j.candles)||!j.candles.length){chartLiveBusy=false;return;}
+    if(selectedPairId!==id){chartLiveBusy=false;return;} // kullanici secimi degistirdiyse atla
+    const data=j.candles.map(c=>({time:c.t,open:c.o,high:c.h,low:c.l,close:c.c}));
+    candleSeries.setData(data);
+    // ENTRY/SL/TP cizgileri kalir (zaten chart'a eklenmis durumda)
+    const last=j.candles[j.candles.length-1];
+    if(last){
+      MKT[id].price=Number(last.c);
+      MKT[id].lastTick=Date.now();
+      const px=fp(Number(last.c),pair.id);
+      const cm=document.getElementById('chartMeta');
+      if(cm){
+        const ageS=Math.max(0,Math.round((Date.now()-Number(last.t)*1000)/1000));
+        cm.innerHTML=`<span class="live-dot"></span>${pair.label} · son fiyat ${px} · TF:${tf} · son mum ${ageS}s once`;
+      }
+    }
+    chartLastTickMs=Date.now();
+  }catch(e){
+    // sessiz: scan loop nasilsa duzeltir
+  }finally{
+    chartLiveBusy=false;
+  }
+}
+function startChartLive(){
+  if(chartLiveTimer)clearInterval(chartLiveTimer);
+  chartLiveTimer=setInterval(chartLiveTick,CHART_LIVE_INTERVAL_MS);
+}
+function stopChartLive(){if(chartLiveTimer){clearInterval(chartLiveTimer);chartLiveTimer=null;}}
+function renderMetrics(){
+  const a=Object.values(MKT);
+  const s=a.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));
+  const occ=a.filter(d=>d.occupied===true).length;
+  m0.textContent=a.length;
+  m1.textContent=s.filter(d=>d.sig.action==='LONG').length;
+  m2.textContent=s.filter(d=>d.sig.action==='SHORT').length;
+  m3.textContent=a.filter(d=>d.sig&&d.sig.pct<2).length;
+  const m4el=document.getElementById('m4');
+  if(m4el)m4el.textContent=occ;
+  const m5el=document.getElementById('m5');
+  if(m5el)m5el.textContent=(realPendingOrders||[]).length;
+  updateStatusBanner();
+}
+function todayPnlUsd(){
+  try{
+    const day=utcDayString();
+    const resetTs=Number(dailyState?.pnlResetTs||0);
+    const arr=Array.isArray(realClosedDeals)?realClosedDeals:[];
+    return arr.filter(x=>{
+      const t=Number(x.time||0);if(!t)return false;
+      if(resetTs>0&&t<resetTs)return false;
+      const d=new Date(t*1000);return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`===day;
+    }).reduce((s,x)=>s+Number(x.profit||0),0);
+  }catch(_){return 0;}
+}
+function todayStrategyPnl(){
+  const day=utcDayString();
+  const resetTs=Number(dailyState?.pnlResetTs||0);
+  const out={core:{p:0,t:0,w:0},turtle_sopa:{p:0,t:0,w:0},vwap_reclaim:{p:0,t:0,w:0},sr_breakout:{p:0,t:0,w:0}};
+  (realClosedDeals||[]).forEach(x=>{
+    const t=Number(x.time||0);if(!t)return;
+    if(resetTs>0&&t<resetTs)return;
+    const d=new Date(t*1000);
+    if(`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`!==day)return;
+    const tag=String(x.strategy_tag||'core');const k=(tag in out)?tag:'core';
+    const pnl=Number(x.profit||0);
+    out[k].p+=pnl;out[k].t+=1;if(pnl>0)out[k].w+=1;
+  });
+  return out;
+}
+function quickToggleAplus(){
+  planCfg.aPlusMode=!planCfg.aPlusMode;
+  const cb=document.getElementById('aPlusMode');if(cb)cb.checked=planCfg.aPlusMode;
+  saveConfigs();updateStatusBanner();
+  pushFeed(`${new Date().toLocaleTimeString()} · A+ Mode ${planCfg.aPlusMode?'AÇILDI (sadece yuksek kaliteli sinyaller)':'KAPATILDI (tum Hemen sinyaller islenecek)'}`);
+}
+function quickToggleAuto(){
+  tradeCfg.autoEnabled=!tradeCfg.autoEnabled;
+  const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=tradeCfg.autoEnabled;
+  saveConfigs();updateStatusBanner();
+  pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade ${tradeCfg.autoEnabled?'AÇILDI':'KAPATILDI'}`);
+}
+function quickSetLossLimit(pct){
+  const p=Math.max(0.1,Math.min(50,Number(pct)));
+  planCfg.maxDailyLossPct=p;
+  const inp=document.getElementById('maxDailyLossPct');if(inp)inp.value=p;
+  saveConfigs();updateStatusBanner();
+  const usd=(riskCfg.balance*p)/100;
+  pushFeed(`${new Date().toLocaleTimeString()} · Gunluk Loss Limiti %${p.toFixed(2)} (~${usd.toFixed(2)} USD) ayarlandi`);
+}
+function quickResetDayLoss(){
+  const pnl=todayPnlUsd();
+  const resetTs=Number(dailyState?.pnlResetTs||0);
+  const cnt=(realClosedDeals||[]).filter(d=>{
+    const t=Number(d.time||d.time_close||0);if(!t)return false;
+    if(resetTs>0&&t<resetTs)return false;
+    return new Date(t*1000).toISOString().slice(0,10)===utcDayString();
+  }).length;
+  const ok=confirm(`Gunluk zarar/trade sayaci sifirlanacak (cache temizlenmez, gercek trade'ler MT5 history'de durur).\n\nBugun sayilan: ${cnt} trade, PnL: ${pnl.toFixed(2)} USD\n\nDevam edilsin mi?`);
+  if(!ok){pushFeed(`${new Date().toLocaleTimeString()} · Iptal: gunluk loss reset`);return;}
+  try{
+    // Baseline ts olustur — bu andan sonra kapanan dealler PnL'e dahil olur, oncekiler atlanır.
+    // Cache'i bozmuyoruz; sadece bir filtre ts'i.
+    dailyState.pnlResetTs=Math.floor(Date.now()/1000);
+    dailyState.tradeCount=0;
+    saveDailyState();
+    pushFeed(`${new Date().toLocaleTimeString()} · Gunluk loss SIFIRLANDI · ${cnt} bugun trade'i sayactan dustu (cache korundu, bildirim spam yok) · yeni emir alimina acik`);
+  }catch(e){pushDebug(`reset_day_loss_err ${e.message}`);}
+  // Anlik taze snapshot + UI render
+  try{refreshTradeSnapshot();}catch(_){ }
+  updateStatusBanner();
+}
+function updateStatusBanner(){
+  const el=document.getElementById('statusBanner');if(!el)return;
+  checkDailyRollover();
+  const target=tradeCfg.targetAccountType==='live'?'<span class="stat-live">LIVE</span>':'<span class="stat-demo">DEMO</span>';
+  const dry=tradeCfg.dryRun?'· dry-run':'· canli';
+  const autoOn=!!tradeCfg.autoEnabled;
+  const auto=`<button class="tf-clr" onclick="quickToggleAuto()" style="border-color:${autoOn?'#2E7D32':'#9A2020'};color:${autoOn?'#2E7D32':'#9A2020'};padding:2px 8px;font-weight:bold" title="Auto trade ac/kapa">${autoOn?'OTO:AÇIK':'OTO:KAPALI'}</button>`;
+  const aplusOn=!!planCfg.aPlusMode;
+  const aplusBtn=`<button class="tf-clr" onclick="quickToggleAplus()" style="border-color:${aplusOn?'#1976d2':'#999'};color:${aplusOn?'#1976d2':'#666'};padding:2px 8px" title="A+ Mode: sadece yuksek kaliteli sinyallere izin ver">A+:${aplusOn?'AÇIK':'KAPALI'}</button>`;
+  const cap=Math.max(1,Number(planCfg.maxTradesPerDay||10));
+  const usedTrades=Number(dailyState.tradeCount||0);
+  const tradePill=`Trade: ${usedTrades}/${cap}${usedTrades>=cap?' 🚫':''}`;
+  const pnl=todayPnlUsd();
+  const pnlTxt=pnl===0?'0.00':(pnl>0?`+${pnl.toFixed(2)}`:pnl.toFixed(2));
+  const lossLimitUsd=(riskCfg.balance*(planCfg.maxDailyLossPct||0))/100;
+  const lossPct=lossLimitUsd>0?Math.abs(Math.min(0,pnl))/lossLimitUsd*100:0;
+  const limitReached=lossLimitUsd>0&&pnl<0&&Math.abs(pnl)>=lossLimitUsd;
+  const pnlCls=pnl>=0?'stat-demo':'stat-live';
+  const open=(realOpenPositions||[]).length;
+  const pend=(realPendingOrders||[]).length;
+  const longC=countBySide('LONG');
+  const shortC=countBySide('SHORT');
+  const dirCap=Math.max(0,Number(planCfg.maxSameDirection||0));
+  const netCap=Math.max(0,Number(planCfg.maxNetExposureCount||0));
+  const delta=longC.total-shortC.total;
+  const longHit=dirCap>0&&longC.total>=dirCap;
+  const shortHit=dirCap>0&&shortC.total>=dirCap;
+  const netHit=netCap>0&&Math.abs(delta)>=netCap;
+  const deltaStr=(delta>=0?'+':'')+delta;
+  const deltaCol=Math.abs(delta)>=Math.max(1,netCap)?'#9A2020':(delta===0?'#2E7D32':'#666');
+  const deltaTxt=netCap>0?`<span title="Net yon farki (L-S). |${delta}|${netHit?'>=':'<'}${netCap}. Asilirsa o yonde yeni emir bloklanir, karsi yon dengeler."> · Net: <b style="color:${deltaCol}">${deltaStr}</b>${netHit?' <span style="color:#9A2020">⚠ DENGE</span>':''}</span>`:'';
+  const dirBadge=`<span title="LONG ve SHORT yon sayilari (acik+pending). Limit asilirsa yeni emir o yonde acilmaz."><b style="color:${longHit?'#9A2020':'#2E7D32'}">L:${longC.total}${dirCap>0?'/'+dirCap:''}</b> · <b style="color:${shortHit?'#9A2020':'#9A2020'};opacity:${shortHit?1:.7}">S:${shortC.total}${dirCap>0?'/'+dirCap:''}</b>${(longHit||shortHit)?' <span style="color:#9A2020;font-weight:bold">⚠</span>':''}</span>${deltaTxt}`;
+  const corrCap=Math.max(0,Number(planCfg.maxCorrelatedExposure||0));
+  let corrBadge='';
+  if(corrCap>0){
+    const exp=effectiveExposure();
+    const items=Object.entries(exp).filter(([_t,v])=>v!==0).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,4);
+    const tag2col=(v)=>Math.abs(v)>corrCap?'#9A2020':(Math.abs(v)===corrCap?'#b45309':(v===0?'#2E7D32':'#666'));
+    const breached=items.some(([_t,v])=>Math.abs(v)>corrCap);
+    const txt=items.length?items.map(([t,v])=>`<span style="color:${tag2col(v)}"><b>${t}:${v>=0?'+':''}${v}</b></span>`).join(' '):'<span style="color:#2E7D32"><b>denge</b></span>';
+    corrBadge=`<span title="Faktor bazli net maruziyet (USD/EUR/RISK_ON/JPY/METAL/CRYPTO vb). Limit: ±${corrCap}. Asan faktorde o yonu kotulestiren sinyal reddedilir.">Korel: ${txt}${breached?' <span style="color:#9A2020;font-weight:bold">⚠</span>':''}</span>`;
+  }
+  const tagBadge=Object.entries(todayStrategyPnl()).filter(([_k,v])=>v.t>0).map(([k,v])=>`${k}:${v.p>=0?'+':''}${v.p.toFixed(1)} (${v.w}/${v.t})`).join(' · ')||'işlem yok';
+  // Loss limit hizli set butonlari + her zaman gorunur RESET
+  const curPct=Number(planCfg.maxDailyLossPct||0).toFixed(1);
+  const resetStyle=limitReached?'padding:2px 8px;font-size:12px;border-color:#9A2020;color:#9A2020;font-weight:bold':'padding:1px 6px;font-size:11px;border-color:#666;color:#666';
+  const lossControls=`<span title="Gunluk Loss Limiti (%)">Loss limit: <b>%${curPct}</b> <button class="tf-clr" onclick="quickSetLossLimit(1)" style="padding:1px 5px;font-size:11px">1%</button><button class="tf-clr" onclick="quickSetLossLimit(2)" style="padding:1px 5px;font-size:11px">2%</button><button class="tf-clr" onclick="quickSetLossLimit(5)" style="padding:1px 5px;font-size:11px">5%</button><button class="tf-clr" onclick="quickSetLossLimit(10)" style="padding:1px 5px;font-size:11px">10%</button> <button class="tf-clr" onclick="quickResetDayLoss()" style="${resetStyle}" title="Bugunun zarar/trade sayaclarini sifirla">${limitReached?'RESET ⚠':'RESET'}</button></span>`;
+  el.innerHTML=`<span>Hesap: ${target} ${dry}</span><span>${auto}</span><span>${aplusBtn}</span><span>${tradePill}</span><span>Açık: <b>${open}</b> · Pending: <b>${pend}</b></span><span>${dirBadge}</span>${corrBadge?`<span>${corrBadge}</span>`:''}<span>PnL bugun: <span class="${pnlCls}"><b>${pnlTxt}</b></span> USD${lossLimitUsd?` (limit ${lossLimitUsd.toFixed(0)}USD, %${lossPct.toFixed(0)})${limitReached?' <span style="color:#9A2020;font-weight:bold">⚠ AŞILDI</span>':''}`:''}</span>${lossControls}<span>${tagBadge}</span><span>${telemetrySummary()}</span>`;
+}
+function renderPendingOrders(){
+  const card=document.getElementById('pendingCard');
+  const list=document.getElementById('pendingList');
+  const cnt=document.getElementById('pendingCount');
+  if(!card||!list)return;
+  const arr=Array.isArray(realPendingOrders)?realPendingOrders:[];
+  if(!arr.length){card.style.display='none';list.innerHTML='';if(cnt)cnt.textContent='0 adet';return;}
+  card.style.display='block';
+  if(cnt)cnt.textContent=`${arr.length} adet`;
+  const now=Math.floor(Date.now()/1000);
+  list.innerHTML=arr.map(o=>{
+    const ageMin=Math.floor((now-Number(o.time_setup||0))/60);
+    const ttl=Number(o.time_expiration||0);
+    const ttlTxt=ttl>0?`TTL: ${Math.max(0,Math.floor((ttl-now)/60))}dk kalan`:'TTL: GTC';
+    const sl=Number(o.sl||0)>0?Number(o.sl).toFixed(5):'—';
+    const tp=Number(o.tp||0)>0?Number(o.tp).toFixed(5):'—';
+    const sideCls=o.side==='LONG'?'pos':'neg';
+    return `<div style="border-bottom:1px solid #e5e7eb;padding:6px 0;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <span><b>${o.symbol||'-'}</b> <span class="${sideCls}">${o.side||'-'}</span> · ${o.type||'-'} · tetik:${Number(o.price_open||0).toFixed(5)} · SL:${sl} · TP:${tp} · lot:${Number(o.volume||0).toFixed(2)} · ticket:${o.ticket} · ${ageMin}dk once · ${ttlTxt}</span>
+      <button class="tf-clr" onclick="cancelPendingOrder(${o.ticket})" style="border-color:#dc2626;color:#dc2626">İptal</button>
+    </div>`;
+  }).join('');
+}
+function pointSizeFor(symbol){
+  const sym=String(symbol||'').toUpperCase();
+  if(/JPY$/.test(sym))return 0.01;
+  if(/XAU|GOLD/.test(sym))return 0.01;
+  if(/XAG|SILVER/.test(sym))return 0.001;
+  if(/BTC|ETH/.test(sym))return 0.1;
+  if(/US30|NAS100|US100|US500|SPX|GER40|UK100|JP225/.test(sym))return 1;
+  return 0.0001;
+}
+function renderManagedPositions(){
+  const card=document.getElementById('managedCard');
+  const list=document.getElementById('managedList');
+  const cnt=document.getElementById('managedCount');
+  if(!card||!list)return;
+  const arr=Array.isArray(realOpenPositions)?realOpenPositions:[];
+  if(!arr.length){card.style.display='none';list.innerHTML='';if(cnt)cnt.textContent='0 adet';return;}
+  card.style.display='block';
+  if(cnt){const emu=Number(planCfg.earlyManageUsd||0);const earlyTxt=emu>0?` · Erken yonetim: ${emu}$`:'';cnt.textContent=`${arr.length} adet · BE:${planCfg.breakEvenAtR}R · Trail:${planCfg.trailAtR}R · TP1:${planCfg.tp1RR}R${earlyTxt}`;}
+  const now=Math.floor(Date.now()/1000);
+  list.innerHTML=arr.map(p=>{
+    const tk=Number(p.ticket||0);
+    const sym=String(p.symbol||'-');
+    const side=String(p.side||'-');
+    const entry=Number(p.price_open||0);
+    const sl=Number(p.sl||0);
+    const tp=Number(p.tp||0);
+    const lot=Number(p.volume||0);
+    const pnl=Number(p.profit||0);
+    const tag=String(p.strategy_tag||'core');
+    const ageMin=Math.max(0,Math.floor((now-Number(p.time||0))/60));
+    const pt=pointSizeFor(sym);
+    const slPts=sl>0?Math.round(Math.abs(entry-sl)/pt):0;
+    const tpPts=tp>0?Math.round(Math.abs(tp-entry)/pt):0;
+    const riskPts=sl>0?Math.abs(entry-sl)/pt:0;
+    const tpRR=(sl>0&&tp>0&&riskPts>0)?(Math.abs(tp-entry)/pt)/riskPts:0;
+    const sideCls=side==='LONG'?'pos':'neg';
+    const pnlCls=pnl>=0?'pos':'neg';
+    const mst=managedActionsByTicket.get(tk)||{};
+    const badges=[];
+    const beActive=sl>0&&(side==='LONG'?sl>=entry-0.0000001:sl<=entry+0.0000001);
+    if(mst.adopted)badges.push('<span style="background:#7c3aed;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px">SAHİPLENİLDİ</span>');
+    if(beActive||mst.beOrTrail)badges.push('<span style="background:#0891b2;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px">BE/TRAIL</span>');
+    if(mst.tp1Done)badges.push('<span style="background:#16a34a;color:#fff;padding:1px 6px;border-radius:8px;font-size:10px">TP1 ALINDI</span>');
+    if(sl<=0||tp<=0)badges.push('<span style="background:#f59e0b;color:#111;padding:1px 6px;border-radius:8px;font-size:10px">SL/TP EKSİK</span>');
+    const lastTxt=mst.lastAction?` · son işlem: ${mst.lastAction.type} · ${new Date(mst.lastAction.ts).toLocaleTimeString()}${mst.lastAction.ok?'':' (FAIL)'}`:'';
+    const slTxt=sl>0?`${sl.toFixed(5)} (${slPts}pt)`:'<span style="color:#dc2626">YOK</span>';
+    const tpTxt=tp>0?`${tp.toFixed(5)} (${tpPts}pt · ${tpRR.toFixed(2)}R)`:'<span style="color:#dc2626">YOK</span>';
+    return `<div style="border-bottom:1px solid #e5e7eb;padding:8px 0;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:flex-start">
+      <div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:3px"><b>${sym}</b> <span class="${sideCls}">${side}</span> <span style="background:#e5e7eb;color:#111;padding:1px 6px;border-radius:8px;font-size:10px">${tag}</span> ${badges.join(' ')}</div>
+        <div style="font-size:11px;line-height:1.5;color:#374151">giriş:${entry.toFixed(5)} · SL:${slTxt} · TP:${tpTxt} · lot:${lot.toFixed(2)} · ticket:${tk} · yaş:${ageMin}dk${lastTxt}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="${pnlCls}" style="font-weight:600;font-size:13px">${pnl>=0?'+':''}${pnl.toFixed(2)} USD</div>
+        <button class="tf-clr" onclick="closeManagedPosition(${tk},'${sym}')" style="border-color:#dc2626;color:#dc2626;margin-top:4px">Kapat</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function closeManagedPosition(ticket,symbol){
+  if(!ticket)return;
+  if(!confirm(`${symbol||''} #${ticket} pozisyonu kapatılsın mı?`))return;
+  try{
+    const r=await fetch(`${PROXY}/api/close-position`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket})});
+    const j=await r.json().catch(()=>({}));
+    if(j&&j.ok){
+      pushTradeFeed('success',`POZ. KAPATILDI · ${symbol||'-'} ticket:${ticket} · rc:${j.retcode||0}`);
+      await refreshTradeSnapshot();
+      renderManagedPositions();
+    }else{
+      pushTradeFeed('error',`POZ. KAPAT HATASI · ticket:${ticket} · ${(j&&(j.error||j.detail))||'unknown'}`);
+    }
+  }catch(e){
+    pushTradeFeed('error',`POZ. KAPAT FETCH HATASI · ${e.message}`);
+  }
+}
+async function emergencyStop(){
+  const choices=[
+    '1: Sadece auto-tarama ve auto-execute durdur',
+    '2: Auto kapat + tüm bekleyen pending\'leri iptal et',
+    '3: Auto kapat + pending\'leri iptal et + AÇIK pozisyonları kapat (TEHLIKELI)'
+  ].join('\n');
+  const ans=prompt(`ACİL DUR — Hangi seviye?\n\n${choices}\n\n1, 2 veya 3 yaz:`,'2');
+  const lvl=Number(ans||0);
+  if(![1,2,3].includes(lvl))return;
+  if(lvl===3&&!confirm('SEVİYE 3: Tüm açık pozisyonlar piyasa fiyatından kapatılacak. Emin misin?'))return;
+  const btn=document.getElementById('estopBtn');
+  if(btn){btn.classList.add('active');btn.disabled=true;btn.textContent='🛑 DURDURULUYOR...';}
+  try{
+    tradeCfg.autoEnabled=false;
+    autoScanOn=false;
+    stopAuto();
+    const acb=document.getElementById('autoBtn');if(acb){acb.textContent='Oto Tarama: Kapalı';acb.classList.remove('on');}
+    const atc=document.getElementById('autoTradeChk');if(atc)atc.checked=false;
+    saveConfigs();
+    pushTradeFeed('error',`🛑 ACİL DUR (seviye ${lvl}) · auto kapatıldı`);
+    if(lvl>=2&&Array.isArray(realPendingOrders)&&realPendingOrders.length){
+      const tickets=realPendingOrders.map(p=>Number(p.ticket||0)).filter(Boolean);
+      pushTradeFeed('warn',`🛑 ${tickets.length} pending iptal ediliyor...`);
+      for(const t of tickets){
+        try{
+          const r=await fetch(`${PROXY}/api/cancel-pending`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:t})});
+          const j=await r.json().catch(()=>({}));
+          pushTradeFeed(j&&j.ok?'success':'error',`🛑 pending ${t}: ${j&&j.ok?'iptal':'BASARISIZ '+(j&&(j.error||j.detail)||'')}`);
+        }catch(e){pushTradeFeed('error',`🛑 pending ${t} fetch hatasi: ${e.message}`);}
+      }
+    }
+    if(lvl>=3&&Array.isArray(realOpenPositions)&&realOpenPositions.length){
+      const tickets=realOpenPositions.map(p=>Number(p.ticket||0)).filter(Boolean);
+      pushTradeFeed('warn',`🛑 ${tickets.length} açık pozisyon kapatılıyor...`);
+      for(const t of tickets){
+        try{
+          const r=await fetch(`${PROXY}/api/close-position`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket:t})});
+          const j=await r.json().catch(()=>({}));
+          pushTradeFeed(j&&j.ok?'success':'error',`🛑 poz ${t}: ${j&&j.ok?'kapatildi':'BASARISIZ '+(j&&(j.error||j.detail)||'')}`);
+        }catch(e){pushTradeFeed('error',`🛑 poz ${t} fetch hatasi: ${e.message}`);}
+      }
+    }
+    await refreshTradeSnapshot();
+    pushTradeFeed('error',`🛑 ACİL DUR TAMAMLANDI · oto tekrar acmak istersen ust panelden ac.`);
+  }catch(e){pushTradeFeed('error',`🛑 ACİL DUR HATA · ${e.message}`);}
+  finally{
+    if(btn){btn.classList.remove('active');btn.disabled=false;btn.textContent='🛑 ACİL DUR';}
+  }
+}
+async function cancelPendingOrder(ticket){
+  if(!ticket)return;
+  if(!confirm(`Pending emir ${ticket} iptal edilsin mi?`))return;
+  try{
+    const r=await fetch(`${PROXY}/api/cancel-pending`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticket})});
+    const j=await r.json();
+    if(j.ok){
+      pushTradeFeed('info',`PENDING IPTAL · ticket:${ticket} · rc:${j.retcode||0}`);
+      await refreshTradeSnapshot();
+      renderPendingOrders();
+    }else{
+      pushTradeFeed('error',`PENDING IPTAL HATASI · ticket:${ticket} · ${j.error||j.detail||'unknown'}`);
+    }
+  }catch(e){
+    pushTradeFeed('error',`PENDING IPTAL FETCH HATASI · ${e.message}`);
+  }
+}
 function renderSignalCards(){const a=filtered().filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((x,y)=>weightedSignalQuality(y)-weightedSignalQuality(x)).slice(0,tradeLimit);if(!a.length){sigGrid.innerHTML='<div class="wait-msg">İnceleme için aktif sinyal yok.</div>';return}sigGrid.innerHTML=a.map(d=>`<div class="sc ${selectedPairId===d.pair.id?'sel':''}"><div class="sc-head"><div><div class="sc-pair">${d.pair.label}<span class="live-tag">CANLI · ${d.sourceName||'mt5'} · ${d.sourceSymbol||d.pair.id}</span><span class="${aiClass(d)}">${aiText(d)}</span></div><div class="sc-cat">${catLabel(d.pair.cat)} · ${d.trend==='up'?'↑ Yükselen':d.trend==='down'?'↓ Düşen':'→ Yatay'} · Kalite ${signalQuality(d)}/100 · Ağırlık ${(strategyWeight(d.strategyTag||'core')).toFixed(2)}</div></div><span class="badge ${d.sig.action==='LONG'?'blong':'bshort'}">${d.sig.action}</span></div><div class="sc-divider"></div><div class="levels"><div class="lv"><div class="lname">STOP</div><div class="lprice neg">${fp(d.sig.sl,d.pair.id)}</div></div><div class="lv entry-lv"><div class="lname">GİRİŞ</div><div class="lprice">${fp(d.sig.entry,d.pair.id)}</div></div><div class="lv"><div class="lname">HEDEF</div><div class="lprice pos">${fp(d.sig.tp,d.pair.id)}</div></div></div><div class="sc-footer"><span class="sc-meta">R:R ${d.sig.rr.toFixed(2)} · TF ${recommendTF(d)}</span><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Aç</button></div></div>`).join('')}
 function signalReason(d){if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return 'Sinyal yok / bekle modu';const t=d.trend==='up'?'trend yukarı':d.trend==='down'?'trend aşağı':'trend yatay';const z=d.sig.pct<=1.2?'dar bölge':d.sig.pct<=2?'orta bölge':'geniş bölge';const rr=(d.sig.rr||0)>=2?'yüksek RR':(d.sig.rr||0)>=1.4?'orta RR':'düşük RR';return `${t}, ${z}, ${rr}`}
-function renderTable(){const rows=filtered();tbl.innerHTML=rows.length?rows.map(d=>{const s=d.sig&&['LONG','SHORT'].includes(d.sig.action),sig=s?`<span class="${d.sig.action==='LONG'?'pos':'neg'}">${d.sig.action}</span> <span class="${aiClass(d)}">${aiText(d)}</span>`:'—',cl=s?'clickrow':'',oc=s?` onclick="showOnChart('${d.pair.id}')"`:'';return`<tr class="${cl}"${oc}><td>${d.pair.label}</td><td>${fp(d.price,d.pair.id)}</td><td>${d.trend}</td><td>${sig}</td><td>${s?fp(d.sig.entry,d.pair.id):'—'}</td><td>${s?fp(d.sig.sl,d.pair.id):'—'}</td><td>${s?fp(d.sig.tp,d.pair.id):'—'}</td><td>${s?d.sig.rr.toFixed(2):'—'}</td><td>${s?recommendTF(d):'—'}</td><td>${fp(d.sig?.crh,d.pair.id)}</td><td>${fp(d.sig?.crl,d.pair.id)}</td><td>${d.sig?.pct?d.sig.pct.toFixed(2)+'%':'—'}</td></tr>`}).join(''):'<tr><td colspan="12" class="muted">Veri yok</td></tr>'}
-function renderReviewCards(){const root=document.getElementById('reviewGrid');if(!root)return;const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));root.innerHTML=sigs.length?sigs.map(d=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),m=lot?marginUsagePct(d,lot.lot):0,act=strategyActionState(d);return`<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>${d.pair.label} · ${d.sig.action} · R:R ${d.sig.rr.toFixed(2)}</h4><div class="klist">Strateji: <b>${d.strategyTag||'core'}</b><br>Aksiyon: <b>${act.status}</b> (${act.reason})<br>Entry Tetik: ${act.entryTrigger}<br>Invalidation: ${act.invalidation}<br>Take Profit: ${act.takeProfit}<br>Öneri: <b>${safe.rec}</b><br>Sonuç: ${d.aiStatus==='confirmed'?'İşleme Uygun':'İzleme'}<br>Sebep: ${signalReason(d)}<br>Onay: ${recommendTF(d)}<br>Geçersiz olma: ${invalidationRule(d)}<br>Güvenlik Notu: ${safe.reason}<br>Bölge: ${d.sig.pct.toFixed(2)}%<br>Lot (öneri): <b>${lot?lot.lot:'—'}</b> · Risk $${lot?lot.riskAmount:'—'} · Marjin ${m.toFixed(1)}%<br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'} · SL: $${lot?lot.slUsd:'—'} · TP: $${lot?lot.tpUsd:'—'}</div></div>`}).join(''):'<div class="kcard"><div class="klist">Aktif sinyal oluştuğunda burada sebep/sonuç kartı görünecek.</div></div>'}
-function renderOrderPlan(){const root=document.getElementById('planGrid');if(!root)return;const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a)).slice(0,planCfg.maxOpenPos);if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return}const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);root.innerHTML=selected.map((d,idx)=>{const lot=lotSuggestion(d),safe=safeRecommendation(d),exitPlan=buildExitPlan(d);let lotAdj='—';if(lot){const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);lotAdj=Math.max(riskCfg.minLot,roundStep(scaled,riskCfg.lotStep)).toFixed(2)}const m=lotAdj!=='—'?marginUsagePct(d,Number(lotAdj)):0;const link=lotAdj!=='—'?buildLiveOrderLink(d,lotAdj):'';return`<div class="kcard"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>${exitPlan?`TP1: ${fp(exitPlan.tp1,d.pair.id)} · TP2: ${fp(exitPlan.tp2,d.pair.id)}<br>BE Trigger: ${fp(exitPlan.beTrigger,d.pair.id)} · Trail Trigger: ${fp(exitPlan.trailTrigger,d.pair.id)}<br>`:''}Önerilen Lot: <b>${lotAdj}</b><br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br>SL'de Zarar: $${lot&&lotAdj!=='—'?(lot.slUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>TP'de Kar: $${lot&&lotAdj!=='—'?(lot.tpUsd*(Number(lotAdj)/Math.max(lot.lot,0.0001))).toFixed(2):'—'}<br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Hedef Hesap: <b>${titleCaseAccount(tradeCfg.targetAccountType)}</b><br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}<br><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Gör</button> ${lotAdj!=='—'?`<button class="sbtn" onclick="executeSignalOrder(MKT['${d.pair.id}'],'${lotAdj}')">${titleCaseAccount(tradeCfg.targetAccountType)} Hesaba Emir Gönder</button>`:''}<br>${link?`<a href="${link}" target="_blank" rel="noopener">Canlı Emir Aç (Link)</a>`:'Canlı emir linki girilmedi'}</div></div>`}).join('')}
+function renderTable(){const rows=filtered();tbl.innerHTML=rows.length?rows.map(d=>{
+  const s=d.sig&&['LONG','SHORT'].includes(d.sig.action);
+  let sig='—';
+  let entry='—',sl='—',tp='—',rr='—',tf='—',crh='—',crl='—',pct='—';
+  // Her render'da occupied'i guncel snapshot'a gore yeniden hesapla (stale state'i onler).
+  const live=openPositionInfoFor(d.pair.id);
+  if(live){
+    const op=live;
+    const isPending=op._kind==='pending';
+    if(isPending){
+      sig=`<span class="live-tag" style="background:#ea580c;color:#fff">PENDING · ${op.side||'-'} · ticket ${op.ticket||'-'}</span> <span style="color:#ea580c">bekliyor</span>`;
+      entry=fp(op.price_open,d.pair.id);
+      sl=op.sl>0?fp(op.sl,d.pair.id):'—';
+      tp=op.tp>0?fp(op.tp,d.pair.id):'—';
+      tf='BEKLİYOR';
+    }else{
+      const pnlCls=Number(op.profit||0)>=0?'pos':'neg';
+      sig=`<span class="live-tag" style="background:#7c3aed;color:#fff">AÇIK · ${op.side||'-'} · ticket ${op.ticket||'-'}</span> <span class="${pnlCls}">PnL ${Number(op.profit||0).toFixed(2)}</span>`;
+      entry=fp(op.price_open,d.pair.id);
+      sl=op.sl>0?fp(op.sl,d.pair.id):'—';
+      tp=op.tp>0?fp(op.tp,d.pair.id):'—';
+      tf='YÖNETİMDE';
+    }
+  }else if(s){
+    sig=`<span class="${d.sig.action==='LONG'?'pos':'neg'}">${d.sig.action}</span> <span class="${aiClass(d)}">${aiText(d)}</span>`;
+    entry=fp(d.sig.entry,d.pair.id);
+    sl=fp(d.sig.sl,d.pair.id);
+    tp=fp(d.sig.tp,d.pair.id);
+    rr=d.sig.rr.toFixed(2);
+    tf=recommendTF(d);
+    crh=fp(d.sig?.crh,d.pair.id);
+    crl=fp(d.sig?.crl,d.pair.id);
+    pct=d.sig?.pct?d.sig.pct.toFixed(2)+'%':'—';
+  }
+  const cl=s?'clickrow':'';
+  const oc=s?` onclick="showOnChart('${d.pair.id}')"`:'';
+  return`<tr class="${cl}"${oc}><td>${d.pair.label}</td><td>${fp(d.price,d.pair.id)}</td><td>${d.trend}</td><td>${sig}</td><td>${entry}</td><td>${sl}</td><td>${tp}</td><td>${rr}</td><td>${tf}</td><td>${crh}</td><td>${crl}</td><td>${pct}</td></tr>`;
+}).join(''):'<tr><td colspan="12" class="muted">Veri yok</td></tr>'}
+function renderReviewCards(){
+  const root=document.getElementById('reviewGrid');if(!root)return;
+  const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));
+  root.innerHTML=sigs.length?sigs.map(d=>{
+    const lot=lotSuggestion(d),safe=safeRecommendation(d),m=lot?marginUsagePct(d,lot.lot):0,act=strategyActionState(d);
+    const bal=Math.max(1,Number(riskCfg.balance||1));
+    const slPct=lot?((lot.slUsd/bal)*100):0;
+    const tpPct=lot?((lot.tpUsd/bal)*100):0;
+    let warn='';
+    if(lot&&lot.minLotApplied&&lot.overRiskPct>5){
+      warn=`<br><span style="color:#9A2020">UYARI: Min lot zorunlulugu nedeniyle SL'de gercek kayip hedeften ${lot.overRiskPct.toFixed(0)}% fazla.</span>`;
+    }
+    return `<div class="kcard clickrow" onclick="showOnChart('${d.pair.id}')"><h4>${d.pair.label} · ${d.sig.action} · R:R ${d.sig.rr.toFixed(2)}</h4><div class="klist">Strateji: <b>${d.strategyTag||'core'}</b><br>Aksiyon: <b>${act.status}</b> (${act.reason})<br>Entry Tetik: ${act.entryTrigger}<br>Invalidation: ${act.invalidation}<br>Take Profit: ${act.takeProfit}<br>Öneri: <b>${safe.rec}</b><br>Sonuç: ${d.aiStatus==='confirmed'?'İşleme Uygun':'İzleme'}<br>Sebep: ${signalReason(d)}<br>Onay: ${recommendTF(d)}<br>Geçersiz olma: ${invalidationRule(d)}<br>Güvenlik Notu: ${safe.reason}<br>Bölge: ${d.sig.pct.toFixed(2)}%<br>Lot (öneri): <b>${lot?lot.lot:'—'}</b> · Hedef risk $${lot?lot.riskAmount:'—'} · Marjin ${m.toFixed(1)}%<br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br><b>SL vurursa kayip:</b> $${lot?lot.slUsd.toFixed(2):'—'} (~%${slPct.toFixed(2)} bakiye)<br><b>TP vurursa kar:</b> $${lot?lot.tpUsd.toFixed(2):'—'} (~%${tpPct.toFixed(2)} bakiye)${warn}</div></div>`;
+  }).join(''):'<div class="kcard"><div class="klist">Aktif sinyal oluştuğunda burada sebep/sonuç kartı görünecek.</div></div>';
+}
+function renderOrderPlan(){
+  const root=document.getElementById('planGrid');if(!root)return;
+  const dailyRiskAmount=(riskCfg.balance*planCfg.dailyRiskPct)/100;
+  const selected=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action)).filter(d=>!aiFilterOn||d.aiStatus==='confirmed').sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a)).slice(0,planCfg.maxOpenPos);
+  if(!selected.length){root.innerHTML='<div class="kcard"><div class="klist">Plan için uygun sinyal yok.</div></div>';return;}
+  const perTradeBudget=dailyRiskAmount/Math.max(selected.length,1);
+  root.innerHTML=selected.map((d,idx)=>{
+    const lot=lotSuggestion(d),safe=safeRecommendation(d),exitPlan=buildExitPlan(d);
+    let lotAdj='—',lotNum=0;
+    if(lot){
+      const vMin=Number(d.pair?.volumeMin||riskCfg.minLot||0.01);
+      const vStep=Number(d.pair?.volumeStep||riskCfg.lotStep||0.01);
+      const scaled=Math.min(lot.lot,(perTradeBudget/Math.max(lot.riskAmount||1,0.0001))*lot.lot);
+      lotNum=Math.max(vMin,roundStep(scaled,vStep));
+      lotAdj=lotNum.toFixed(2);
+    }
+    const m=lotNum>0?marginUsagePct(d,lotNum):0;
+    const link=lotNum>0?buildLiveOrderLink(d,lotAdj):'';
+    // Gercek SL/TP USD: lossPerLot * lotNum (orantisal degil, dogrudan)
+    const lossPer1=lot?Number(lot.lossPerLot||0):0;
+    const slUsd=lossPer1*lotNum;
+    const tpUsd=slUsd*Math.max(d.sig.rr||0,0);
+    const bal=Math.max(1,Number(riskCfg.balance||1));
+    return `<div class="kcard"><h4>#${idx+1} ${d.pair.label} · ${d.sig.action}</h4><div class="klist">Entry: ${fp(d.sig.entry,d.pair.id)}<br>SL: ${fp(d.sig.sl,d.pair.id)}<br>TP: ${fp(d.sig.tp,d.pair.id)}<br>${exitPlan?`TP1: ${fp(exitPlan.tp1,d.pair.id)} · TP2: ${fp(exitPlan.tp2,d.pair.id)}<br>BE Trigger: ${fp(exitPlan.beTrigger,d.pair.id)} · Trail Trigger: ${fp(exitPlan.trailTrigger,d.pair.id)}<br>`:''}Önerilen Lot: <b>${lotAdj}</b><br>1 Lot Notional: $${lot?lot.oneLotNotional:'—'}<br><b>SL vurursa kayip:</b> $${lotNum>0?slUsd.toFixed(2):'—'} (~%${lotNum>0?((slUsd/bal)*100).toFixed(2):'—'} bakiye)<br><b>TP vurursa kar:</b> $${lotNum>0?tpUsd.toFixed(2):'—'} (~%${lotNum>0?((tpUsd/bal)*100).toFixed(2):'—'} bakiye)<br>R:R: ${d.sig.rr.toFixed(2)}<br>Plan Önerisi: <b>${safe.rec}</b> (${safe.reason})<br>Hedef Hesap: <b>${titleCaseAccount(tradeCfg.targetAccountType)}</b><br>Marjin kullanım: ${m.toFixed(1)}% / limit ${planCfg.maxMarginUse}%<br>Max günlük risk bütçesi: $${perTradeBudget.toFixed(2)}<br>Açık pozisyon limiti: ${planCfg.maxOpenPos}<br><button class="sbtn" onclick="showOnChart('${d.pair.id}')">Grafikte Gör</button> ${lotNum>0?`<button class="sbtn" onclick="executeSignalOrder(MKT['${d.pair.id}'],'${lotAdj}')">${titleCaseAccount(tradeCfg.targetAccountType)} Hesaba Emir Gönder</button>`:''}<br>${link?`<a href="${link}" target="_blank" rel="noopener">Canlı Emir Aç (Link)</a>`:'Canlı emir linki girilmedi'}</div></div>`;
+  }).join('');
+}
 function renderCategoryPanels(){kGrid.innerHTML=['forex','metals','crypto','indices'].map(c=>{const r=PAIRS.filter(p=>p.cat===c).map(p=>MKT[p.id]).filter(Boolean),s=r.filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));return`<div class="kcard"><h4>${catLabel(c)} · ${r.length} ürün · ${s.length} sinyal</h4><div class="klist">${r.slice(0,30).map(d=>`${d.pair.label} · ${d.sig?.action||'WAIT'} · TF:${recommendTF(d)}`).join('<br>')||'Veri yok'}</div></div>`}).join('')}
-function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan();renderHistory();renderPassBacktest()}
-async function aiValidate(items){if(!items.length)return;const compact=items.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend,entry:+(d.sig.entry||0).toFixed(dp(d.pair.id)),sl:+(d.sig.sl||0).toFixed(dp(d.pair.id)),tp:+(d.sig.tp||0).toFixed(dp(d.pair.id)),pa:(d.pa?.notes||[]).slice(0,3),elliott_phase:d.elliott?.phase||'unknown',elliott_bias:d.elliott?.bias||'neutral'}));const kThemes=knowledgeThemes();const prompt=`JSON only: {"decisions":[{"pair":"USDJPY","status":"confirmed|watch","reason":"kisa neden"}]}.\nKnowledge themes (project knowledge folder): ${kThemes.join(', ')||'none'}.\nIslem giris checklisti:\n1) Trend uyumu: trend up->LONG, trend down->SHORT, range ise daha sikı filtre.\n2) Risk/odul: rr >= 1.4 olmali.\n3) Bolge kalitesi: zone <= 1.8 olmali.\n4) Seviye tutarliligi: LONG icin sl<entry<tp, SHORT icin tp<entry<sl.\n5) Elliott uyumu: LONG icin bullish bias, SHORT icin bearish bias tercih edilir.\n6) Price Action/Candlestick uyumu: engulf/pin/inside-break destekleyici degilse watch.\nBu kurallardan biri bozuksa status=watch.\nData:${JSON.stringify(compact)}`;const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt})});if(!r.ok)return;const j=await r.json();let t=(j.text||'').toString(),p=null;try{p=JSON.parse(t)}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m)try{p=JSON.parse(m[0])}catch(e2){}}const m={};(p?.decisions||[]).forEach(x=>m[String(x.pair||'').toUpperCase()]={status:x.status,reason:String(x.reason||'')});items.forEach(d=>{const rec=m[d.pair.id];d.aiStatus=rec?.status==='confirmed'?'confirmed':rec?.status==='watch'?'watch':'unknown';d.aiReason=rec?.reason||''})}
+function renderAll(){renderMetrics();renderSignalCards();renderTable();renderCategoryPanels();renderReviewCards();renderOrderPlan();renderHistory();renderPassBacktest();renderManagedPositions();renderPendingOrders()}
+const aiDecisionCache=new Map();
+const AI_CACHE_TTL_MS=120000;
+function aiCacheKey(d){return `${d.pair.id}|${d.sig.action}|${Number(d.sig.entry||0).toFixed(dp(d.pair.id))}|${Number(d.sig.sl||0).toFixed(dp(d.pair.id))}|${Number(d.sig.tp||0).toFixed(dp(d.pair.id))}`;}
+async function aiValidate(items){
+  if(!items.length)return;
+  // Cache'den karsilananlari isaretle, kalanlari API'ye gonder
+  const now=Date.now();
+  const fresh=[];
+  const cachedHits=[];
+  items.forEach(d=>{
+    const k=aiCacheKey(d);
+    const c=aiDecisionCache.get(k);
+    if(c&&(now-c.ts)<AI_CACHE_TTL_MS){
+      d.aiStatus=c.status;d.aiReason=c.reason||'';
+      cachedHits.push(d);
+    }else{
+      fresh.push(d);
+    }
+  });
+  if(cachedHits.length){pushDebug(`ai_cache_hit ${cachedHits.length}/${items.length} pairs=${cachedHits.map(d=>d.pair.id).join(',')}`);}
+  if(!fresh.length){pushDebug(`ai_validate_skipped_all_cached`);return;}
+  const compact=fresh.map(d=>({pair:d.pair.id,side:d.sig.action,rr:+(d.sig.rr||0).toFixed(2),zone:+(d.sig.pct||0).toFixed(2),trend:d.trend,entry:+(d.sig.entry||0).toFixed(dp(d.pair.id)),sl:+(d.sig.sl||0).toFixed(dp(d.pair.id)),tp:+(d.sig.tp||0).toFixed(dp(d.pair.id)),pa:(d.pa?.notes||[]).slice(0,3),elliott_phase:d.elliott?.phase||'unknown',elliott_bias:d.elliott?.bias||'neutral'}));
+  const kThemes=knowledgeThemes();
+  const inputPairs=compact.map(c=>String(c.pair||'').toUpperCase());
+  // 'items' yerine 'fresh' kullanmaliyiz; geriye uyumluluk icin alias:
+  const itemsForApply=fresh;
+  const prompt=`Gorev: Asagidaki "Data" listesindeki HER pair icin tek bir karar uret. Cikti SADECE gecerli JSON olsun, baska metin, kod blogu (\`\`\`) veya aciklama EKLEME.\nCikti semasi: {"decisions":[{"pair":"<PAIR_ID>","status":"confirmed"|"watch","reason":"kisa neden"}]}.\nKurallar:\n- decisions dizisinde Data icindeki HER pair icin BIR nesne olmali (toplam ${inputPairs.length} adet).\n- pair degeri TAM olarak Data icindeki pair string'i ile aynı yazilmali (orn: ${inputPairs.join(', ')||'EURUSD'}).\n- Ornek pair adlari (USDJPY vb.) sema icin sadece sablondur; Data'daki gercek pair'leri kullan.\nKarar mantigi:\n- Varsayilan: status=confirmed.\n- Sadece su AGIR ihlallerden biri varsa status=watch:\n  A) Seviye tutarsizligi: LONG icin sl<entry<tp sirasi BOZUK, ya da SHORT icin tp<entry<sl sirasi BOZUK.\n  B) rr < 1.0.\n  C) Trend tamamen ters: trend=up iken SHORT, ya da trend=down iken LONG.\n- Zayif uyarilar (zone>1.8, range trend, Elliott uyumsuz, PA tetikleyici yok) TEK BASINA watch sebebi DEGILDIR; bunlari reason alanina not ekle ama status=confirmed kalsin.\n- reason 80 karakteri gecmesin.\nKnowledge themes: ${kThemes.join(', ')||'none'}.\nData (degerlendirilecek pair listesi, ${compact.length} adet): ${JSON.stringify(compact)}`;
+  pushDebug(`ai_validate_start items=${fresh.length}/${items.length} (fresh) pairs=${fresh.map(d=>d.pair.id).join(',')}`);
+  let r;
+  try{r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:900,prompt})});}catch(e){pushDebug(`ai_validate_fetch_error ${e.message}`);return;}
+  if(!r.ok){pushDebug(`ai_validate_http_error status=${r.status}`);return;}
+  const j=await r.json();
+  const t=(j.text||'').toString();
+  pushDebug(`ai_validate_resp len=${t.length} head=${t.slice(0,80).replace(/\n/g,' ')}`);
+  let p=null,parsePath='direct';
+  try{p=JSON.parse(t);}catch(e){const m=t.match(/\{[\s\S]*\}/);if(m){try{p=JSON.parse(m[0]);parsePath='regex';}catch(e2){parsePath='regex_failed';}}else{parsePath='no_brace';}}
+  const decisions=Array.isArray(p?.decisions)?p.decisions:[];
+  pushDebug(`ai_validate_parsed path=${parsePath} decisions=${decisions.length} keys=${decisions.map(x=>String(x.pair||'').toUpperCase()).join(',')||'-'}`);
+  const m={};
+  decisions.forEach(x=>m[String(x.pair||'').toUpperCase()]={status:x.status,reason:String(x.reason||'')});
+  let nConfirmed=0,nWatch=0,nUnknown=0;
+  itemsForApply.forEach(d=>{
+    const rec=m[String(d.pair.id||'').toUpperCase()];
+    d.aiStatus=rec?.status==='confirmed'?'confirmed':rec?.status==='watch'?'watch':'unknown';
+    d.aiReason=rec?.reason||'';
+    if(d.aiStatus==='confirmed')nConfirmed++;else if(d.aiStatus==='watch')nWatch++;else nUnknown++;
+    // Cache'e yaz
+    try{aiDecisionCache.set(aiCacheKey(d),{ts:Date.now(),status:d.aiStatus,reason:d.aiReason});}catch(_){ }
+  });
+  // Cache'i 200'u astiginda temizle
+  if(aiDecisionCache.size>200){
+    const arr=Array.from(aiDecisionCache.entries()).sort((a,b)=>b[1].ts-a[1].ts).slice(0,150);
+    aiDecisionCache.clear();
+    arr.forEach(([k,v])=>aiDecisionCache.set(k,v));
+  }
+  pushDebug(`ai_validate_apply confirmed=${nConfirmed} watch=${nWatch} unknown=${nUnknown} cacheSize=${aiDecisionCache.size}`);
+}
+async function fetchCandlesOnce(pair,granularity,minCount,cache){
+  // Tek bir tarama icinde ayni tf icin tek istek — onceden cekildiyse paylasilan veriyi don
+  const key=`${pair.id}:${granularity}`;
+  if(cache.has(key)){
+    const existing=cache.get(key);
+    if(existing&&Array.isArray(existing.candles)&&existing.candles.length>=minCount){
+      return existing;
+    }
+  }
+  try{
+    const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity,count:Math.max(minCount,240),alignmentTimezone:SCAN_TZ})});
+    if(!r.ok){cache.set(key,{ok:false,status:r.status,candles:[]});return cache.get(key);}
+    const j=await r.json();
+    const entry={ok:true,candles:Array.isArray(j.candles)?j.candles:[],provider:j.provider,instrument:j.instrument};
+    cache.set(key,entry);
+    return entry;
+  }catch(e){
+    cache.set(key,{ok:false,error:e.message,candles:[]});
+    return cache.get(key);
+  }
+}
 async function scanPairByIntervals(pair){
   const dbg={pair:pair.id,coreErrors:0,turtleErrors:0,turtleWaitNotes:[],coreSig:0,turtleSig:0};
+  const cache=new Map();
+  // Acik pozisyon varsa bu paritede yeni sinyal uretme. Onceki ticari kararı kabul ettik.
+  const openInfo=openPositionInfoFor(pair.id);
+  if(openInfo){
+    pushDebug(`scan_skip_open_pos ${pair.id} side=${openInfo.side} ticket=${openInfo.ticket||'-'}`);
+    return {
+      pair,
+      sig:null,
+      occupied:true,
+      openPosition:{ticket:openInfo.ticket,side:openInfo.side,volume:openInfo.volume,price_open:openInfo.price_open,sl:openInfo.sl,tp:openInfo.tp,profit:openInfo.profit},
+      trend:'—',
+      price:Number(openInfo.price_open||0),
+      source:'live',sourceName:'mt5',sourceSymbol:String(openInfo.symbol||pair.id),
+      timeframe:'-',timezone:SCAN_TZ,strategyTag:'managed'
+    };
+  }
   let bestCore=null;
   if(planCfg.scanCore){
     for(const itv of SCAN_INTERVALS){
       try{
-        const r=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:itv,count:180,alignmentTimezone:SCAN_TZ})});
-        if(!r.ok){
+        const j=await fetchCandlesOnce(pair,itv,180,cache);
+        if(!j.ok){
           dbg.coreErrors++;
-          pushDebug(`broker_fail pair=${pair.id} tf=${itv} status=${r.status}`);
+          pushDebug(`broker_fail pair=${pair.id} tf=${itv} status=${j.status||j.error||'fail'}`);
           continue;
         }
-        const j=await r.json();
         if(!Array.isArray(j.candles)||j.candles.length<30)continue;
         const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,pa=detectPASignals(candles),elliott=detectElliott(candles);
         const row={pair,candles,trend,sig,pa,elliott,turtle:null,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ,strategyTag:'core'};
@@ -998,21 +2619,21 @@ async function scanPairByIntervals(pair){
   let bestTurtle=null;
   if(planCfg.scanTurtle){
     try{
-      const r1=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M1',count:360,alignmentTimezone:SCAN_TZ})});
-      if(r1.ok){
-        const j1=await r1.json();
+      const j1=await fetchCandlesOnce(pair,'M1',360,cache);
+      if(j1.ok){
         if(Array.isArray(j1.candles)&&j1.candles.length>=60){
           const m1=j1.candles;
           const m3=aggregateCandles(m1,3);
           const m5=aggregateCandles(m1,5);
-          const all=[{tf:'M1',candles:m1},{tf:'M3',candles:m3},{tf:'M5',candles:m5}];
+          const all=[{tf:'M3',candles:m3},{tf:'M5',candles:m5},{tf:'M1',candles:m1}];
           for(const x of all){
-            if(!x.candles||x.candles.length<35)continue;
+            if(!x.candles||x.candles.length<45)continue;
             const trend=detectTrend(x.candles);
             const turtle=detectTurtleSopa(x.candles,trend);
             const price=x.candles[x.candles.length-1]?.c;
             if(turtle.action==='WAIT'){dbg.turtleWaitNotes.push(`${x.tf}:${(turtle.notes||[]).slice(0,2).join('|')}`);continue;}
-            const sig={action:turtle.action,entry:turtle.entry,sl:turtle.sl,tp:turtle.tp,rr:turtle.rr,crh:Math.max(...x.candles.slice(-24).map(c=>c.h)),crl:Math.min(...x.candles.slice(-24).map(c=>c.l)),pct:0.9};
+            const pct=(x.tf==='M3'||x.tf==='M5')?0.7:0.95;
+            const sig={action:turtle.action,entry:turtle.entry,sl:turtle.sl,tp:turtle.tp,rr:turtle.rr,crh:Math.max(...x.candles.slice(-24).map(c=>c.h)),crl:Math.min(...x.candles.slice(-24).map(c=>c.l)),pct};
             const pa=detectPASignals(x.candles),elliott=detectElliott(x.candles);
             const row={pair,candles:x.candles,trend,sig,pa,elliott,turtle,price,source:'live',sourceName:'mt5',sourceSymbol:j1.instrument||pair.id,timeframe:x.tf,timezone:SCAN_TZ,strategyTag:'turtle_sopa'};
             dbg.turtleSig++;
@@ -1021,16 +2642,15 @@ async function scanPairByIntervals(pair){
         }
       }else{
         dbg.turtleErrors++;
-        pushDebug(`broker_fail pair=${pair.id} tf=M1 status=${r1.status}`);
+        pushDebug(`broker_fail pair=${pair.id} tf=M1 status=${j1.status||j1.error||'fail'}`);
       }
     }catch(e){dbg.turtleErrors++;pushDebug(`broker_err pair=${pair.id} tf=M1 ${e.message}`)}
   }
   let bestVWAP=null;
   if(planCfg.scanVWAP){
     try{
-      const rv=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M15',count:220,alignmentTimezone:SCAN_TZ})});
-      if(rv.ok){
-        const jv=await rv.json();
+      const jv=await fetchCandlesOnce(pair,'M15',240,cache);
+      if(jv.ok){
         if(Array.isArray(jv.candles)&&jv.candles.length>=40){
           const candles=jv.candles,trend=detectTrend(candles),vwapSig=detectVWAPReclaim(candles,trend);
           if(vwapSig.action!=='WAIT'){
@@ -1045,9 +2665,8 @@ async function scanPairByIntervals(pair){
   let bestSR=null;
   if(planCfg.scanSRBreak){
     try{
-      const rs=await fetch(BROKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pairId:pair.id,category:pair.cat,granularity:'M15',count:240,alignmentTimezone:SCAN_TZ})});
-      if(rs.ok){
-        const js=await rs.json();
+      const js=await fetchCandlesOnce(pair,'M15',240,cache);
+      if(js.ok){
         if(Array.isArray(js.candles)&&js.candles.length>=45){
           const candles=js.candles,trend=detectTrend(candles),srSig=detectSRBreakoutRetest(candles,trend);
           if(srSig.action!=='WAIT'){
@@ -1077,6 +2696,59 @@ async function scanPairByIntervals(pair){
   if(bestCore&&bestTurtle)return weightedSignalQuality(bestTurtle)>=weightedSignalQuality(bestCore)?bestTurtle:bestCore;
   return bestTurtle||bestCore;
 }
+function isNewsBlackoutNow(){
+  const txt=String(planCfg.newsBlackoutTimes||'').trim();
+  if(!txt)return null;
+  const buffer=Math.max(0,Number(planCfg.newsBlackoutBufferMin||0));
+  if(buffer<=0)return null;
+  const now=new Date();
+  const nowMin=now.getUTCHours()*60+now.getUTCMinutes();
+  const parts=txt.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+  for(const p of parts){
+    const m=p.match(/^(\d{1,2}):(\d{2})$/);
+    if(!m)continue;
+    const h=Number(m[1]),mn=Number(m[2]);
+    if(!Number.isFinite(h)||!Number.isFinite(mn)||h<0||h>23||mn<0||mn>59)continue;
+    const tgt=h*60+mn;
+    let diff=Math.abs(nowMin-tgt);
+    if(diff>720)diff=1440-diff; // gunun donumu
+    if(diff<=buffer)return {label:p,bufferMin:buffer,diffMin:diff};
+  }
+  return null;
+}
+let snapshotTimer=null;
+let lastSnapshotMs=0;
+function computeSnapshotIntervalMs(){
+  const hasPending=(realPendingOrders||[]).length>0;
+  const hasOpen=(realOpenPositions||[]).length>0;
+  if(hasPending)return 3000;     // pending varken hizli (TP/SL/TTL tetigi)
+  if(hasOpen)return 5000;        // acik poz varsa orta
+  return 15000;                  // bos durumda yavas
+}
+function scheduleSnapshotLoop(){
+  if(snapshotTimer){clearTimeout(snapshotTimer);snapshotTimer=null;}
+  const delay=computeSnapshotIntervalMs();
+  snapshotTimer=setTimeout(async()=>{
+    try{await refreshTradeSnapshot();}catch(_){ }
+    lastSnapshotMs=Date.now();
+    scheduleSnapshotLoop();
+  },delay);
+}
+function enforceStandardRR(row){
+  if(!row||!row.sig)return;
+  const rrTarget=Number(planCfg.standardRR||0);
+  if(rrTarget<=0)return;
+  const a=String(row.sig.action||'');
+  if(!['LONG','SHORT'].includes(a))return;
+  const entry=Number(row.sig.entry||0);
+  const sl=Number(row.sig.sl||0);
+  if(!entry||!sl)return;
+  const risk=Math.abs(entry-sl);
+  if(risk<=0)return;
+  const newTP=(a==='LONG')?(entry+risk*rrTarget):(entry-risk*rrTarget);
+  row.sig.tp=newTP;
+  row.sig.rr=rrTarget;
+}
 async function refreshAll(){
   if(isScanning)return;
   isScanning=true;
@@ -1086,18 +2758,30 @@ async function refreshAll(){
   MKT={};
   sigGrid.innerHTML='<div class="wait-msg">Taranıyor...</div>';
   if(!availablePairIds)await refreshAvailablePairs();
-  const scanPairs=(availablePairIds&&availablePairIds.size)?PAIRS.filter(p=>availablePairIds.has(String(p.id).toUpperCase())):PAIRS.filter(p=>!unavailablePairIds.has(String(p.id).toUpperCase()));
+  // Acik pozisyon listesini taramadan ONCE al ki ayni pariteden yeni sinyal uretilmesin.
+  await refreshTradeSnapshot();
+  const occupiedPairs=new Set((realOpenPositions||[]).map(p=>normalizeSymbol(p.symbol)));
+  if(occupiedPairs.size){pushDebug(`scan_pre_snapshot occupied=${Array.from(occupiedPairs).join(',')}`);}
+  const basePairs=(availablePairIds&&availablePairIds.size)?PAIRS.filter(p=>availablePairIds.has(String(p.id).toUpperCase())):PAIRS.filter(p=>!unavailablePairIds.has(String(p.id).toUpperCase()));
+  // institutionalMode RR/kalite sikilastirmasi icin; pair filtresi degil.
+  // Kategori bazli filtre sadece scanCategories ayariyla (default: tum SCAN_CATEGORIES).
+  const scanPairs=basePairs;
   let done=0,src={mt5:0,unsupported:0};
   for(const p of scanPairs){
     done++;
     pill.textContent=`Taranıyor... ${done}/${scanPairs.length} · ${p.label}`;
     const row=await scanPairByIntervals(p);
-    if(row){MKT[p.id]=row;src.mt5++;}else src.unsupported++;
+    if(row){enforceStandardRR(row);MKT[p.id]=row;src.mt5++;}else src.unsupported++;
     if(done%5===0)renderAll();
     await new Promise(r=>setTimeout(r,120));
   }
   const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));
-  sigs.forEach(d=>{d.aiStatus='unknown';signalSeenAt[d.pair.id]=Date.now();});
+  sigs.forEach(d=>{
+    d.aiStatus='unknown';
+    // signalSeenAt sadece YENI sinyal anahtarlarinda guncellensin (eski mantik her tarayista yeniliyordu - bug)
+    const key=`${d.pair.id}:${d.sig.action}:${Number(d.sig.entry||0).toFixed(dp(d.pair.id))}`;
+    if(!signalSeenAt[key])signalSeenAt[key]=Date.now();
+  });
   cleanupOldSignals();
   try{await aiValidate(sigs);}catch(e){pushFeed(`${new Date().toLocaleTimeString()} · AI filtre pas geçti`);pushDebug(`ai_validate_failed ${e.message}`);}
   const next={};
@@ -1107,8 +2791,9 @@ async function refreshAll(){
   upsertPassBacktestCandidates();
   updatePassBacktestStatus();
   savePassBacktest();
-  await runPositionManager();
   await refreshTradeSnapshot();
+  await runPositionManager();
+  if(realOpenPositions&&realOpenPositions.length)await refreshTradeSnapshot();
   renderAll();
   pill.textContent=`${Object.keys(MKT).length} parite · ${sigs.length} sinyal`;
   pill.className='pill ok';
@@ -1116,17 +2801,33 @@ async function refreshAll(){
   pushDebug(`scan_done pairs=${Object.keys(MKT).length} signals=${sigs.length} verisiz=${src.unsupported} universe=${scanPairs.length}`);
   if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;
   if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);
-  pushDebug(`auto_state enabled=${tradeCfg.autoEnabled?'on':'off'} dry=${tradeCfg.dryRun?'on':'off'} health=${tradeCfg.lastHealth}`);
+  pushDebug(`auto_state enabled=${tradeCfg.autoEnabled?'on':'off'} dry=${tradeCfg.dryRun?'on':'off'} health=${tradeCfg.lastHealth} session=${isSessionOpen()?'open':'closed'} aplus=${planCfg.aPlusMode?'on':'off'} dayLoss=${currentDayLossUsd().toFixed(2)}`);
   if(tradeCfg.autoEnabled){
-    if(tradeCfg.lastHealth!=='MT5 OK'){
+    const blackout=isNewsBlackoutNow();
+    if(blackout){
+      pushTradeFeed('warn',`📰 HABER BLACKOUT · ${blackout.label} (±${blackout.bufferMin}dk · su an ${blackout.diffMin}dk) · auto-execute beklemede`);
+      pushDebug(`news_blackout active label=${blackout.label} diff=${blackout.diffMin}min`);
+      autoSkip.news_blackout=(autoSkip.news_blackout||0)+1;
+    }else if(tradeCfg.lastHealth!=='MT5 OK'){
       pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade durdu: MT5 health uygun degil`);
       autoSkip.health_not_ok=(autoSkip.health_not_ok||0)+1;
     }else{
-      const ready=sigs.map(d=>({d,rec:safeRecommendation(d).rec}));
+      checkDailyRollover();
+      const t=strategyThresholds();
+      const ready=sigs.map(d=>{const safe=safeRecommendation(d);const base=getRecommendation(d);return{d,rec:safe.rec,base,reason:safe.reason};});
       const allowBekle=String(planCfg.strategyProfile||'balanced')==='aggressive';
       const ranked=ready.filter(x=>x.rec==='Hemen'||(allowBekle&&x.rec==='Bekle')).map(x=>x.d).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));
       let executed=0;
+      const dailyCap=Math.max(1,Number(planCfg.maxTradesPerDay||10));
+      if((dailyState.tradeCount||0)>=dailyCap){
+        pushTradeFeed('warn',`🚫 GÜNLÜK TRADE LIMITI · ${dailyState.tradeCount}/${dailyCap} · Yeni emir gönderilmeyecek (yarın 00:00 UTC reset)`);
+        pushDebug(`daily_cap_reached count=${dailyState.tradeCount} cap=${dailyCap}`);
+        savePassBacktest();
+        pushDebug(`auto_executed 0/${planCfg.maxOpenPos} (daily_cap)`);
+      }else{
       pushDebug(`auto_candidates hemen=${ready.filter(x=>x.rec==='Hemen').length} bekle=${ready.filter(x=>x.rec==='Bekle').length} ranked=${ranked.length} mode=${allowBekle?'aggressive':'strict'}`);
+      pushDebug(`auto_threshold profile=${planCfg.strategyProfile||'balanced'} rrNow=${t.rrNow} zoneNow=${t.zoneNow} scoreNow=${t.scoreNow} rrWatch=${t.rrWatch} zoneWatch=${t.zoneWatch} scoreWatch=${t.scoreWatch}`);
+      ready.forEach(x=>{const d=x.d;const rr=Number(d?.sig?.rr||0).toFixed(2);const zone=Number(d?.sig?.pct||0).toFixed(2);const sc=confluenceScore(d);const sq=Math.round(weightedSignalQuality(d));const age=signalAgeMin(d);const ageStr=Number.isFinite(age)?age.toFixed(1):'?';pushDebug(`signal_eval ${d.pair.id} ${d.sig?.action||'-'} tag=${d.strategyTag||'core'} tf=${d.timeframe||'-'} age=${ageStr}min ai=${d.aiStatus||'unknown'} rr=${rr} zone=${zone} score=${sc} sq=${sq} base=${x.base} rec=${x.rec} fresh=${freshnessReason(d)} reason=${x.reason}`);});
       for(const d of ranked){
         if(executed>=planCfg.maxOpenPos)break;
         const gate=canAutoExecute(d);
@@ -1143,14 +2844,41 @@ async function refreshAll(){
           continue;
         }
         const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;
-        const lotAdj=Math.max(riskCfg.minLot,roundStep(Math.min(lot.lot,(budget/Math.max(planCfg.maxOpenPos,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),riskCfg.lotStep)).toFixed(2);
-        pushDebug(`lot_calc ${d.pair.id} side=${d.sig.action} riskUsd=${Number(lot.riskAmount||0).toFixed(2)} slUsd=${Number(lot.slUsd||0).toFixed(2)} lotRaw=${Number(lot.lot||0).toFixed(2)} lotFinal=${lotAdj}`);
+        const vMin=Number(d.pair?.volumeMin||riskCfg.minLot||0.01);
+        const vStep=Number(d.pair?.volumeStep||riskCfg.lotStep||0.01);
+        let lotAdjNum=Math.max(vMin,roundStep(Math.min(lot.lot,(budget/Math.max(planCfg.maxOpenPos,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),vStep));
+        // Marjin cap kontrolu — eger lot anlik marjin sinirini geciyorsa, sinira indir
+        const mBefore=marginUsagePct(d,lotAdjNum);
+        let marginShrunk=false;
+        if(mBefore>planCfg.maxMarginUse){
+          const cap=marginCapLot(d,planCfg.maxMarginUse);
+          if(cap>=Number(riskCfg.minLot||0.01)){
+            lotAdjNum=cap;
+            marginShrunk=true;
+          }else{
+            autoSkip.margin_below_minlot=(autoSkip.margin_below_minlot||0)+1;
+            upsertPassBacktestFromBlocked(d,`blocked:margin_below_minlot ${mBefore.toFixed(1)}%`);
+            pushDebug(`lot_calc_skip ${d.pair.id} margin ${mBefore.toFixed(1)}% > ${planCfg.maxMarginUse}% capLot ${cap.toFixed(2)} < minLot ${riskCfg.minLot}`);
+            continue;
+          }
+        }
+        const lotAdj=lotAdjNum.toFixed(2);
+        const mAfter=marginUsagePct(d,Number(lotAdj));
+        pushDebug(`lot_calc ${d.pair.id} side=${d.sig.action} riskUsd=${Number(lot.riskAmount||0).toFixed(2)} slUsd=${Number(lot.slUsd||0).toFixed(2)} lotRaw=${Number(lot.lot||0).toFixed(2)} lotFinal=${lotAdj} margin=${mAfter.toFixed(1)}%${marginShrunk?` (cap'lendi from ${mBefore.toFixed(1)}%)`:''}`);
+        if(marginShrunk){
+          pushTradeFeed('info',`LOT KUCULULTULDU · ${d.pair.label} ${d.sig.action} · marjin %${mBefore.toFixed(1)} → %${mAfter.toFixed(1)} · lot:${lot.lot.toFixed(2)} → ${lotAdj}`);
+        }
+        if((dailyState.tradeCount||0)>=dailyCap){
+          pushTradeFeed('warn',`🚫 GÜNLÜK LIMIT ULASTIRIDI · ${dailyState.tradeCount}/${dailyCap} · tarama sirasinda · kalan adaylar atlandi`);
+          break;
+        }
         const res=await executeSignalOrder(d,lotAdj);
-        if(res&&res.ok&&!res.skipped)executed++;
+        if(res&&res.ok&&!res.skipped){executed++;incDailyTradeCount();}
         else upsertPassBacktestFromBlocked(d,`blocked:${res?.error||res?.detail||'order_failed'}`);
       }
       savePassBacktest();
-      pushDebug(`auto_executed ${executed}/${planCfg.maxOpenPos}`);
+      pushDebug(`auto_executed ${executed}/${planCfg.maxOpenPos} dailyCount=${dailyState.tradeCount}/${dailyCap}`);
+      }
     }
   }
   const skipTxt=Object.keys(autoSkip).map(k=>`${k}:${autoSkip[k]}`).join(', ');
@@ -1161,18 +2889,87 @@ function toggleAutoScan(el){autoScanOn=!autoScanOn;el.textContent=`Oto Tarama: $
 function toggleAiFilter(el){aiFilterOn=!aiFilterOn;el.textContent=`AI Filtre: ${aiFilterOn?'Açık':'Kapalı'}`;el.classList.toggle('on',aiFilterOn);renderSignalCards()}
 function toggleNightTheme(el){document.body.classList.toggle('night-paper');const on=document.body.classList.contains('night-paper');el.textContent=`Gece Gazetesi: ${on?'Açık':'Kapalı'}`;el.classList.toggle('on',on)}
 function setTradeLimit(v){const n=Number(v);if(!Number.isFinite(n))return;tradeLimit=Math.max(1,Math.min(20,n));limitLbl.textContent=`İşlem limit: ${tradeLimit}`;renderSignalCards()}
+function _round2(v){return Math.round(Number(v||0)*100)/100}
+function _setNum(id,v){const el=document.getElementById(id);if(el)el.value=_round2(v)}
+function refreshRiskSummary(){
+  const el=document.getElementById('riskSummary');if(!el)return;
+  const bal=Math.max(0,Number(riskCfg.balance||0));
+  const usd=Math.max(0,Number(riskCfg.riskUsd||0));
+  const pct=Math.max(0,Number(riskCfg.riskPct||0));
+  const pctUsd=(bal*pct)/100;
+  const effective=(usd>0&&pctUsd>0)?Math.min(usd,pctUsd):(usd>0?usd:pctUsd);
+  const effPct=bal>0?(effective/bal)*100:0;
+  const inconsistent=Math.abs(usd-pctUsd)>0.51&&usd>0&&pctUsd>0;
+  el.innerHTML=`Bir SL'de kaybedilecek: <b>${effective.toFixed(2)} USD</b> (~%${effPct.toFixed(2)} bakiye). `+
+    (inconsistent?`<span style="color:#9A2020">UYARI: Risk% ile Risk USD tutarsiz (USD=${usd.toFixed(2)}, %=${pctUsd.toFixed(2)}). Guvenli olan ${effective.toFixed(2)} kullanilacak.</span>`:'');
+}
+function syncRiskFromPct(){
+  const bal=Math.max(10,Number((document.getElementById('accBal')||{}).value||1000));
+  const pct=Math.max(0.05,Number((document.getElementById('riskPct')||{}).value||1));
+  const usd=(bal*pct)/100;
+  _setNum('riskUsd',usd);
+  riskCfg.balance=bal;riskCfg.riskPct=pct;riskCfg.riskUsd=_round2(usd);
+  refreshRiskSummary();
+}
+function syncRiskFromUsd(){
+  const bal=Math.max(10,Number((document.getElementById('accBal')||{}).value||1000));
+  const usd=Math.max(0.1,Number((document.getElementById('riskUsd')||{}).value||10));
+  const pct=bal>0?(usd/bal)*100:0;
+  _setNum('riskPct',pct);
+  riskCfg.balance=bal;riskCfg.riskUsd=_round2(usd);riskCfg.riskPct=_round2(pct);
+  refreshRiskSummary();
+}
+function syncRiskFromBalance(){
+  const bal=Math.max(10,Number((document.getElementById('accBal')||{}).value||1000));
+  // Bakiye degisince risk% sabit kalir, riskUsd yeniden hesaplanir
+  const pct=Math.max(0.05,Number((document.getElementById('riskPct')||{}).value||1));
+  const usd=(bal*pct)/100;
+  _setNum('riskUsd',usd);
+  riskCfg.balance=bal;riskCfg.riskPct=pct;riskCfg.riskUsd=_round2(usd);
+  refreshRiskSummary();
+}
 function updateRiskConfig(){
   riskCfg.balance=Math.max(10,Number(accBal.value||1000));
-  riskCfg.riskPct=Math.max(0.1,Number(riskPct.value||1));
-  riskCfg.riskUsd=Math.max(1,Number(riskUsd.value||20));
+  riskCfg.riskPct=Math.max(0.05,Number(riskPct.value||1));
+  riskCfg.riskUsd=Math.max(0.1,Number(riskUsd.value||(riskCfg.balance*riskCfg.riskPct)/100));
   riskCfg.leverage=Math.max(1,Number(levVal.value||200));
   riskCfg.minLot=Math.max(0.001,Number(minLot.value||0.01));
   riskCfg.maxLot=Math.max(riskCfg.minLot,Number(maxLot.value||5));
   riskCfg.lotStep=Math.max(0.001,Number(lotStep.value||0.01));
+  // Tutarsizliklari kullaniciya bildir, ama otomatik duzeltme (Risk USD'yi %1'e cek)
+  const pctUsd=(riskCfg.balance*riskCfg.riskPct)/100;
+  if(Math.abs(riskCfg.riskUsd-pctUsd)>0.51){
+    riskCfg.riskUsd=_round2(pctUsd);
+    _setNum('riskUsd',riskCfg.riskUsd);
+    pushDebug(`risk_sync riskUsd<-${pctUsd.toFixed(2)} (riskPct=${riskCfg.riskPct}% * balance=${riskCfg.balance})`);
+  }
+  refreshRiskSummary();
   renderReviewCards();renderOrderPlan();
 }
-function updatePlanConfig(){planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||3));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||2)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||40)));planCfg.maxSpreadPts=Math.max(0,Number(maxSpreadPts.value||35));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||25));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk)`)}
-let autoT=null,countT=null;function tick(){if(!autoScanOn)return scanNote.textContent='Oto tarama kapalı';const ms=Math.max(0,AUTO_SCAN_MS-(Date.now()%AUTO_SCAN_MS));scanNote.textContent=`Sonraki tarama: ${Math.ceil(ms/1000)}sn`}function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterval(()=>refreshAll(),AUTO_SCAN_MS);countT=setInterval(tick,1000);tick()}function stopAuto(){clearInterval(autoT);clearInterval(countT)}
+function updatePlanConfig(){
+  // LIVE moda gecis cift onayi
+  try{
+    const newTarget=String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo';
+    const wasLive=tradeCfg.targetAccountType==='live';
+    if(newTarget==='live'&&!wasLive){
+      const phrase=prompt('UYARI: Emirler LIVE hesaba gidecek. Onaylamak için "LIVE-EVET" yaz:','');
+      if(String(phrase||'').trim().toUpperCase()!=='LIVE-EVET'){
+        targetAccountType.value='demo';
+        alert('Onay geçersiz. DEMO modda kalındı.');
+      }
+    }
+  }catch(_){ }
+  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||10)));planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));planCfg.aPlusMode=!!aPlusMode.checked;planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);if(newVal!==planCfg.scanStocks){planCfg.scanStocks=newVal;try{const cached=loadCachedAllSymbols();if(cached&&cached.length){PAIRS=buildPairsFromSymbols(cached);pushDebug(`pairs_rebuilt scanStocks=${planCfg.scanStocks?'on':'off'} total=${PAIRS.length}`);}}catch(_){}}planCfg.scanStocks=newVal;}if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.standardRR=Math.max(0,Math.min(10,Number((document.getElementById('standardRR')||{}).value||3)));planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));{const _emu=document.getElementById('earlyManageUsd');planCfg.earlyManageUsd=Math.max(0,Number((_emu&&_emu.value)||planCfg.earlyManageUsd||0));}{const _msd=document.getElementById('maxSameDirection');planCfg.maxSameDirection=Math.max(0,Math.min(20,Number((_msd&&_msd.value)||planCfg.maxSameDirection||0)));}{const _mne=document.getElementById('maxNetExposureCount');planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number((_mne&&_mne.value)||planCfg.maxNetExposureCount||0)));}{const _mce=document.getElementById('maxCorrelatedExposure');planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number((_mce&&_mce.value)||planCfg.maxCorrelatedExposure||0)));}tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();tradeCfg.placement=(String((document.getElementById('placementType')||{}).value||'pending').toLowerCase()==='market'?'market':'pending');tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number((document.getElementById('pendingExpireMin')||{}).value||0)));tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number((document.getElementById('pendingPullbackPts')||{}).value||0)));tradeCfg.allowMarketFallback=!!(document.getElementById('allowMarketFallback')||{}).checked;tradeCfg.autoAdjustPending=!!(document.getElementById('autoAdjustPending')||{}).checked;saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk · seans:${planCfg.sessionEnabled?`${planCfg.sessionStartHour}-${planCfg.sessionEndHour} UTC`:'off'} · A+:${planCfg.aPlusMode?'on':'off'} · loss<=${planCfg.maxDailyLossPct}% · inst:${planCfg.institutionalMode?'on':'off'} rr>=${planCfg.institutionalMinRR} · turtleScalp:${planCfg.allowTurtleScalp?'on':'off'} rr>=${planCfg.turtleScalpMinRR})`)}
+let autoT=null,countT=null;
+function tick(){
+  try{checkDailyRollover();}catch(_){ }
+  try{updateStatusBanner();}catch(_){ }
+  if(!autoScanOn){if(scanNote)scanNote.textContent='Oto tarama kapalı';return;}
+  const ms=Math.max(0,AUTO_SCAN_MS-(Date.now()%AUTO_SCAN_MS));
+  if(scanNote)scanNote.textContent=`Sonraki tarama: ${Math.ceil(ms/1000)}sn`;
+}
+function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterval(()=>refreshAll(),AUTO_SCAN_MS);countT=setInterval(tick,1000);tick()}
+function stopAuto(){clearInterval(autoT);clearInterval(countT)}
 async function runAI(){const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));const lines=sigs.map(d=>`${d.pair.label} ${d.sig.action} RR=${(d.sig.rr||0).toFixed(2)} TF=${recommendTF(d)}`).join('\n')||'Aktif sinyal yok';try{const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt:`CRT olarak değerlendir:\n${lines}`})});const j=await r.json();aio.textContent=(j.text||'Analiz alınamadı').toString()}catch(e){aio.textContent='AI hatası: '+e.message}}
-loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;strategyProfile.value=planCfg.strategyProfile||'balanced';tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';updatePlanConfig();checkHealth();loadKnowledgeIndex();refreshDebugLog();refreshAll().then(()=>startAuto());
+loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;{const _mtp=document.getElementById('maxTradesPerDay');if(_mtp)_mtp.value=Number.isFinite(planCfg.maxTradesPerDay)?planCfg.maxTradesPerDay:10;const _nbt=document.getElementById('newsBlackoutTimes');if(_nbt)_nbt.value=String(planCfg.newsBlackoutTimes||'');const _nbb=document.getElementById('newsBlackoutBufferMin');if(_nbb)_nbb.value=Number.isFinite(planCfg.newsBlackoutBufferMin)?planCfg.newsBlackoutBufferMin:15;}maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;sessionEnabled.checked=!!planCfg.sessionEnabled;sessionStartHour.value=planCfg.sessionStartHour;aPlusMode.checked=!!planCfg.aPlusMode;maxDailyLossPct.value=planCfg.maxDailyLossPct;disableWeakStrategies.checked=!!planCfg.disableWeakStrategies;institutionalMode.checked=!!planCfg.institutionalMode;institutionalMinRR.value=planCfg.institutionalMinRR;allowTurtleScalp.checked=!!planCfg.allowTurtleScalp;turtleScalpMinRR.value=planCfg.turtleScalpMinRR;sessionEndHour.value=planCfg.sessionEndHour;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;{const _ss=document.getElementById('scanStocks');if(_ss)_ss.checked=!!planCfg.scanStocks;}strategyProfile.value=planCfg.strategyProfile||'balanced';{const _srr=document.getElementById('standardRR');if(_srr)_srr.value=Number.isFinite(planCfg.standardRR)?planCfg.standardRR:3;}tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;{const _emu=document.getElementById('earlyManageUsd');if(_emu)_emu.value=Number.isFinite(planCfg.earlyManageUsd)?planCfg.earlyManageUsd:13;}{const _msd=document.getElementById('maxSameDirection');if(_msd)_msd.value=Number.isFinite(planCfg.maxSameDirection)?planCfg.maxSameDirection:3;}{const _mne=document.getElementById('maxNetExposureCount');if(_mne)_mne.value=Number.isFinite(planCfg.maxNetExposureCount)?planCfg.maxNetExposureCount:0;}{const _mce=document.getElementById('maxCorrelatedExposure');if(_mce)_mce.value=Number.isFinite(planCfg.maxCorrelatedExposure)?planCfg.maxCorrelatedExposure:2;}autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';(document.getElementById('placementType')||{}).value=tradeCfg.placement||'pending';(document.getElementById('pendingExpireMin')||{}).value=Number.isFinite(tradeCfg.pendingExpireMin)?tradeCfg.pendingExpireMin:5;{const _ppb=document.getElementById('pendingPullbackPts');if(_ppb)_ppb.value=Number.isFinite(tradeCfg.pendingPullbackPts)?tradeCfg.pendingPullbackPts:10;const _amf=document.getElementById('allowMarketFallback');if(_amf)_amf.checked=!!tradeCfg.allowMarketFallback;const _aap=document.getElementById('autoAdjustPending');if(_aap)_aap.checked=tradeCfg.autoAdjustPending!==false;}updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>startAuto());
 </script>

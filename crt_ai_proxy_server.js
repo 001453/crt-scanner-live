@@ -24,10 +24,40 @@ function ensureDebugDir() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
+const LOG_ROTATE_MAX_BYTES = Number(process.env.CRT_DEBUG_LOG_MAX_BYTES || 5 * 1024 * 1024);
+const LOG_ROTATE_KEEP = Number(process.env.CRT_DEBUG_LOG_KEEP || 3);
+let lastRotateCheck = 0;
+function maybeRotateDebugLog() {
+  const now = Date.now();
+  if (now - lastRotateCheck < 5000) return;
+  lastRotateCheck = now;
+  try {
+    if (!fs.existsSync(DEBUG_LOG_PATH)) return;
+    const st = fs.statSync(DEBUG_LOG_PATH);
+    if (st.size < LOG_ROTATE_MAX_BYTES) return;
+    for (let i = LOG_ROTATE_KEEP; i >= 1; i--) {
+      const cur = `${DEBUG_LOG_PATH}.${i}`;
+      const nxt = `${DEBUG_LOG_PATH}.${i + 1}`;
+      if (fs.existsSync(cur)) {
+        if (i === LOG_ROTATE_KEEP) {
+          try { fs.unlinkSync(cur); } catch (_) {}
+        } else {
+          try { fs.renameSync(cur, nxt); } catch (_) {}
+        }
+      }
+    }
+    try { fs.renameSync(DEBUG_LOG_PATH, `${DEBUG_LOG_PATH}.1`); } catch (_) {}
+    fs.writeFileSync(DEBUG_LOG_PATH, `${JSON.stringify({ ts: new Date().toISOString(), level: 'info', event: 'log.rotated', max_bytes: LOG_ROTATE_MAX_BYTES, keep: LOG_ROTATE_KEEP })}\n`, 'utf8');
+  } catch (_e) {
+    // ignore rotation errors to avoid breaking runtime
+  }
+}
+
 function logEvent(level, event, detail = {}) {
   if (!DEBUG_ENABLED) return;
   try {
     ensureDebugDir();
+    maybeRotateDebugLog();
     const line = JSON.stringify({
       ts: new Date().toISOString(),
       level,
@@ -82,6 +112,25 @@ function pyExec(code, args = []) {
   return execFileAsync('py', ['-c', code, ...args], {
     timeout: 30000,
     maxBuffer: 1024 * 1024
+  });
+}
+
+function pyExecStdin(code, stdinPayload = '', timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const child = execFile('py', ['-c', code], {
+      timeout: timeoutMs,
+      maxBuffer: 1024 * 1024
+    }, (err, stdout, stderr) => {
+      if (err) return reject(err);
+      resolve({ stdout, stderr });
+    });
+    try {
+      child.stdin.setDefaultEncoding('utf8');
+      child.stdin.write(String(stdinPayload || ''));
+      child.stdin.end();
+    } catch (e) {
+      reject(e);
+    }
   });
 }
 
@@ -199,21 +248,26 @@ async function handleBrokerCandles(req, res) {
       'if not mt5.initialize():',
       '  print(json.dumps({"error":"MT5 initialize basarisiz","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(1)',
-      'base=pair_id.replace("/","").replace("_","").upper()',
       'symbols=mt5.symbols_get() or []',
       'names=[s.name for s in symbols]',
-      'def score(n):',
-      '  u=n.upper()',
-      '  clean="".join(ch for ch in u if ch.isalnum())',
-      '  if clean==base: return 100',
-      '  if clean.startswith(base): return 90',
-      '  if base in clean: return 80',
-      '  if category=="indices" and base=="NAS100" and ("NAS" in clean or "USTEC" in clean): return 70',
-      '  if category=="indices" and base=="US500" and ("SPX" in clean or "US500" in clean): return 70',
-      '  if category=="indices" and base=="US30" and ("US30" in clean or "DJI" in clean): return 70',
-      '  return -1',
-      'cands=sorted(((score(n),n) for n in names), reverse=True)',
-      'symbol=next((n for s,n in cands if s>=70), None)',
+      'names_ci={n.upper():n for n in names}',
+      '# 1) Tam isim (case-insensitive) — frontend genelde brokerin tam sembol adini gonderir',
+      'symbol=names_ci.get(pair_id.upper().strip())',
+      'if not symbol:',
+      '  # 2) Skor bazli fuzzy match — alphanumeric normalize ile broker suffix (.x .r .m) goz ardi',
+      '  base="".join(ch for ch in pair_id.upper() if ch.isalnum())',
+      '  def score(n):',
+      '    u=n.upper()',
+      '    clean="".join(ch for ch in u if ch.isalnum())',
+      '    if clean==base: return 100',
+      '    if clean.startswith(base): return 90',
+      '    if base in clean: return 80',
+      '    if category=="indices" and base=="NAS100" and ("NAS" in clean or "USTEC" in clean): return 70',
+      '    if category=="indices" and base=="US500" and ("SPX" in clean or "US500" in clean): return 70',
+      '    if category=="indices" and base=="US30" and ("US30" in clean or "DJI" in clean): return 70',
+      '    return -1',
+      '  cands=sorted(((score(n),n) for n in names), reverse=True)',
+      '  symbol=next((n for s,n in cands if s>=70), None)',
       'if not symbol:',
       '  print(json.dumps({"error":"Symbol bulunamadi","pairId":pair_id}), flush=True)',
       '  mt5.shutdown()',
@@ -260,6 +314,237 @@ async function handleBrokerCandles(req, res) {
   }
 }
 
+async function handleClosePosition(req, res) {
+  const startedAt = Date.now();
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const ticket = Number(payload.ticket || 0);
+    if (!ticket) {
+      writeJson(res, 400, { ok: false, error: 'ticket_required' });
+      return;
+    }
+    const pyCode = [
+      'import json, sys',
+      'import MetaTrader5 as mt5',
+      'raw = sys.stdin.read()',
+      'p = json.loads(raw or "{}")',
+      'ticket = int(p.get("ticket",0) or 0)',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'pos_list = mt5.positions_get(ticket=ticket) or []',
+      'if not pos_list:',
+      '  mt5.shutdown()',
+      '  print(json.dumps({"ok":False,"error":"position_not_found","ticket":ticket}), flush=True)',
+      '  raise SystemExit(0)',
+      'pos = pos_list[0]',
+      'symbol = str(getattr(pos,"symbol","") or "")',
+      'volume = float(getattr(pos,"volume",0) or 0)',
+      'side_buy = int(getattr(pos,"type",-1)) == mt5.POSITION_TYPE_BUY',
+      'tick = mt5.symbol_info_tick(symbol)',
+      'if tick is None:',
+      '  mt5.shutdown()',
+      '  print(json.dumps({"ok":False,"error":"tick_unavailable","ticket":ticket,"symbol":symbol}), flush=True)',
+      '  raise SystemExit(0)',
+      'price = float(tick.bid) if side_buy else float(tick.ask)',
+      'order_type = mt5.ORDER_TYPE_SELL if side_buy else mt5.ORDER_TYPE_BUY',
+      'req = {',
+      '  "action": mt5.TRADE_ACTION_DEAL,',
+      '  "position": ticket,',
+      '  "symbol": symbol,',
+      '  "volume": volume,',
+      '  "type": order_type,',
+      '  "price": price,',
+      '  "deviation": 30,',
+      '  "magic": 990011,',
+      '  "comment": "manual_close",',
+      '  "type_time": mt5.ORDER_TIME_GTC,',
+      '  "type_filling": mt5.ORDER_FILLING_IOC',
+      '}',
+      'result = mt5.order_send(req)',
+      'rc = int(getattr(result,"retcode",0) or 0)',
+      'ok = rc in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED)',
+      'out = {"ok":ok,"ticket":ticket,"symbol":symbol,"retcode":rc,"detail":str(getattr(result,"comment","") or "")}',
+      'mt5.shutdown()',
+      'print(json.dumps(out), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExecStdin(pyCode, JSON.stringify({ ticket }));
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    logEvent(j.ok ? 'info' : 'warn', 'close_position.result', {
+      ok: !!j.ok, ticket, retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
+    });
+    writeJson(res, j.ok ? 200 : 400, j);
+  } catch (err) {
+    logEvent('error', 'close_position.failed', { detail: err.message });
+    writeJson(res, 500, { ok: false, error: 'close_position_failed', detail: err.message });
+  }
+}
+
+async function handleCancelPending(req, res) {
+  const startedAt = Date.now();
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const ticket = Number(payload.ticket || 0);
+    if (!ticket) {
+      writeJson(res, 400, { ok: false, error: 'ticket_required' });
+      return;
+    }
+    const pyCode = [
+      'import json, sys',
+      'import MetaTrader5 as mt5',
+      'raw = sys.stdin.read()',
+      'p = json.loads(raw or "{}")',
+      'ticket = int(p.get("ticket",0) or 0)',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'orders = mt5.orders_get(ticket=ticket) or []',
+      'if not orders:',
+      '  mt5.shutdown()',
+      '  print(json.dumps({"ok":False,"error":"order_not_found","ticket":ticket}), flush=True)',
+      '  raise SystemExit(0)',
+      'req = {"action": mt5.TRADE_ACTION_REMOVE, "order": ticket}',
+      'result = mt5.order_send(req)',
+      'ok = bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
+      'out = {"ok":ok, "ticket":ticket, "retcode":int(getattr(result,"retcode",0) or 0), "detail":str(getattr(result,"comment","") or "")}',
+      'mt5.shutdown()',
+      'print(json.dumps(out), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExecStdin(pyCode, JSON.stringify({ ticket }));
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    logEvent(j.ok ? 'info' : 'warn', 'cancel_pending.result', {
+      ok: !!j.ok, ticket, retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
+    });
+    writeJson(res, j.ok ? 200 : 400, j);
+  } catch (err) {
+    logEvent('error', 'cancel_pending.failed', { detail: err.message });
+    writeJson(res, 500, { ok: false, error: 'cancel_pending_failed', detail: err.message });
+  }
+}
+
+async function handleListAllSymbols(_req, res) {
+  const startedAt = Date.now();
+  try {
+    const pyCode = [
+      'import json',
+      'import MetaTrader5 as mt5',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'syms=mt5.symbols_get() or []',
+      'FULL_TRADE = 4  # SYMBOL_TRADE_MODE_FULL',
+      'LONG_ONLY = 2',
+      'SHORT_ONLY = 3',
+      'ALLOWED_MODES = {FULL_TRADE, LONG_ONLY, SHORT_ONLY}',
+      'def derive_category(path, name, descr):',
+      '  p=(path or "").lower()',
+      '  n=(name or "").upper()',
+      '  d=(descr or "").lower()',
+      '  # Broker suffix temizle (.x .r .pro .raw .m vb.)',
+      '  base=n.lstrip("#$")',
+      '  for suf in (".X",".R",".PRO",".RAW",".M",".I",".CASH",".SPOT","_X","_R"):',
+      '    if base.endswith(suf):',
+      '      base=base[:-len(suf)]',
+      '  # Sentetik urunler (broker icinden uretilmis varyantlar — XAUEUR, GAUTRY, GAUUSD vb.)',
+      '  # bunlari ayri kategoriye al, tarama dahil etme',
+      '  if "synthetic" in p: return "synthetic"',
+      '  # Path tabanli kontroller (en guvenilir kategorizasyon)',
+      '  if "crypto" in p: return "crypto"',
+      '  if "metal" in p: return "metals"',
+      '  if "indice" in p or "index" in p or "indic" in p: return "indices"',
+      '  if "energ" in p: return "energies"',
+      '  if "share" in p or "stock" in p or "equit" in p: return "stocks"',
+      '  if "bond" in p: return "bonds"',
+      '  if "agri" in p or "commod" in p or "soft" in p: return "commodities"',
+      '  if "forex" in p or "fx" in p or "currenc" in p: return "forex"',
+      '  # Description tabanli',
+      '  if "index" in d or "indices" in d: return "indices"',
+      '  if "crypto" in d or "cryptocurrency" in d: return "crypto"',
+      '  if "oil" in d or "crude" in d or "natural gas" in d: return "energies"',
+      '  # Symbol kalibi tabanli (son care)',
+      '  index_names={"NAS100","NASDAQ","US500","SP500","SPX","SPX500","US30","DJ30","DJIA","DJI","UK100","FTSE","FTSE100","GER30","GER40","DAX","CAC40","CAC","FRA40","JPN225","N225","NIKKEI","SPA35","IBEX","AUS200","HK50","HSI","RUSSELL","RUSSEL2000","RUSSELL2000","NDX","DXY","USDX"}',
+      '  if base in index_names: return "indices"',
+      '  if base.startswith(("XAU","XAG","XPT","XPD")): return "metals"',
+      '  crypto_tags=("BTC","ETH","XRP","LTC","DOGE","ADA","SOL","DOT","BNB","AVAX","LINK","MATIC","SHIB","TRX","UNI","XLM","ATOM","BCH","BSV","AVE")',
+      '  if any(base.startswith(t) for t in crypto_tags): return "crypto"',
+      '  energy_tags=("WTI","BRENT","XBR","XTI","NGAS")',
+      '  if any(t in base for t in energy_tags) or base in ("NG","OIL"): return "energies"',
+      '  commod_tags=("WHEAT","CORN","SOYB","COCOA","COFFEE","SUGAR","COTTON","RICE")',
+      '  if any(t in base for t in commod_tags): return "commodities"',
+      '  # # veya $ prefix kalan stocks',
+      '  if name.startswith(("#","$")): return "stocks"',
+      '  # Stocks ipuclari (company/inc/ltd vs)',
+      '  if "company" in d or "corporation" in d or "inc." in d or " ltd" in d or " plc" in d:',
+      '    return "stocks"',
+      '  # Forex: 6 harfli alpha (basit kural)',
+      '  clean_base="".join(ch for ch in base if ch.isalpha())',
+      '  if len(clean_base)==6:',
+      '    return "forex"',
+      '  return "other"',
+      'rows=[]',
+      'for s in syms:',
+      '  try:',
+      '    name=str(getattr(s,"name","") or "")',
+      '    if not name: continue',
+      '    info=mt5.symbol_info(name)',
+      '    if info is None: continue',
+      '    trade_mode=int(getattr(info,"trade_mode",0) or 0)',
+      '    if trade_mode not in ALLOWED_MODES: continue',
+      '    path=str(getattr(info,"path","") or "")',
+      '    descr=str(getattr(info,"description","") or "")',
+      '    cat=derive_category(path, name, descr)',
+      '    # Brokerin kendi hesabini sor: 1 lot ALIS icin marjin (account currency cinsinden, USD)',
+      '    mpl=0.0',
+      '    try:',
+      '      tick=mt5.symbol_info_tick(name)',
+      '      ask=float(getattr(tick,"ask",0) or 0) if tick else 0.0',
+      '      if ask>0:',
+      '        if not mt5.symbol_select(name, True): pass',
+      '        m=mt5.order_calc_margin(mt5.ORDER_TYPE_BUY, name, 1.0, ask)',
+      '        if m is not None and m>0: mpl=float(m)',
+      '    except Exception:',
+      '      mpl=0.0',
+      '    rows.append({',
+      '      "name": name,',
+      '      "category": cat,',
+      '      "path": path,',
+      '      "description": descr,',
+      '      "digits": int(getattr(info,"digits",5) or 5),',
+      '      "point": float(getattr(info,"point",0.00001) or 0.00001),',
+      '      "volume_min": float(getattr(info,"volume_min",0.01) or 0.01),',
+      '      "volume_step": float(getattr(info,"volume_step",0.01) or 0.01),',
+      '      "trade_mode": trade_mode,',
+      '      "spread": int(getattr(info,"spread",0) or 0),',
+      '      "tick_value": float(getattr(info,"trade_tick_value",0) or 0),',
+      '      "tick_size": float(getattr(info,"trade_tick_size",0) or 0),',
+      '      "stops_level": int(getattr(info,"trade_stops_level",0) or 0),',
+      '      "contract_size": float(getattr(info,"trade_contract_size",100000) or 100000),',
+      '      "margin_per_lot": mpl,',
+      '      "currency_base": str(getattr(info,"currency_base","") or ""),',
+      '      "currency_profit": str(getattr(info,"currency_profit","") or ""),',
+      '      "currency_margin": str(getattr(info,"currency_margin","") or "")',
+      '    })',
+      '  except Exception as e:',
+      '    continue',
+      'rows.sort(key=lambda x: (x["category"], x["name"]))',
+      'mt5.shutdown()',
+      'print(json.dumps({"ok":True,"count":len(rows),"symbols":rows}, ensure_ascii=False), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode, []);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+    logEvent('info', 'list_all_symbols.ok', {
+      count: Number(j.count || 0),
+      elapsed_ms: Date.now() - startedAt
+    });
+  } catch (err) {
+    logEvent('error', 'list_all_symbols.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'list_all_symbols_failed', detail: err.message });
+  }
+}
+
 async function handleAvailablePairs(req, res) {
   try {
     const body = await readBody(req);
@@ -287,14 +572,19 @@ async function handleAvailablePairs(req, res) {
       '  return -1',
       'available=[]',
       'unavailable=[]',
+      'names_ci={n.upper():n for n in names}',
       'for row in pairs:',
       '  pid=str((row or {}).get("pairId","") or "").upper().strip()',
       '  cat=str((row or {}).get("category","") or "").lower().strip()',
       '  if not pid:',
       '    continue',
-      '  base=pid.replace("/","").replace("_","").upper()',
-      '  cands=sorted(((score(base,cat,n),n) for n in names), reverse=True)',
-      '  symbol=next((n for s,n in cands if s>=70), None)',
+      '  # 1) Once tam isim (case-insensitive) — frontend genelde brokerin tam sembol adini gonderir',
+      '  symbol=names_ci.get(pid)',
+      '  if not symbol:',
+      '    # 2) Skor bazli fuzzy match — alphanumeric normalize ederek (.x .r gibi suffixleri es gec)',
+      '    base="".join(ch for ch in pid if ch.isalnum())',
+      '    cands=sorted(((score(base,cat,n),n) for n in names), reverse=True)',
+      '    symbol=next((n for s,n in cands if s>=70), None)',
       '  if symbol:',
       '    available.append({"pairId":pid,"category":cat,"symbol":symbol})',
       '  else:',
@@ -386,8 +676,53 @@ async function handleTradeSnapshot(_req, res) {
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
       '  closed_rows.append({"deal": int(getattr(d, "ticket", 0) or 0), "position_id": int(getattr(d, "position_id", 0) or 0), "symbol": str(getattr(d, "symbol", "") or ""), "side": side, "volume": float(getattr(d, "volume", 0) or 0), "price": float(getattr(d, "price", 0) or 0), "profit": float(getattr(d, "profit", 0) or 0), "reason": reason_name, "result": result, "time": int(getattr(d, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
       'closed_rows = sorted(closed_rows, key=lambda x: x["time"], reverse=True)[:300]',
+      '# Pending orders',
+      'pending_orders = mt5.orders_get() or []',
+      'pending_rows = []',
+      'pending_type_map = {',
+      '  int(mt5.ORDER_TYPE_BUY_LIMIT):"BUY_LIMIT",',
+      '  int(mt5.ORDER_TYPE_SELL_LIMIT):"SELL_LIMIT",',
+      '  int(mt5.ORDER_TYPE_BUY_STOP):"BUY_STOP",',
+      '  int(mt5.ORDER_TYPE_SELL_STOP):"SELL_STOP",',
+      '  int(getattr(mt5,"ORDER_TYPE_BUY_STOP_LIMIT",-1)):"BUY_STOP_LIMIT",',
+      '  int(getattr(mt5,"ORDER_TYPE_SELL_STOP_LIMIT",-1)):"SELL_STOP_LIMIT"',
+      '}',
+      'for o in pending_orders:',
+      '  ot = int(getattr(o,"type",-1))',
+      '  if ot not in pending_type_map: continue',
+      '  comment = str(getattr(o,"comment","") or "")',
+      '  lc = comment.lower()',
+      '  strategy_tag = "core"',
+      '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
+      '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
+      '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
+      '  side = "LONG" if ot in (int(mt5.ORDER_TYPE_BUY_LIMIT), int(mt5.ORDER_TYPE_BUY_STOP)) else "SHORT"',
+      '  sym_name = str(getattr(o,"symbol","") or "")',
+      '  bid_v = 0.0; ask_v = 0.0',
+      '  try:',
+      '    tk = mt5.symbol_info_tick(sym_name)',
+      '    if tk is not None:',
+      '      bid_v = float(getattr(tk,"bid",0) or 0)',
+      '      ask_v = float(getattr(tk,"ask",0) or 0)',
+      '  except Exception: pass',
+      '  pending_rows.append({',
+      '    "ticket": int(getattr(o,"ticket",0) or 0),',
+      '    "symbol": sym_name,',
+      '    "side": side,',
+      '    "type": pending_type_map[ot],',
+      '    "volume": float(getattr(o,"volume_initial",0) or 0),',
+      '    "price_open": float(getattr(o,"price_open",0) or 0),',
+      '    "sl": float(getattr(o,"sl",0) or 0),',
+      '    "tp": float(getattr(o,"tp",0) or 0),',
+      '    "time_setup": int(getattr(o,"time_setup",0) or 0),',
+      '    "time_expiration": int(getattr(o,"time_expiration",0) or 0),',
+      '    "bid": bid_v,',
+      '    "ask": ask_v,',
+      '    "comment": comment,',
+      '    "strategy_tag": strategy_tag',
+      '  })',
       'mt5.shutdown()',
-      'print(json.dumps({"ok": True, "open_positions": open_rows, "closed_deals": closed_rows}), flush=True)'
+      'print(json.dumps({"ok": True, "open_positions": open_rows, "closed_deals": closed_rows, "pending_orders": pending_rows}), flush=True)'
     ].join('\n');
     const { stdout } = await pyExec(pyCode);
     const j = JSON.parse((stdout || '').trim() || '{}');
@@ -412,6 +747,7 @@ async function handleManagePositions(req, res) {
     const beAtR = Math.max(0.2, Number(payload.be_at_r || 1.0));
     const trailAtR = Math.max(0.2, Number(payload.trail_at_r || 1.5));
     const partialClosePct = Math.max(0, Math.min(100, Number(payload.partial_close_pct || 50)));
+    const earlyManageUsd = Math.max(0, Number(payload.early_manage_usd || 0));
     const pyCode = [
       'import json,sys,sqlite3,os,datetime,math',
       'import MetaTrader5 as mt5',
@@ -425,6 +761,7 @@ async function handleManagePositions(req, res) {
       'be_at_r=float(p.get("be_at_r",1.0) or 1.0)',
       'trail_at_r=float(p.get("trail_at_r",1.5) or 1.5)',
       'partial_close_pct=float(p.get("partial_close_pct",50) or 50)',
+      'early_manage_usd=float(p.get("early_manage_usd",0) or 0)',
       'if not mt5.initialize():',
       '  out={"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}',
       '  conn.close()',
@@ -432,6 +769,39 @@ async function handleManagePositions(req, res) {
       '  raise SystemExit(0)',
       'positions=mt5.positions_get() or []',
       'actions=[]',
+      'def adopt_levels(symbol, side, entry, point):',
+      '  # SL/TP atanmamis pozisyonu son 96 M15 mumdan CRH/CRL ve ATR ile sahiplen',
+      '  bars=mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M15, 0, 96)',
+      '  if bars is None or len(bars)<24:',
+      '    return None',
+      '  highs=[float(b["high"]) for b in bars]',
+      '  lows=[float(b["low"]) for b in bars]',
+      '  closes=[float(b["close"]) for b in bars]',
+      '  crh=max(highs[-48:])',
+      '  crl=min(lows[-48:])',
+      '  rng=crh-crl',
+      '  if rng<=point*10:',
+      '    return None',
+      '  # ATR yaklasimi (basit)',
+      '  trs=[]',
+      '  for i in range(1,len(bars)):',
+      '    h=highs[i]; l=lows[i]; pc=closes[i-1]',
+      '    trs.append(max(h-l, abs(h-pc), abs(l-pc)))',
+      '  atr=sum(trs[-14:])/max(1,len(trs[-14:])) if trs else rng*0.02',
+      '  buf=max(atr*0.5, point*30)',
+      '  if side=="LONG":',
+      '    sl_new=min(crl - buf, entry - atr*1.2)',
+      '    risk=entry - sl_new',
+      '    if risk<=point*10:',
+      '      return None',
+      '    tp_new=entry + risk*2.0',
+      '  else:',
+      '    sl_new=max(crh + buf, entry + atr*1.2)',
+      '    risk=sl_new - entry',
+      '    if risk<=point*10:',
+      '      return None',
+      '    tp_new=entry - risk*2.0',
+      '  return {"sl":float(sl_new),"tp":float(tp_new),"crh":float(crh),"crl":float(crl),"atr":float(atr)}',
       'for pos in positions:',
       '  ticket=int(getattr(pos,"ticket",0) or 0)',
       '  symbol=str(getattr(pos,"symbol","") or "")',
@@ -450,14 +820,36 @@ async function handleManagePositions(req, res) {
       '  vol_step=float(getattr(si,"volume_step",0.01) or 0.01)',
       '  vol_min=float(getattr(si,"volume_min",0.01) or 0.01)',
       '  px=float(tick.bid if side=="LONG" else tick.ask)',
+      '  # SL/TP atanmamissa sahiplen (adoption)',
+      '  needs_adoption = (sl<=0) or (tp<=0)',
+      '  if needs_adoption:',
+      '    lv=adopt_levels(symbol, side, entry, point)',
+      '    if lv is not None:',
+      '      new_sl = lv["sl"] if sl<=0 else sl',
+      '      new_tp = lv["tp"] if tp<=0 else tp',
+      '      # Pozisyon zarari geri donulemez seviyede ise sl secimi mantikli mi kontrolu',
+      '      if side=="LONG" and new_sl>=px:',
+      '        new_sl = px - max(lv["atr"]*0.8, point*30)',
+      '      if side=="SHORT" and new_sl<=px:',
+      '        new_sl = px + max(lv["atr"]*0.8, point*30)',
+      '      req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(new_sl),"tp":float(new_tp),"magic":20260506,"comment":"crt-adopt"}',
+      '      rr=mt5.order_send(req)',
+      '      ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
+      '      actions.append({"ticket":ticket,"symbol":symbol,"side":side,"type":"adopt","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"new_sl":float(new_sl),"new_tp":float(new_tp),"crh":float(lv["crh"]),"crl":float(lv["crl"]),"atr":float(lv["atr"]),"detail":"orphan_position_adopted"})',
+      '      if ok:',
+      '        sl=float(new_sl)',
+      '        tp=float(new_tp)',
       '  risk=abs(entry-sl)',
-      '  if risk<=point*2:',
+      '  if sl<=0 or risk<=point*2:',
       '    continue',
       '  r=(px-entry)/risk if side=="LONG" else (entry-px)/risk',
+      '  profit_usd=float(getattr(pos,"profit",0) or 0)',
+      '  # Erken yonetim: profit_usd belirli esigi gecince BE+trailing+TP1 ayni anda devreye girer',
+      '  early_hit=(early_manage_usd>0.0 and profit_usd>=early_manage_usd)',
       '  desired_sl=sl',
-      '  if r>=be_at_r:',
+      '  if r>=be_at_r or early_hit:',
       '    desired_sl=max(desired_sl,entry) if side=="LONG" else (min(desired_sl,entry) if desired_sl>0 else entry)',
-      '  if r>=trail_at_r:',
+      '  if r>=trail_at_r or early_hit:',
       '    trail_dist=risk*0.6',
       '    t_sl=(px-trail_dist) if side=="LONG" else (px+trail_dist)',
       '    desired_sl=max(desired_sl,t_sl) if side=="LONG" else (min(desired_sl,t_sl) if desired_sl>0 else t_sl)',
@@ -468,7 +860,7 @@ async function handleManagePositions(req, res) {
       '    actions.append({"ticket":ticket,"symbol":symbol,"type":"sl_update","ok":bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED)),"retcode":int(getattr(rr,"retcode",0) or 0),"new_sl":float(desired_sl)})',
       '  row=cur.execute("SELECT tp1_done FROM manage_state WHERE position_ticket=?",(ticket,)).fetchone()',
       '  tp1_done=int(row[0]) if row else 0',
-      '  if r>=tp1_r and tp1_done==0 and partial_close_pct>0:',
+      '  if (r>=tp1_r or early_hit) and tp1_done==0 and partial_close_pct>0:',
       '    close_vol=max(vol_min, math.floor((volume*(partial_close_pct/100.0))/vol_step)*vol_step)',
       '    if close_vol>=vol_min and close_vol<volume:',
       '      close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
@@ -485,7 +877,7 @@ async function handleManagePositions(req, res) {
       'mt5.shutdown()',
       'print(json.dumps({"ok":True,"managed_count":len(positions),"actions":actions}, ensure_ascii=False), flush=True)'
     ].join('\n');
-    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct }), DB_PATH]);
+    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct, early_manage_usd: earlyManageUsd }), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
     writeJson(res, 200, j);
     logEvent('info', 'manage_positions.ok', {
@@ -544,6 +936,10 @@ async function handleExecuteOrder(req, res) {
       'tp=float(p.get("tp",0) or 0)',
       'max_spread_points=float(p.get("max_spread_points",0) or 0)',
       'dry=bool(p.get("dry_run",True))',
+      'placement=str(p.get("placement","pending") or "pending").lower()',
+      'desired_entry=float(p.get("desired_entry",0) or 0)',
+      'entry_offset_pts=float(p.get("entry_offset_pts",0) or 0)',
+      'expire_min=int(p.get("expire_min",0) or 0)',
       'meta_login = int(p.get("meta_login",0) or 0)',
       'meta_password = str(p.get("meta_password","") or "")',
       'meta_server = str(p.get("meta_server","") or "")',
@@ -592,6 +988,16 @@ async function handleExecuteOrder(req, res) {
       '    mt5.shutdown()',
       '    cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type) VALUES(?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type))',
       '    conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
+      '  pending_orders = mt5.orders_get(symbol=symbol) or []',
+      '  pending_side_types_buy = (mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_BUY_STOP_LIMIT)',
+      '  pending_side_types_sell = (mt5.ORDER_TYPE_SELL_LIMIT, mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_SELL_STOP_LIMIT)',
+      '  target_pending_types = pending_side_types_buy if side=="LONG" else pending_side_types_sell',
+      '  same_side_pending = [o for o in pending_orders if int(getattr(o,"type",-1)) in target_pending_types]',
+      '  if len(same_side_pending) > 0:',
+      '    out={"ok":False,"error":"duplicate_pending_blocked","detail":f"symbol={symbol} side={side} pending_count={len(same_side_pending)}"}',
+      '    mt5.shutdown()',
+      '    cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
+      '    conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if not mt5.symbol_select(symbol, True):',
       '  out={"ok":False,"error":"symbol_select_failed"}',
       '  mt5.shutdown()',
@@ -603,28 +1009,159 @@ async function handleExecuteOrder(req, res) {
       '  mt5.shutdown()',
       '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"error","tick_unavailable",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
-      'entry=float(tick.ask if side=="LONG" else tick.bid)',
       'si=mt5.symbol_info(symbol)',
       'point=float(getattr(si,"point",0.0) or 0.0)',
-      'spread_points=float((tick.ask-tick.bid)/point) if point>0 else 0.0',
-      'if max_spread_points>0 and spread_points>max_spread_points:',
-      '  out={"ok":False,"error":"spread_too_wide","detail":f"spread={spread_points:.2f}pt > max={max_spread_points:.2f}pt","spread_points":spread_points,"max_spread_points":max_spread_points}',
+      'digits=int(getattr(si,"digits",5) or 5)',
+      'stops_level_pts=float(getattr(si,"trade_stops_level",0) or 0)',
+      'min_dist=stops_level_pts*point if point>0 else 0.0',
+      'current_ask=float(tick.ask); current_bid=float(tick.bid)',
+      'spread_points=float((current_ask-current_bid)/point) if point>0 else 0.0',
+      'market_entry=current_ask if side=="LONG" else current_bid',
+      '# Pending modda spread check gevsek (anlik fiyati gecmedigimiz icin):',
+      '# - market modda: kullanici limiti aynen uygulanir',
+      '# - pending modda: limit 3x kullanici degeri (max 500pt) — anlik fiyati gecmiyoruz, sadece sablon kontrol',
+      'is_pending_mode = (placement=="pending" and desired_entry>0)',
+      'effective_max_spread = max_spread_points',
+      'if is_pending_mode and max_spread_points>0:',
+      '  effective_max_spread = min(500.0, max_spread_points*3.0)',
+      'mode_label = "pending" if is_pending_mode else "market"',
+      'if effective_max_spread>0 and spread_points>effective_max_spread:',
+      '  out={"ok":False,"error":"spread_too_wide","detail":f"spread={spread_points:.2f}pt > max={effective_max_spread:.2f}pt (mode={mode_label})","spread_points":spread_points,"max_spread_points":effective_max_spread}',
       '  mt5.shutdown()',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,market_entry,sl,tp,1,"rejected",out["detail"],target_account_type,strategy_tag))',
+      '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
+      '# === Emir tipi karari (market / pending) ===',
+      'pending_type=None; pending_label="market"; final_price=market_entry',
+      'allow_market_fallback = bool(p.get("allow_market_fallback", False))',
+      'auto_adjust_pending = bool(p.get("auto_adjust_pending", True))',
+      'requested_pending = (placement=="pending" and desired_entry>0)',
+      'use_pending = requested_pending',
+      'pending_adjusted = False',
+      'pending_original_target = 0.0',
+      'if requested_pending:',
+      '  target=float(desired_entry)',
+      '  if side=="LONG":',
+      '    target = target + entry_offset_pts*point',
+      '  else:',
+      '    target = target - entry_offset_pts*point',
+      '  target=round(target, digits)',
+      '  ref = current_ask if side=="LONG" else current_bid',
+      '  gap_pts = abs(target-ref)/point if point>0 else 0',
+      '  min_pts = max(stops_level_pts, 2.0)',
+      '  if gap_pts < min_pts:',
+      '    pending_original_target = target',
+      '    # Otomatik adjust: stops_level + 2pt buffer kadar uzaga kaydir (stratejinin yonune sadik kalarak)',
+      '    if auto_adjust_pending:',
+      '      buffer_pts = min_pts + 2.0',
+      '      # Hedef yonu: orijinal hedef ref den hangi tarafta ise, o tarafa kaydir',
+      '      if target < ref:',
+      '        target = round(ref - buffer_pts*point, digits)  # alttan BUY_LIMIT / SELL_STOP',
+      '      elif target > ref:',
+      '        target = round(ref + buffer_pts*point, digits)  # ustten BUY_STOP / SELL_LIMIT',
+      '      else:',
+      '        # tam ust uste — LONG icin altta limit (alis dipte), SHORT icin ustte limit',
+      '        if side=="LONG":',
+      '          target = round(ref - buffer_pts*point, digits)',
+      '        else:',
+      '          target = round(ref + buffer_pts*point, digits)',
+      '      pending_adjusted = True',
+      '      gap_pts = abs(target-ref)/point if point>0 else 0',
+      '    elif allow_market_fallback:',
+      '      use_pending = False',
+      '    else:',
+      '      reason=f"pending_too_close_to_market gap={gap_pts:.1f}pt min={min_pts:.1f}pt target={target} ref={ref}"',
+      '      out={"ok":False,"error":"pending_too_close","detail":reason,"gap_points":gap_pts,"stops_level_pts":stops_level_pts,"target":target,"market_ref":ref,"spread_points":spread_points}',
+      '      mt5.shutdown()',
+      '      cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,target,sl,tp,1,"rejected",reason,target_account_type,strategy_tag))',
+      '      conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
+      '  if use_pending:',
+      '    if side=="LONG":',
+      '      pending_type = mt5.ORDER_TYPE_BUY_LIMIT if target < ref else mt5.ORDER_TYPE_BUY_STOP',
+      '      pending_label = "BUY_LIMIT" if target < ref else "BUY_STOP"',
+      '    else:',
+      '      pending_type = mt5.ORDER_TYPE_SELL_LIMIT if target > ref else mt5.ORDER_TYPE_SELL_STOP',
+      '      pending_label = "SELL_LIMIT" if target > ref else "SELL_STOP"',
+      '    final_price = target',
+      '# SL/TP minimum mesafe dogrulamasi',
+      'def _violates_stops(price, sl_v, tp_v, is_long):',
+      '  if min_dist<=0: return ""',
+      '  if is_long:',
+      '    if sl_v>0 and (price-sl_v)<min_dist: return f"SL {abs(price-sl_v)/point:.1f}pt < min {stops_level_pts}pt"',
+      '    if tp_v>0 and (tp_v-price)<min_dist: return f"TP {abs(tp_v-price)/point:.1f}pt < min {stops_level_pts}pt"',
+      '  else:',
+      '    if sl_v>0 and (sl_v-price)<min_dist: return f"SL {abs(sl_v-price)/point:.1f}pt < min {stops_level_pts}pt"',
+      '    if tp_v>0 and (price-tp_v)<min_dist: return f"TP {abs(price-tp_v)/point:.1f}pt < min {stops_level_pts}pt"',
+      '  return ""',
+      'violation=_violates_stops(final_price, sl, tp, side=="LONG")',
+      'if violation:',
+      '  out={"ok":False,"error":"stops_too_tight","detail":violation,"stops_level_pts":stops_level_pts,"final_price":final_price}',
+      '  mt5.shutdown()',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,final_price,sl,tp,1,"rejected",violation,target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if dry:',
-      '  out={"ok":True,"dry_run":True,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"spread_points":spread_points,"target_account_type":target_account_type,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
-      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,1,"dry_run","preview",target_account_type,strategy_tag))',
+      '  out={"ok":True,"dry_run":True,"symbol":symbol,"side":side,"lot":lot,"entry":final_price,"sl":sl,"tp":tp,"spread_points":spread_points,"placement":pending_label,"market_entry":market_entry,"pending_adjusted":pending_adjusted,"original_target":pending_original_target,"expire_min":expire_min,"target_account_type":target_account_type,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
+      '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,final_price,sl,tp,1,"dry_run",f"preview {pending_label}",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); mt5.shutdown(); print(json.dumps(out), flush=True); raise SystemExit(0)',
-      'order_type = mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
       'order_comment = ("crt-"+strategy_tag)[:28]',
-      'req={ "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lot, "type": order_type, "price": entry, "sl": sl, "tp": tp, "deviation": 20, "magic": 20260506, "comment": order_comment, "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC }',
+      'if use_pending:',
+      '  # Broker hangi expiration modlarini destekler? (bitmask)',
+      '  exp_mode_mask = int(getattr(si,"expiration_mode",1) or 1)',
+      '  SUP_GTC = bool(exp_mode_mask & 1)',
+      '  SUP_DAY = bool(exp_mode_mask & 2)',
+      '  SUP_SPECIFIED = bool(exp_mode_mask & 4)',
+      '  SUP_SPECIFIED_DAY = bool(exp_mode_mask & 8)',
+      '  type_time = mt5.ORDER_TIME_GTC',
+      '  expiration_ts = 0',
+      '  if expire_min>0:',
+      '    # Broker server time (broker timezone) — anlik tick zamanini referans al',
+      '    server_now = int(getattr(tick,"time",0) or 0)',
+      '    if server_now<=0:',
+      '      server_now = int(datetime.datetime.now().timestamp())',
+      '    target_ts = server_now + expire_min*60',
+      '    if SUP_SPECIFIED:',
+      '      type_time = mt5.ORDER_TIME_SPECIFIED',
+      '      expiration_ts = target_ts',
+      '    elif SUP_SPECIFIED_DAY:',
+      '      type_time = mt5.ORDER_TIME_SPECIFIED_DAY',
+      '      expiration_ts = target_ts',
+      '    elif SUP_DAY:',
+      '      # SPECIFIED desteklenmiyorsa gun sonuna kadar',
+      '      type_time = mt5.ORDER_TIME_DAY',
+      '      expiration_ts = 0',
+      '    else:',
+      '      type_time = mt5.ORDER_TIME_GTC',
+      '      expiration_ts = 0',
+      '  req={ "action": mt5.TRADE_ACTION_PENDING, "symbol": symbol, "volume": lot, "type": pending_type, "price": final_price, "sl": sl, "tp": tp, "deviation": 20, "magic": 20260506, "comment": order_comment, "type_time": type_time, "type_filling": mt5.ORDER_FILLING_RETURN }',
+      '  if expiration_ts>0:',
+      '    req["expiration"] = expiration_ts',
+      'else:',
+      '  order_type = mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
+      '  req={ "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": lot, "type": order_type, "price": final_price, "sl": sl, "tp": tp, "deviation": 20, "magic": 20260506, "comment": order_comment, "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_IOC }',
       'result=mt5.order_send(req)',
       'ok=bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
+      '# Eger pending FILLING modu reddedilirse, diger filling modlari ile tekrar dene',
+      'if not ok and result and int(getattr(result,"retcode",0)) in (10030,):',
+      '  for ft in (mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN):',
+      '    if req.get("type_filling")==ft: continue',
+      '    req["type_filling"]=ft',
+      '    result=mt5.order_send(req)',
+      '    ok=bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
+      '    if ok: break',
+      '# Invalid expiration (10022) ise GTC ile tekrar dene',
+      'if not ok and result and int(getattr(result,"retcode",0))==10022 and use_pending:',
+      '  req["type_time"]=mt5.ORDER_TIME_GTC',
+      '  if "expiration" in req: del req["expiration"]',
+      '  result=mt5.order_send(req)',
+      '  ok=bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
+      '  if not ok and result and int(getattr(result,"retcode",0))==10022:',
+      '    # Hala invalid ise DAY dene',
+      '    req["type_time"]=mt5.ORDER_TIME_DAY',
+      '    result=mt5.order_send(req)',
+      '    ok=bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
       'detail=str(getattr(result,"comment","")) if result else "no_result"',
       'ticket=int(getattr(result,"order",0) or getattr(result,"deal",0) or 0) if result else 0',
-      'out={"ok":ok,"dry_run":False,"ticket":ticket,"symbol":symbol,"side":side,"lot":lot,"entry":entry,"sl":sl,"tp":tp,"spread_points":spread_points,"retcode":int(getattr(result,"retcode",0) or 0),"detail":detail,"target_account_type":target_account_type,"strategy_tag":strategy_tag,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
-      'cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,entry,sl,tp,0,("sent" if ok else "rejected"),json.dumps(out),target_account_type,strategy_tag))',
+      'out={"ok":ok,"dry_run":False,"ticket":ticket,"symbol":symbol,"side":side,"lot":lot,"entry":final_price,"sl":sl,"tp":tp,"spread_points":spread_points,"placement":pending_label,"market_entry":market_entry,"stops_level_pts":stops_level_pts,"pending_adjusted":pending_adjusted,"original_target":pending_original_target,"expire_min":expire_min,"retcode":int(getattr(result,"retcode",0) or 0),"detail":detail,"target_account_type":target_account_type,"strategy_tag":strategy_tag,"connected_account_type":current_account_type,"connected_account_login":int(getattr(ai,"login",0) or 0)}',
+      'cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,final_price,sl,tp,0,("sent" if ok else "rejected"),json.dumps(out),target_account_type,strategy_tag))',
       'conn.commit(); conn.close(); mt5.shutdown(); print(json.dumps(out), flush=True)'
     ].join('\n');
     const { stdout } = await pyExec(pyCode, [JSON.stringify(payload), DB_PATH]);
@@ -691,6 +1228,18 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/available-pairs' && req.method === 'POST') {
     handleAvailablePairs(req, res);
+    return;
+  }
+  if (routePath === '/api/list-all-symbols' && (req.method === 'POST' || req.method === 'GET')) {
+    handleListAllSymbols(req, res);
+    return;
+  }
+  if (routePath === '/api/cancel-pending' && req.method === 'POST') {
+    handleCancelPending(req, res);
+    return;
+  }
+  if (routePath === '/api/close-position' && req.method === 'POST') {
+    handleClosePosition(req, res);
     return;
   }
 
