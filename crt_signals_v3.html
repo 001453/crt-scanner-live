@@ -3,23 +3,28 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:#F4F7FB;color:#1F2937}
 .db{max-width:1180px;margin:0 auto;padding:16px 14px 30px}
-.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
-.hdr h2{font-size:24px;font-weight:700;color:#111827}
-.hdr p{font-size:13px;color:#6B7280;margin-top:4px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;flex-wrap:wrap;gap:8px}
+.hdr h2{font-size:24px;font-weight:700;color:#111827;display:flex;align-items:center;gap:8px}
+.hdr h2::before{content:'📊';font-size:22px}
+.hdr p{font-size:12px;color:#6B7280;margin-top:2px}
 .pill{font-size:12px;padding:4px 11px;border-radius:20px;font-weight:600}
 .ok{background:#EAF3DE;color:#3B6D11}.ld{background:#FAEEDA;color:#854F0B}
 .ctrl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;background:#fff;padding:10px;border:1px solid #E5E7EB;border-radius:10px}
 .cb{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#4B5563;cursor:pointer}
 .cb.on{background:#185FA5;color:#fff;border-color:#185FA5}
-.rbtn{font-size:12px;padding:7px 12px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#111827;cursor:pointer;margin-left:auto}
+.rbtn{font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid #D1D5DB;background:#fff;color:#111827;cursor:pointer;font-weight:600}
+.rbtn:hover{background:#f3f4f6;border-color:#9ca3af}
 .scan-note{font-size:12px;color:#6B7280;padding:2px 6px}
-.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:7px;margin-bottom:1rem}
-.mc{background:#fff;border-radius:10px;padding:12px;border:1px solid #E5E7EB}
-.mc .lb{font-size:12px;color:#6B7280;margin-bottom:5px}
-.mc .vl{font-size:26px;font-weight:700;color:#111827}
+.mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1rem}
+.mc{background:#fff;border-radius:10px;padding:12px;border:1px solid #E5E7EB;transition:transform .12s,box-shadow .15s;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#1976d2,#7c3aed);opacity:.5}
+.mc:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(24,95,165,0.08)}
+.mc .lb{font-size:11px;color:#6B7280;margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.mc .vl{font-size:26px;font-weight:700;color:#111827;font-variant-numeric:tabular-nums}
 .pos{color:#2E7D32}.neg{color:#B91C1C}.muted{color:#6B7280}
 .sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:1rem}
-.sc{border-radius:12px;border:1px solid #E5E7EB;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.sc{border-radius:12px;border:1px solid #E5E7EB;background:#fff;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.03);transition:transform .12s,box-shadow .15s,border-color .15s}
+.sc:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08);border-color:#cbd5e1}
 .sc.sel{border-color:#185FA5;box-shadow:0 0 0 2px rgba(24,95,165,.15)}
 .sc-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px 8px}
 .sc-pair{font-size:15px;font-weight:700;color:#111827}
@@ -43,15 +48,18 @@ body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:#F4F7FB;color
 .rr-badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;background:#fff;border:1px solid #D1D5DB;color:#111827}
 .sbtn{font-size:10px;padding:4px 8px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer}
 .wait-msg{text-align:center;padding:2rem;color:#6B7280;font-size:13px;grid-column:1/-1}
-.chartbox,.tcard,.aip{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:1rem}
-.chartbox h3,.tcard h3,.aip h3{font-size:14px;font-weight:700;color:#374151;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chartbox,.tcard,.aip{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:1rem;transition:box-shadow .15s}
+.chartbox:hover,.tcard:hover,.aip:hover{box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.chartbox h3,.tcard h3,.aip h3{font-size:14px;font-weight:700;color:#374151;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
 .tcard.collapsed,.aip.collapsed{padding:10px 14px}
 .tcard.collapsed > *:not(h3),.aip.collapsed > *:not(h3){display:none !important}
 .tcard.collapsed h3,.aip.collapsed h3{margin-bottom:0}
 .coll-btn{font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid #D1D5DB;background:#fff;cursor:pointer;color:#374151;font-weight:500;white-space:nowrap}
 .coll-btn:hover{background:#f3f4f6}
 .coll-btn.collapsed{background:#fef3c7;border-color:#f59e0b;color:#92400e}
-.status-banner{background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#312e81;display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-family:ui-monospace,Menlo,Consolas,monospace}
+.status-banner{background:linear-gradient(90deg,#eef2ff,#f5f3ff);border:1px solid #c7d2fe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#312e81;display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.6}
+.status-banner > span{display:inline-flex;align-items:center;gap:4px;padding:2px 0}
+.status-banner > span:not(:last-child)::after{content:'';display:inline-block;width:1px;height:14px;background:#c7d2fe;margin-left:8px}
 .status-banner b{color:#1e1b4b}
 .status-banner .stat-live{color:#9a2020;font-weight:700}
 .status-banner .stat-demo{color:#16a34a;font-weight:700}
@@ -60,9 +68,9 @@ body.night-paper .status-banner{background:rgba(214,201,178,0.18);border-color:r
 .estop-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:2px solid #dc2626;background:#fee2e2;color:#7f1d1d;font-weight:700;cursor:pointer;transition:all .15s}
 .estop-btn:hover{background:#dc2626;color:#fff;transform:scale(1.03)}
 .estop-btn.active{background:#dc2626;color:#fff;animation:pulse 1.2s infinite}
-.master-strategy-bar{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-bottom:10px;border-radius:10px;border:2px solid #cbd5e1;background:#f8fafc;flex-wrap:wrap}
-.master-strategy-bar.active{border-color:#16a34a;background:linear-gradient(90deg,#dcfce7,#f0fdf4);box-shadow:0 0 0 3px rgba(22,163,74,0.1)}
-.master-strategy-bar.stopped{border-color:#dc2626;background:linear-gradient(90deg,#fee2e2,#fef2f2)}
+.master-strategy-bar{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-bottom:10px;border-radius:10px;border:2px solid #cbd5e1;background:#f8fafc;flex-wrap:wrap;position:sticky;top:0;z-index:50;backdrop-filter:blur(6px)}
+.master-strategy-bar.active{border-color:#16a34a;background:linear-gradient(90deg,rgba(220,252,231,0.95),rgba(240,253,244,0.95));box-shadow:0 4px 12px rgba(22,163,74,0.18)}
+.master-strategy-bar.stopped{border-color:#dc2626;background:linear-gradient(90deg,rgba(254,226,226,0.95),rgba(254,242,242,0.95));box-shadow:0 4px 12px rgba(220,38,38,0.12)}
 .master-btn{font-size:14px;padding:10px 22px;border-radius:10px;border:2px solid;font-weight:800;cursor:pointer;transition:all .15s;letter-spacing:.5px}
 .master-btn.start{border-color:#16a34a;background:#dcfce7;color:#14532d}
 .master-btn.start:hover{background:#16a34a;color:#fff;transform:scale(1.03)}
@@ -95,9 +103,33 @@ td{padding:8px 7px;border-bottom:1px solid #F1F5F9;color:#111827;white-space:now
 .clickrow{cursor:pointer}
 .clickrow:hover{background:#F8FBFF}
 .reason{font-size:11px;color:#6B7280}
-.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:8px}
-.risk-grid label{font-size:11px;color:#6B7280;display:flex;flex-direction:column;gap:4px}
-.risk-grid input{padding:6px 8px;border:1px solid #D1D5DB;border-radius:8px;font-size:12px}
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:8px}
+.risk-grid label{font-size:11px;color:#6B7280;display:flex;flex-direction:column;gap:4px;cursor:help;transition:color .15s}
+.risk-grid label:hover{color:#1976d2}
+.risk-grid input,.risk-grid select{padding:7px 9px;border:1px solid #D1D5DB;border-radius:8px;font-size:12px;background:#fff;transition:border-color .15s}
+.risk-grid input:focus,.risk-grid select:focus{outline:none;border-color:#1976d2;box-shadow:0 0 0 3px rgba(25,118,210,0.12)}
+.plan-section{margin-top:14px;border:1px solid #E5E7EB;border-radius:10px;overflow:hidden;background:#fafbfc}
+.plan-section > summary{cursor:pointer;padding:10px 14px;background:linear-gradient(90deg,#f1f5f9,#f8fafc);font-weight:700;font-size:13px;color:#1e293b;display:flex;align-items:center;gap:8px;user-select:none;list-style:none}
+.plan-section > summary::-webkit-details-marker{display:none}
+.plan-section > summary::before{content:'▸';color:#64748b;display:inline-block;transition:transform .2s;font-size:11px}
+.plan-section[open] > summary::before{transform:rotate(90deg)}
+.plan-section[open] > summary{background:linear-gradient(90deg,#dbeafe,#eff6ff);color:#1e40af;border-bottom:1px solid #cbd5e1}
+.plan-section .plan-body{padding:12px 14px}
+.plan-section-icon{font-size:16px}
+.plan-section-sub{font-size:11px;color:#64748b;font-weight:normal;margin-left:auto}
+body.night-paper .plan-section{background:rgba(74,63,49,0.4);border-color:#62533d}
+body.night-paper .plan-section > summary{background:linear-gradient(90deg,#4a3f31,#3a3126);color:#efe4cf}
+body.night-paper .plan-section[open] > summary{background:linear-gradient(90deg,#5b4d3a,#4a3f31);color:#f4e9d4;border-bottom-color:#776347}
+body.night-paper .plan-section-sub{color:#cdb892}
+body.night-paper .risk-grid input,body.night-paper .risk-grid select{background:#3a3126;border-color:#62533d;color:#efe4cf}
+.toolbar-group{display:flex;gap:6px;align-items:center;padding:4px 8px;border-radius:8px}
+.toolbar-group.filters{background:rgba(24,95,165,0.04);border:1px solid rgba(24,95,165,0.12)}
+.toolbar-group.system{background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.12)}
+.toolbar-group.actions{background:rgba(220,38,38,0.04);border:1px solid rgba(220,38,38,0.12);margin-left:auto}
+.toolbar-sep{width:1px;height:24px;background:#d1d5db;margin:0 2px}
+body.night-paper .toolbar-group.filters{background:rgba(212,180,128,0.08);border-color:rgba(212,180,128,0.2)}
+body.night-paper .toolbar-group.system{background:rgba(186,150,200,0.08);border-color:rgba(186,150,200,0.2)}
+body.night-paper .toolbar-group.actions{background:rgba(220,90,90,0.08);border-color:rgba(220,90,90,0.2)}
 .hist-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
 .hist-col{background:#f9f2e4;border:1px solid #d6c9b2;border-radius:10px;padding:8px}
 .hist-col h4{font-size:12px;margin-bottom:6px}
@@ -240,28 +272,45 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
     <button id="masterStrategyBtn" class="master-btn start" onclick="toggleStrategyMaster()" title="Stratejiyi başlat: hem tarama hem otomatik emir gönderme aktif olur. Hesap ayarları doğru olmalı! Başlatmadan önce sağdan hesap seçin/girin.">▶ STRATEJİYİ BAŞLAT</button>
     <span id="masterStrategyState" class="master-state off"><span class="dot"></span><span id="masterStateText">DURDU · Ayarları yapın ve BAŞLAT'a basın</span></span>
     <span style="flex:1"></span>
+    <div class="qnav" style="display:flex;gap:3px;align-items:center;border-right:1px solid #cbd5e1;padding-right:8px;margin-right:4px">
+      <span style="font-size:10px;color:#64748b;font-weight:700;margin-right:2px">↗</span>
+      <button class="acct-quick" onclick="scrollToSection('signalsSection')" title="Aktif sinyal kartlarına git">Sinyaller</button>
+      <button class="acct-quick" onclick="scrollToSection('tradeFeed')" title="Canlı işlem akışına git">Akış</button>
+      <button class="acct-quick" onclick="scrollToSection('managedCard')" title="Yönetilen pozisyonlara git">Yönetim</button>
+      <button class="acct-quick" onclick="scrollToSection('planCard')" title="Tüm strateji/risk ayarlarına git">⚙ Ayarlar</button>
+    </div>
     <label class="acct-quick" title="Aktif MT5 hesabı. Birden fazla hesap kaydedebilir, başlatmadan önce seçebilirsin. Stratejiyi başlatınca seçili hesaba login denenir.">
       Hesap:
       <select id="activeAccountProfile" class="acct-select" onchange="switchAccountProfile(this.value)" style="margin-left:4px">
         <option value="">— Plan ayarlarındaki (default) —</option>
       </select>
     </label>
-    <button class="acct-quick" onclick="saveAccountProfile()" title="Mevcut Meta Login/Password/Server bilgilerini bir profil olarak kaydet. Birden fazla demo/live hesap arası geçiş için.">+ Hesap Kaydet</button>
-    <button class="acct-quick" onclick="deleteAccountProfile()" title="Seçili hesap profilini sil. Mevcut canlı bağlantıyı etkilemez, sadece kaydı kaldırır.">🗑 Sil</button>
-    <button class="acct-quick" onclick="document.getElementById('plan').scrollIntoView({behavior:'smooth'})" title="Tüm strateji/risk/hesap ayarlarına git">⚙ Ayarlar</button>
+    <button class="acct-quick" onclick="saveAccountProfile()" title="Mevcut Meta Login/Password/Server bilgilerini bir profil olarak kaydet. Birden fazla demo/live hesap arası geçiş için.">+ Kaydet</button>
+    <button class="acct-quick" onclick="deleteAccountProfile()" title="Seçili hesap profilini sil. Mevcut canlı bağlantıyı etkilemez, sadece kaydı kaldırır.">🗑</button>
   </div>
   <div id="statusBanner" class="status-banner">Sistem hazirlaniyor...</div>
   <div id="alertBanner" class="alert-banner" style="display:none"></div>
   <div class="ctrl">
-    <button class="cb on" onclick="setCat('all',this)" title="Tüm ürün kategorilerini göster (forex+metal+endeks+kripto karışık liste).">Tümü</button><button class="cb" onclick="setCat('forex',this)" title="Sadece forex çiftlerini göster (EURUSD, GBPJPY vb).">Forex</button><button class="cb" onclick="setCat('metals',this)" title="Sadece metaller (XAUUSD=Altın, XAGUSD=Gümüş).">Metaller</button><button class="cb" onclick="setCat('crypto',this)" title="Sadece kripto CFD'leri (BTCUSD, ETHUSD vb).">Kripto</button><button class="cb" onclick="setCat('indices',this)" title="Sadece endeksler (NAS100, US30, GER40 vb).">Endeksler</button>
-    <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)" title="AI Filtresi: Sinyalleri GPT modeli ile çapraz doğrula. Açıkken sadece AI'nın onayladığı sinyaller geçer (daha kaliteli ama az). Kapalıyken tüm sinyaller geçer.">AI Filtre: Açık</button>
-    <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))" title="Aynı anda kart olarak gösterilecek max sinyal sayısı. Sadece görselleştirme, gerçek pozisyon limiti değil. Yüksek = ekranda daha çok kart.">İşlem limit: 6</button>
-    <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)" title="Gece modu: koyu kahve/sepya 'eski gazete' teması. Gözünü yormaz, uzun süre kullanım için.">Gece Gazetesi: Kapalı</button>
-    <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)" title="Oto Tarama: Her 2 dakikada bir tüm pariteleri otomatik tara ve sinyal üret. Kapalıyken sadece manuel 'Tara' butonu ile tarar.">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
-    <button class="rbtn" onclick="refreshAll()" title="Şu anda tüm pariteleri TEK SEFERLİK tara. Oto Tarama'dan bağımsız, anında çalışır.">Tara</button>
-    <button class="estop-btn" id="estopBtn" onclick="emergencyStop()" title="ACİL DUR: Tüm pending emirleri iptal et + Auto Trade'i kapat. Mevcut açık pozisyonlara dokunmaz (manuel kapat). Felaket durumunda kullan.">🛑 ACİL DUR</button>
+    <div class="toolbar-group filters" title="Ekranda gösterilecek kategori filtresi (sadece görsel, tarama ayarlarını değiştirmez)">
+      <span style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.5px;padding:0 2px">FİLTRE</span>
+      <button class="cb on" onclick="setCat('all',this)" title="Tüm ürün kategorilerini göster (forex+metal+endeks+kripto karışık liste).">Tümü</button><button class="cb" onclick="setCat('forex',this)" title="Sadece forex çiftlerini göster (EURUSD, GBPJPY vb).">Forex</button><button class="cb" onclick="setCat('metals',this)" title="Sadece metaller (XAUUSD=Altın, XAGUSD=Gümüş).">Metal</button><button class="cb" onclick="setCat('crypto',this)" title="Sadece kripto CFD'leri (BTCUSD, ETHUSD vb).">Kripto</button><button class="cb" onclick="setCat('indices',this)" title="Sadece endeksler (NAS100, US30, GER40 vb).">Endeks</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <div class="toolbar-group system" title="Sistem ayarları ve görünüm">
+      <span style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.5px;padding:0 2px">SİSTEM</span>
+      <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)" title="AI Filtresi: Sinyalleri GPT modeli ile çapraz doğrula. Açıkken sadece AI'nın onayladığı sinyaller geçer (daha kaliteli ama az). Kapalıyken tüm sinyaller geçer.">AI Filtre: Açık</button>
+      <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))" title="Aynı anda kart olarak gösterilecek max sinyal sayısı. Sadece görselleştirme, gerçek pozisyon limiti değil. Yüksek = ekranda daha çok kart.">Limit: 6</button>
+      <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)" title="Gece modu: koyu kahve/sepya 'eski gazete' teması. Gözünü yormaz, uzun süre kullanım için.">🌙 Gece</button>
+      <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)" title="Oto Tarama: Her 2 dakikada bir tüm pariteleri otomatik tara ve sinyal üret. Kapalıyken sadece manuel 'Tara' butonu ile tarar.">Oto Tarama: Açık</button>
+      <span class="scan-note" id="scanNote">Sonraki: —</span>
+    </div>
+    <div class="toolbar-group actions" title="Eylemler">
+      <button class="rbtn" onclick="refreshAll()" title="Şu anda tüm pariteleri TEK SEFERLİK tara. Oto Tarama'dan bağımsız, anında çalışır.">🔄 Tara</button>
+      <button class="estop-btn" id="estopBtn" onclick="emergencyStop()" title="ACİL DUR: Tüm pending emirleri iptal et + Auto Trade'i kapat. Mevcut açık pozisyonlara dokunmaz (manuel kapat). Felaket durumunda kullan.">🛑 ACİL DUR</button>
+    </div>
   </div>
   <div class="mg"><div class="mc"><div class="lb">Taranan</div><div class="vl muted" id="m0">—</div></div><div class="mc"><div class="lb">Long</div><div class="vl pos" id="m1">—</div></div><div class="mc"><div class="lb">Short</div><div class="vl neg" id="m2">—</div></div><div class="mc"><div class="lb">Yatay Bölge</div><div class="vl muted" id="m3">—</div></div><div class="mc"><div class="lb">Yönetimde</div><div class="vl" id="m4" style="color:#7c3aed">—</div></div><div class="mc"><div class="lb">Bekleyen</div><div class="vl" id="m5" style="color:#0891b2">—</div></div></div>
+  <div id="signalsSection"></div>
   <div class="sig-grid" id="sigGrid"><div class="wait-msg">Tarama başlatılıyor...</div></div>
   <div class="chartbox"><h3>Canlı Grafik (Seçili Sinyal)</h3><div class="feed" id="sigFeed">Yeni sinyaller burada akacak...</div><div class="chartmeta" id="chartMeta">Karttan "Grafikte Aç" seçin.</div><div class="level-readout" id="levelReadout">ENTRY: — · SL: — · TP: —</div><div class="chartacts"><button class="pinbtn" id="pinBtn" onclick="togglePin()">Sabitle: Kapalı</button><span class="scan-note" id="pinInfo">Seçili parite otomatik değişebilir.</span></div><div id="chart"></div></div>
   <div class="trade-feed-card">
@@ -292,112 +341,160 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
     <div class="reason" id="riskSummary" style="margin-top:6px">İşlem başı zarar tahmini: —</div>
     <button class="cb" style="margin-top:8px" onclick="updateRiskConfig()">Lot Hesabını Güncelle</button>
   </div>
-  <div class="tcard">
-    <h3>Tek Tık Emir Planı</h3>
-    <div class="risk-grid">
-      <label title="Hesap bakiyesinin yüzdesi olarak günlük toplam risk bütçesi. Tüm açık pozisyonların risk toplamı bu yüzdeyi aşarsa yeni emir alınmaz. Örn: 2% = 1000$ bakiyede 20$ günlük risk.">Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="2"></label>
-      <label title="24 saat içinde gönderilebilecek MAX yeni emir sayısı. Bu sayıya ulaşılınca otomatik trading durur, ertesi gün 00:00 UTC'de sıfırlanır.">Max Günlük Trade Sayısı<input id="maxTradesPerDay" type="number" step="1" min="1" max="50" value="10"></label>
-      <label title="Aynı anda MT5'te açık+pending olabilecek MAKSİMUM pozisyon sayısı (TÜM kategoriler dahil). Aşılırsa hiç yeni emir gönderilmez. Status banner'da [open/cap] gösterir.">Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="1"></label>
-      <label title="Aynı yönde (LONG veya SHORT) maksimum acik+pending pozisyon. 0=sinirsiz">Aynı Yön Max (LONG/SHORT)<input id="maxSameDirection" type="number" step="1" min="0" max="20" value="3"></label>
-      <label title="Korelasyon bazli net maruziyet limiti. Faktor basina (USD/EUR/RISK_ON/JPY/METAL/CRYPTO vb) |net|>X iken o yonu kotulestiren sinyaller reddedilir, dengeleyiciler kabul edilir. 0=kapali. ONERILEN: 2">Korelasyon Limiti (faktör başı)<input id="maxCorrelatedExposure" type="number" step="1" min="0" max="20" value="2"></label>
-      <label title="ESKI: Basit |LONG-SHORT| farki limiti. Korelasyon kullanmaz, sayisaldir. 0=kapali (onerilen, Korelasyon Limiti daha akilli).">Basit Net Yön (|L−S|) Max<input id="maxNetExposureCount" type="number" step="1" min="0" max="20" value="0"></label>
-      <label title="Tek bir pozisyonun kullanabileceği max marjin yüzdesi (hesabın toplam free margin'ine göre). Aşılırsa lot otomatik küçültülür. Örn: 30% = 1000$ free margin'de max 300$ marjin tutar.">Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="30"></label>
-      <label title="Sinyal alınırken kabul edilen max spread (point cinsinden). Pending emirler için bu değer otomatik 3x büyütülür çünkü tetiklenme anında spread değişebilir. Yüksek spread = trade reddedilir.">Max Spread (point, pending=3x)<input id="maxSpreadPts" type="number" step="1" min="5" max="300" value="60"></label>
-      <label title="Aynı paritede peş peşe trade'i engellemek için bekleme süresi (dakika). Bir EURUSD trade'i sonra 40dk EURUSD'ye dokunulmaz. 0=cooldown yok.">Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="40"></label>
-      <label title="UTC seans saat filtresi açık mı? Sadece belirli saatlerde işlem yapmak için. Örn: Asya seansı kapalı kalsın istiyorsan.">Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
-      <label title="Trading başlangıç saati (UTC). Örn: 7 = sabah 7:00 UTC = TR saatiyle 10:00. Bu saatten önce hiç emir gönderilmez.">Seans Baslangic (UTC saat)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
-      <label title="Trading bitiş saati (UTC). Örn: 21 = akşam 21:00 UTC = TR saatiyle 00:00. Bu saatten sonra yeni emir gönderilmez ama açık pozisyonlar yönetilmeye devam eder.">Seans Bitis (UTC saat)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
-      <label title="UTC saatleri, virgülle ayır (örn: 08:30, 12:30, 14:00). Bu saatlerden ±buffer dakika içinde auto-execute durur">Haber Blackout (UTC HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
-      <label title="Haber blackout penceresi ±X dakika. Örn: 15 = haber saatinden 15dk önce ve 15dk sonra hiç emir gönderilmez. Volatilite riskinden korur.">Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
-      <label title="A+ Modu: Sadece YÜKSEK kaliteli sinyaller kabul edilir (RR≥2.5 + AI onayı + confluence skoru ≥7). Kapatırsan daha çok sinyal alır ama daha düşük kalite.">A+ Modu<input id="aPlusMode" type="checkbox" checked></label>
-      <label title="Hesap bakiyesinin yüzdesi olarak günlük max zarar. Örn: 1.5% = 1000$ bakiyede günlük -15$ zarar etse auto-trade durur. Status banner'da RESET butonuyla manuel sıfırlanabilir.">Gunluk Zarar Limiti %<input id="maxDailyLossPct" type="number" step="0.1" min="0.1" value="1.5"></label>
-      <label title="Son 20 trade'de net negatif performans gösteren stratejileri otomatik devre dışı bırak. Kötü performans gösteren strateji geçici olarak susturulur.">Zayif Stratejiyi Ele<input id="disableWeakStrategies" type="checkbox" checked></label>
-      <label title="Institutional Mod: Sıkı RR (≥1.8 default) ve daha temiz sinyal kalıpları. Kapatırsan daha agresif scalping mümkün ama risk artar.">Institutional Mod<input id="institutionalMode" type="checkbox" checked></label>
-      <label title="Institutional Mod aktifken kabul edilecek minimum Risk:Reward oranı. 1.8 = 1$ riske karşı en az 1.8$ kar potansiyeli olmalı. Daha düşük sinyaller reddedilir.">Institutional Min RR<input id="institutionalMinRR" type="number" step="0.1" min="1" value="1.8"></label>
-      <label title="Turtle Sopa scalp stratejisi izin ver mi? Kısa süreli (M1/M3/M5) hızlı setup'lar. Riskli ama agresif fırsatlar için.">Turtle Scalp'a Izin Ver<input id="allowTurtleScalp" type="checkbox"></label>
-      <label title="Turtle scalp aktifken kabul edilecek minimum RR. Scalp'lar hızlı kapanır, küçük RR (1.6) yeterli olabilir.">Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
-      <label title="Harici emir tetik linki (webhook URL). MT5 yerine farklı bir broker/sistem entegrasyonu için. Örn: TradingView alert webhook. Boş bırak: kullanılmaz.">Canlı Emir Linki<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
-      <label title="Bir sinyalin geçerlilik süresi (dakika). Sinyal üretildikten X dakika sonra hala execute edilmediyse çöpe atılır. Eski sinyalle trade'i engeller.">Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
-      <label title="Genel strateji modu seçimi. Hybrid: tüm stratejileri kullan (önerilen). Core: sadece CRT + Price Action + Elliott. Turtle: hızlı scalp odaklı (M1/M3/M5).">Strateji Modu
-        <select id="strategyMode" onchange="syncChecksFromStrategyMode()">
-          <option value="hybrid" selected>Hybrid (CRT + Turtle Sopa)</option>
-          <option value="core">CRT + PA + Elliott</option>
-          <option value="turtle_sopa">Turtle Sopa (M1/M3/M5)</option>
-        </select>
-      </label>
-      <label title="Hangi tarama stratejilerinin aktif olacağını seç. En az 1 tane açık olmalı. Core=CRT+PA temel. Turtle=hızlı scalp. VWAP=hacim ortalaması toparlanması. S/R Breakout=destek/direnç kırılımı.">Tarama Stratejileri
-        <div class="strat-pick">
-          <label title="Core: CRT (Candle Range Theory) + Price Action + Elliott Wave temel sistemi. En kapsamlı strateji."><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core</label>
-          <label title="Turtle Sopa: M1/M3/M5 timeframe'lerde hızlı momentum scalp. Yüksek frekanslı, küçük kâr/zararlar."><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
-          <label title="VWAP Reclaim: Hacim ağırlıklı ortalama kırılımı sonrası geri-toparlanma yakalar. Trend devamı stratejisi."><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
-          <label title="S/R Breakout: Destek/direnç kırılımı sonrası takip. Yatay konsolidasyon sonrası patlamaları yakalar."><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
+  <div class="tcard" id="planCard">
+    <h3>⚙ Tek Tık Emir Planı (Strateji Ayarları)<button class="coll-btn" onclick="toggleCard('planCard',this)">Gizle</button></h3>
+    <div class="reason" style="margin-bottom:6px">Tüm strateji, risk ve emir ayarlarını burada düzenle. Bölümleri tıklayarak aç/kapa. Tooltip için inputların üzerine gel. Düzenleme sonrası <b>"Planı Güncelle"</b> butonuna bas.</div>
+
+    <details class="plan-section" open id="planSec_risk">
+      <summary><span class="plan-section-icon">🛡</span> Risk & Limitler <span class="plan-section-sub">Günlük risk, pozisyon ve maruziyet kontrolleri</span></summary>
+      <div class="plan-body">
+        <div class="risk-grid">
+          <label title="Hesap bakiyesinin yüzdesi olarak günlük toplam risk bütçesi. Tüm açık pozisyonların risk toplamı bu yüzdeyi aşarsa yeni emir alınmaz. Örn: 2% = 1000$ bakiyede 20$ günlük risk.">Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="2"></label>
+          <label title="Hesap bakiyesinin yüzdesi olarak günlük max zarar. Örn: 1.5% = 1000$ bakiyede günlük -15$ zarar etse auto-trade durur. Status banner'da RESET butonuyla manuel sıfırlanabilir.">Günlük Zarar Limiti %<input id="maxDailyLossPct" type="number" step="0.1" min="0.1" value="1.5"></label>
+          <label title="24 saat içinde gönderilebilecek MAX yeni emir sayısı. Bu sayıya ulaşılınca otomatik trading durur, ertesi gün 00:00 UTC'de sıfırlanır.">Max Günlük Trade<input id="maxTradesPerDay" type="number" step="1" min="1" max="50" value="10"></label>
+          <label title="Aynı anda MT5'te açık+pending olabilecek MAKSİMUM pozisyon sayısı (TÜM kategoriler dahil). Aşılırsa hiç yeni emir gönderilmez. Status banner'da [open/cap] gösterir.">Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="1"></label>
+          <label title="Aynı yönde (LONG veya SHORT) maksimum acik+pending pozisyon. 0=sinirsiz">Aynı Yön Max (L/S)<input id="maxSameDirection" type="number" step="1" min="0" max="20" value="3"></label>
+          <label title="Korelasyon bazli net maruziyet limiti. Faktor basina (USD/EUR/RISK_ON/JPY/METAL/CRYPTO vb) |net|>X iken o yonu kotulestiren sinyaller reddedilir, dengeleyiciler kabul edilir. 0=kapali. ONERILEN: 2">Korelasyon Limiti<input id="maxCorrelatedExposure" type="number" step="1" min="0" max="20" value="2"></label>
+          <label title="ESKI: Basit |LONG-SHORT| farki limiti. Korelasyon kullanmaz, sayisaldir. 0=kapali (onerilen, Korelasyon Limiti daha akilli).">Basit Net Yön (|L−S|)<input id="maxNetExposureCount" type="number" step="1" min="0" max="20" value="0"></label>
+          <label title="Tek bir pozisyonun kullanabileceği max marjin yüzdesi (hesabın toplam free margin'ine göre). Aşılırsa lot otomatik küçültülür. Örn: 30% = 1000$ free margin'de max 300$ marjin tutar.">Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="30"></label>
+          <label title="Sinyal alınırken kabul edilen max spread (point cinsinden). Pending emirler için bu değer otomatik 3x büyütülür çünkü tetiklenme anında spread değişebilir. Yüksek spread = trade reddedilir.">Max Spread (point)<input id="maxSpreadPts" type="number" step="1" min="5" max="300" value="60"></label>
+          <label title="Aynı paritede peş peşe trade'i engellemek için bekleme süresi (dakika). Bir EURUSD trade'i sonra 40dk EURUSD'ye dokunulmaz. 0=cooldown yok.">Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="40"></label>
         </div>
-      </label>
-      <label title="Hangi ürün kategorileri taransın? Sadece seçili olanlar scan listesine girer. Çoklu seç. Boş bırakma!">Tarama Kategorileri (Ürün Tipi)
-        <div class="strat-pick" id="scanCategoriesGrid">
-          <label title="Forex çiftleri: EURUSD, GBPJPY, AUDCAD vb. En likit, en düşük spread'li enstrümanlar."><input type="checkbox" data-cat="forex" onchange="updatePlanConfig()"> Forex (FX)</label>
-          <label title="Değerli metaller: XAUUSD (Altın), XAGUSD (Gümüş), XPTUSD (Platin). Volatil ama trend güçlü."><input type="checkbox" data-cat="metals" onchange="updatePlanConfig()"> Metal (Altın/Gümüş)</label>
-          <label title="Endeksler: NAS100, US30 (DJ), SPX500, GER40 (DAX), UK100. ABD seansında çok aktif."><input type="checkbox" data-cat="indices" onchange="updatePlanConfig()"> Endeks (NAS/DAX/DJ)</label>
-          <label title="Enerji: WTI Petrol, Brent Petrol, Natural Gas. Haber duyarlı, volatil."><input type="checkbox" data-cat="energies" onchange="updatePlanConfig()"> Enerji (WTI/Brent)</label>
-          <label title="Kripto CFD: BTCUSD, ETHUSD, vb. 7/24 işlem, çok volatil, hafta sonu da aktif. Spread genelde yüksek."><input type="checkbox" data-cat="crypto" onchange="updatePlanConfig()"> Kripto (BTC/ETH)</label>
-          <label title="Emtia: Wheat (Buğday), Cocoa (Kakao), Coffee (Kahve), Sugar (Şeker). Mevsimsel, az likit."><input type="checkbox" data-cat="commodities" onchange="updatePlanConfig()"> Emtia (Wheat/Cocoa)</label>
-          <label title="Tahvil/Bonds: US10Y, BUND vb. Faiz hareketleriyle ilgili. Düşük volatil, makro odaklı."><input type="checkbox" data-cat="bonds" onchange="updatePlanConfig()"> Tahvil (Bonds)</label>
-          <label title="Tek hisse CFD: AAPL, TSLA, NVDA gibi. Çok fazla sembol ve spread yüksek olabilir. Önerilen: KAPALI."><input type="checkbox" data-cat="stocks" onchange="updatePlanConfig()"> Hisse CFD</label>
+      </div>
+    </details>
+
+    <details class="plan-section" id="planSec_session">
+      <summary><span class="plan-section-icon">🕐</span> Seans & Haber Filtresi <span class="plan-section-sub">Çalışma saatleri ve haber blackout pencereleri</span></summary>
+      <div class="plan-body">
+        <div class="risk-grid">
+          <label title="UTC seans saat filtresi açık mı? Sadece belirli saatlerde işlem yapmak için. Örn: Asya seansı kapalı kalsın istiyorsan.">Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
+          <label title="Trading başlangıç saati (UTC). Örn: 7 = sabah 7:00 UTC = TR saatiyle 10:00. Bu saatten önce hiç emir gönderilmez.">Seans Başlangıç (UTC)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
+          <label title="Trading bitiş saati (UTC). Örn: 21 = akşam 21:00 UTC = TR saatiyle 00:00. Bu saatten sonra yeni emir gönderilmez ama açık pozisyonlar yönetilmeye devam eder.">Seans Bitiş (UTC)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
+          <label title="UTC saatleri, virgülle ayır (örn: 08:30, 12:30, 14:00). Bu saatlerden ±buffer dakika içinde auto-execute durur" style="grid-column:span 2">Haber Blackout (UTC HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
+          <label title="Haber blackout penceresi ±X dakika. Örn: 15 = haber saatinden 15dk önce ve 15dk sonra hiç emir gönderilmez. Volatilite riskinden korur.">Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
         </div>
-        <div class="reason" style="margin-top:4px;font-size:11px">Sadece secili kategoriler taranir. Default: forex+metal+endeks+enerji acik, kripto/emtia/tahvil/hisse kapali.</div>
-      </label>
-      <!-- ESKI tek toggle (backward compat icin gizli) -->
-      <input id="scanStocks" type="checkbox" style="display:none">
-      <label title="Strateji eşik profili. Conservative: sıkı filtreler, az ama kaliteli sinyal. Balanced: dengeli (önerilen). Aggressive: gevşek filtreler, çok sinyal ama daha düşük kalite.">Strateji Profili
-        <select id="strategyProfile">
-          <option value="conservative">Conservative</option>
-          <option value="balanced" selected>Balanced</option>
-          <option value="aggressive">Aggressive</option>
-        </select>
-      </label>
-      <label title="Standart Risk:Reward oranı. 3.0 = TP, SL'in 3 katı uzaklıkta. Sinyal kendi RR'sini önerse bile bu değere zorlanır. 0=zorlama yok, sinyalin önerdiği RR kullanılır.">Standart R:R (TP/SL, 0=kapali)<input id="standardRR" type="number" step="0.1" min="0" max="10" value="3.0"></label>
-      <label title="TP1 (Kısmi Kapama Seviyesi) R cinsinden. 1.0 = 1R kâra ulaşınca pozisyonun %50'si kapatılır, kalan trailing/BE ile yönetilir.">TP1 (R)<input id="tp1RR" type="number" step="0.1" value="1.0"></label>
-      <label title="TP2 (Hedef Kapama Seviyesi) R cinsinden. 2.0 = 2R kâra ulaşınca kalan pozisyon kapatılır.">TP2 (R)<input id="tp2RR" type="number" step="0.1" value="2.0"></label>
-      <label title="Break-even (zarara kapatılmama noktası) R cinsinden. 1.0 = 1R kâra ulaşınca SL otomatik olarak entry seviyesine çekilir, artık zarara kapatamaz.">Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
-      <label title="Trailing stop'un başlangıç R seviyesi. 1.5 = 1.5R kâra ulaşınca trailing aktif olur, SL fiyatı takip eder.">Trailing Baslangic (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
-      <label title="Bu USD kar esigi asilirsa BE + TP1 partial + Trailing hepsi aninda devreye girer. 0=kapali">Erken Yonetim (USD kar)<input id="earlyManageUsd" type="number" step="1" min="0" value="13"></label>
-      <label title="HIGH-WATER MARK TRAIL: Toplam kar bu esige ulasinca peak takibi aktif olur. 0=kapali. ONERILEN: 15">Portföy Trail Aktivasyon (USD)<input id="portfolioTrailActivateUsd" type="number" step="1" min="0" value="15"></label>
-      <label title="TRAIL DRAWDOWN: Trail aktifken, peak'ten bu kadar geri cekilirse tum pozisyonlar kapatilir. Max karda durmak icin: kucuk=siki (3-5), buyuk=gevsek (10-15). 0=kapali. ONERILEN: 8">Portföy Trail Pullback (USD)<input id="portfolioTrailDrawdownUsd" type="number" step="1" min="0" value="8"></label>
-      <label title="SABIT BASKET TP: Toplam kar bu degere ulasinca hepsi kapatilir (trailing'i pas geçer). 0=kapali. Trailing kullaniyorsan 0 birak.">Portföy TP (Sabit, Toplam Kar USD)<input id="portfolioTpUsd" type="number" step="1" min="0" value="0"></label>
-      <label title="BASKET SL: Tum acik pozisyonlarin toplam zarari -X USD'ye ulasirsa hepsi otomatik kapatilir (acil dur). 0=kapali">Portföy SL (Toplam Zarar USD)<input id="portfolioSlUsd" type="number" step="1" min="0" value="50"></label>
-      <label title="BASKET BE: Tum acik pozisyonlarin toplam kari bu degere ulasirsa, kapamadan once tum SL'leri entry'e ceker (riski sifirlar). 0=kapali">Portföy BE (Toplam Kar USD)<input id="portfolioBeUsd" type="number" step="1" min="0" value="20"></label>
-      <div style="grid-column:1/-1;border-top:1px dashed #cbd5e1;margin-top:8px;padding-top:8px">
-        <details>
-          <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#1976d2" title="Kategori bazli basket TP/SL: Her urun kategorisinin kendi total profit esigi olabilir. Kapaliyken global Portfoy TP/SL uygulanir. Acikken o kategorinin pozisyonlari sadece kendi esikleriyle yonetilir.">📦 Kategori Bazlı Basket (gelişmiş) — global yerine kategori başı TP/SL/BE</summary>
-          <div class="reason" style="margin:6px 0 8px 0;font-size:11px">Bir kategoriyi <b>Aktif</b> ettiğinde, o kategorinin total karı/zararı global Portföy esiklerini değil, buradaki esikleri kullanır. Kapalı kalan kategoriler global esikle yönetilir. Trailing/BE/TP/SL bağımsız çalışır.</div>
+      </div>
+    </details>
+
+    <details class="plan-section" open id="planSec_strategy">
+      <summary><span class="plan-section-icon">🎯</span> Strateji & Sinyal Kalitesi <span class="plan-section-sub">Hangi sinyaller kabul edilsin, hangi ürünler taransın</span></summary>
+      <div class="plan-body">
+        <div class="risk-grid">
+          <label title="Genel strateji modu seçimi. Hybrid: tüm stratejileri kullan (önerilen). Core: sadece CRT + Price Action + Elliott. Turtle: hızlı scalp odaklı (M1/M3/M5).">Strateji Modu
+            <select id="strategyMode" onchange="syncChecksFromStrategyMode()">
+              <option value="hybrid" selected>Hybrid (CRT + Turtle)</option>
+              <option value="core">CRT + PA + Elliott</option>
+              <option value="turtle_sopa">Turtle Sopa (M1/M3/M5)</option>
+            </select>
+          </label>
+          <label title="Strateji eşik profili. Conservative: sıkı filtreler, az ama kaliteli sinyal. Balanced: dengeli (önerilen). Aggressive: gevşek filtreler, çok sinyal ama daha düşük kalite.">Strateji Profili
+            <select id="strategyProfile">
+              <option value="conservative">Conservative (sıkı)</option>
+              <option value="balanced" selected>Balanced (dengeli)</option>
+              <option value="aggressive">Aggressive (gevşek)</option>
+            </select>
+          </label>
+          <label title="A+ Modu: Sadece YÜKSEK kaliteli sinyaller kabul edilir (RR≥2.5 + AI onayı + confluence skoru ≥7). Kapatırsan daha çok sinyal alır ama daha düşük kalite.">A+ Modu (kalite)<input id="aPlusMode" type="checkbox" checked></label>
+          <label title="Son 20 trade'de net negatif performans gösteren stratejileri otomatik devre dışı bırak. Kötü performans gösteren strateji geçici olarak susturulur.">Zayıf Stratejiyi Ele<input id="disableWeakStrategies" type="checkbox" checked></label>
+          <label title="Institutional Mod: Sıkı RR (≥1.8 default) ve daha temiz sinyal kalıpları. Kapatırsan daha agresif scalping mümkün ama risk artar.">Institutional Mod<input id="institutionalMode" type="checkbox" checked></label>
+          <label title="Institutional Mod aktifken kabul edilecek minimum Risk:Reward oranı. 1.8 = 1$ riske karşı en az 1.8$ kar potansiyeli olmalı. Daha düşük sinyaller reddedilir.">Institutional Min RR<input id="institutionalMinRR" type="number" step="0.1" min="1" value="1.8"></label>
+          <label title="Turtle Sopa scalp stratejisi izin ver mi? Kısa süreli (M1/M3/M5) hızlı setup'lar. Riskli ama agresif fırsatlar için.">Turtle Scalp İzin<input id="allowTurtleScalp" type="checkbox"></label>
+          <label title="Turtle scalp aktifken kabul edilecek minimum RR. Scalp'lar hızlı kapanır, küçük RR (1.6) yeterli olabilir.">Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
+          <label title="Bir sinyalin geçerlilik süresi (dakika). Sinyal üretildikten X dakika sonra hala execute edilmediyse çöpe atılır. Eski sinyalle trade'i engeller.">Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:11px;color:#6B7280" title="Hangi tarama stratejilerinin aktif olacağını seç. En az 1 tane açık olmalı. Core=CRT+PA temel. Turtle=hızlı scalp. VWAP=hacim ortalaması toparlanması. S/R Breakout=destek/direnç kırılımı.">Aktif Tarama Stratejileri
+          <div class="strat-pick">
+            <label title="Core: CRT (Candle Range Theory) + Price Action + Elliott Wave temel sistemi. En kapsamlı strateji."><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core (CRT+PA)</label>
+            <label title="Turtle Sopa: M1/M3/M5 timeframe'lerde hızlı momentum scalp. Yüksek frekanslı, küçük kâr/zararlar."><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
+            <label title="VWAP Reclaim: Hacim ağırlıklı ortalama kırılımı sonrası geri-toparlanma yakalar. Trend devamı stratejisi."><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
+            <label title="S/R Breakout: Destek/direnç kırılımı sonrası takip. Yatay konsolidasyon sonrası patlamaları yakalar."><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
+          </div>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:11px;color:#6B7280" title="Hangi ürün kategorileri taransın? Sadece seçili olanlar scan listesine girer. Çoklu seç. Boş bırakma!">Tarama Kategorileri (Ürün Tipi)
+          <div class="strat-pick" id="scanCategoriesGrid">
+            <label title="Forex çiftleri: EURUSD, GBPJPY, AUDCAD vb. En likit, en düşük spread'li enstrümanlar."><input type="checkbox" data-cat="forex" onchange="updatePlanConfig()"> Forex</label>
+            <label title="Değerli metaller: XAUUSD (Altın), XAGUSD (Gümüş), XPTUSD (Platin). Volatil ama trend güçlü."><input type="checkbox" data-cat="metals" onchange="updatePlanConfig()"> Metal</label>
+            <label title="Endeksler: NAS100, US30 (DJ), SPX500, GER40 (DAX), UK100. ABD seansında çok aktif."><input type="checkbox" data-cat="indices" onchange="updatePlanConfig()"> Endeks</label>
+            <label title="Enerji: WTI Petrol, Brent Petrol, Natural Gas. Haber duyarlı, volatil."><input type="checkbox" data-cat="energies" onchange="updatePlanConfig()"> Enerji</label>
+            <label title="Kripto CFD: BTCUSD, ETHUSD, vb. 7/24 işlem, çok volatil, hafta sonu da aktif. Spread genelde yüksek."><input type="checkbox" data-cat="crypto" onchange="updatePlanConfig()"> Kripto</label>
+            <label title="Emtia: Wheat (Buğday), Cocoa (Kakao), Coffee (Kahve), Sugar (Şeker). Mevsimsel, az likit."><input type="checkbox" data-cat="commodities" onchange="updatePlanConfig()"> Emtia</label>
+            <label title="Tahvil/Bonds: US10Y, BUND vb. Faiz hareketleriyle ilgili. Düşük volatil, makro odaklı."><input type="checkbox" data-cat="bonds" onchange="updatePlanConfig()"> Tahvil</label>
+            <label title="Tek hisse CFD: AAPL, TSLA, NVDA gibi. Çok fazla sembol ve spread yüksek olabilir. Önerilen: KAPALI."><input type="checkbox" data-cat="stocks" onchange="updatePlanConfig()"> Hisse</label>
+          </div>
+          <div class="reason" style="font-size:11px">Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji açık, kripto/emtia/tahvil/hisse kapalı.</div>
+        </label>
+        <input id="scanStocks" type="checkbox" style="display:none">
+      </div>
+    </details>
+
+    <details class="plan-section" id="planSec_position">
+      <summary><span class="plan-section-icon">📈</span> Pozisyon Yönetimi (TP/SL/Trail) <span class="plan-section-sub">Tek pozisyon ve portföy seviyesi yönetim</span></summary>
+      <div class="plan-body">
+        <div class="reason" style="margin-bottom:8px"><b>Tek Pozisyon Yönetimi:</b> Her açık pozisyon kendi başına TP1/TP2/BE/Trail ile yönetilir.</div>
+        <div class="risk-grid">
+          <label title="Standart Risk:Reward oranı. 3.0 = TP, SL'in 3 katı uzaklıkta. Sinyal kendi RR'sini önerse bile bu değere zorlanır. 0=zorlama yok, sinyalin önerdiği RR kullanılır.">Standart R:R (0=kapalı)<input id="standardRR" type="number" step="0.1" min="0" max="10" value="3.0"></label>
+          <label title="TP1 (Kısmi Kapama Seviyesi) R cinsinden. 1.0 = 1R kâra ulaşınca pozisyonun %50'si kapatılır, kalan trailing/BE ile yönetilir.">TP1 (R)<input id="tp1RR" type="number" step="0.1" value="1.0"></label>
+          <label title="TP2 (Hedef Kapama Seviyesi) R cinsinden. 2.0 = 2R kâra ulaşınca kalan pozisyon kapatılır.">TP2 (R)<input id="tp2RR" type="number" step="0.1" value="2.0"></label>
+          <label title="Break-even (zarara kapatılmama noktası) R cinsinden. 1.0 = 1R kâra ulaşınca SL otomatik olarak entry seviyesine çekilir, artık zarara kapatamaz.">Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
+          <label title="Trailing stop'un başlangıç R seviyesi. 1.5 = 1.5R kâra ulaşınca trailing aktif olur, SL fiyatı takip eder.">Trailing Başlangıç (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
+          <label title="Bu USD kar esigi asilirsa BE + TP1 partial + Trailing hepsi aninda devreye girer. 0=kapali">Erken Yönetim (USD)<input id="earlyManageUsd" type="number" step="1" min="0" value="13"></label>
+        </div>
+        <div class="reason" style="margin-top:14px;margin-bottom:8px"><b>Portföy Basket (Tüm Pozisyonlar Toplam):</b> Tüm açık pozisyonların TOPLAM USD karı/zararı esikleri aşarsa tek seferde hepsi kapatılır.</div>
+        <div class="risk-grid">
+          <label title="HIGH-WATER MARK TRAIL: Toplam kar bu esige ulasinca peak takibi aktif olur. 0=kapali. ONERILEN: 15">Trail Aktivasyon (USD)<input id="portfolioTrailActivateUsd" type="number" step="1" min="0" value="15"></label>
+          <label title="TRAIL DRAWDOWN: Trail aktifken, peak'ten bu kadar geri cekilirse tum pozisyonlar kapatilir. Max karda durmak icin: kucuk=siki (3-5), buyuk=gevsek (10-15). 0=kapali. ONERILEN: 8">Trail Pullback (USD)<input id="portfolioTrailDrawdownUsd" type="number" step="1" min="0" value="8"></label>
+          <label title="SABIT BASKET TP: Toplam kar bu degere ulasinca hepsi kapatilir (trailing'i pas geçer). 0=kapali. Trailing kullaniyorsan 0 birak.">Sabit TP (toplam kar USD)<input id="portfolioTpUsd" type="number" step="1" min="0" value="0"></label>
+          <label title="BASKET SL: Tum acik pozisyonlarin toplam zarari -X USD'ye ulasirsa hepsi otomatik kapatilir (acil dur). 0=kapali">Sabit SL (toplam zarar USD)<input id="portfolioSlUsd" type="number" step="1" min="0" value="50"></label>
+          <label title="BASKET BE: Tum acik pozisyonlarin toplam kari bu degere ulasirsa, kapamadan once tum SL'leri entry'e ceker (riski sifirlar). 0=kapali">Sabit BE (toplam kar USD)<input id="portfolioBeUsd" type="number" step="1" min="0" value="20"></label>
+        </div>
+        <details style="margin-top:14px;border-top:1px dashed #cbd5e1;padding-top:10px">
+          <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#1976d2" title="Kategori bazli basket TP/SL: Her urun kategorisinin kendi total profit esigi olabilir. Kapaliyken global Portfoy TP/SL uygulanir. Acikken o kategorinin pozisyonlari sadece kendi esikleriyle yonetilir.">📦 Kategori Bazlı Basket (gelişmiş)</summary>
+          <div class="reason" style="margin:6px 0 8px 0;font-size:11px">Bir kategoriyi <b>Aktif</b> ettiğinde, o kategorinin total karı/zararı global Portföy esiklerini değil, buradaki esikleri kullanır. Kapalı kalan kategoriler global esikle yönetilir.</div>
           <div id="categoryBasketGrid" style="display:grid;grid-template-columns:minmax(0,1fr);gap:6px"></div>
         </details>
       </div>
-      <label title="Otomatik trade açık mı? Açıkken sinyal geldikçe MT5'e emir gönderilir. Kapalıyken sadece tarama yapılır, emir gitmez. (Status banner'daki BAŞLAT/DURDUR butonu daha hızlıdır)">Auto Trade<input id="autoTradeChk" type="checkbox"></label>
-      <label title="Dry Run (kuru çalıştırma): Sinyaller hesaplanır ve loglanır ama MT5'e GERÇEK emir GİTMEZ. Test/simülasyon için. Live'a almadan önce kullan.">Dry Run<input id="dryRunChk" type="checkbox" checked></label>
-      <label title="Emirleri Demo hesaba mı Live hesaba mı gönder? MT5 terminalinde hangisine login olduğunla uyumlu olmalı. Yanlış seçim trade'i reddeder.">Emir Hesabı
-        <select id="targetAccountType">
-          <option value="demo" selected>Demo</option>
-          <option value="live">Live</option>
-        </select>
-      </label>
-      <label title="Emir tipi: Pending=Bekleyen limit/stop emir (geri çekilme bekler, daha iyi fiyat alır). Market=Anlık piyasa emri (slippage olabilir ama kesin tetiklenir).">Emir Tipi
-        <select id="placementType">
-          <option value="pending" selected>Pending (Limit/Stop)</option>
-          <option value="market">Market (Anlık)</option>
-        </select>
-      </label>
-      <label title="Pending emir geçerlilik süresi (dakika). 0=GTC (broker iptaline kadar geçerli). Önerilen: 5dk = sinyal anı geçerse otomatik iptal, eski sinyale girilmez.">Pending Süresi (dk, 0=GTC)<input id="pendingExpireMin" type="number" step="1" min="0" max="1440" value="5"></label>
-      <label title="Pending emir fiyatı, mevcut fiyattan ne kadar geride olsun (point). 10 point = küçük bir geri çekilme bekler, daha iyi giriş.">Pending Geri Çekme (point)<input id="pendingPullbackPts" type="number" step="1" min="0" max="500" value="10"></label>
-      <label title="Pending fiyatı mevcut fiyata çok yakınsa (broker stops_level ihlali), otomatik geriye al. Kapalıysa emir reddedilir.">Çok yakınsa Pending'i kaydır<input id="autoAdjustPending" type="checkbox" checked></label>
-      <label title="Pending emir broker tarafından reddedilirse (stops_level vs.), Market emir olarak gönder. Risk: slippage olabilir. Önerilen: KAPALI.">Pending olmuyorsa Market'a düş<input id="allowMarketFallback" type="checkbox"></label>
-      <label title="MT5 hesap numarası. Boş bırak: terminalde halihazırda login olan hesap kullanılır. Doldur: bu hesaba otomatik login denenir.">Meta Login<input id="metaLogin" type="number" step="1" placeholder="demo hesap no"></label>
-      <label title="MT5 hesap şifresi. Sadece otomatik login için. Boş bırak: terminaldeki açık hesap kullanılır. Şifre tarayıcı localStorage'da saklanır.">Meta Şifre<input id="metaPass" type="password" placeholder="şifre"></label>
-      <label title="MT5 server adı (örn: 'MetaQuotes-Demo' veya broker'ın verdiği). Otomatik login için gerekli. Broker'dan kontrol et.">Meta Server<input id="metaServer" type="text" placeholder="broker-demo server"></label>
+    </details>
+
+    <details class="plan-section" id="planSec_order">
+      <summary><span class="plan-section-icon">📤</span> Emir & Hesap Ayarları <span class="plan-section-sub">Auto trade, dry run, MT5 login, emir tipi</span></summary>
+      <div class="plan-body">
+        <div class="risk-grid">
+          <label title="Otomatik trade açık mı? Açıkken sinyal geldikçe MT5'e emir gönderilir. Kapalıyken sadece tarama yapılır, emir gitmez. (Status banner'daki BAŞLAT/DURDUR butonu daha hızlıdır)">Auto Trade<input id="autoTradeChk" type="checkbox"></label>
+          <label title="Dry Run (kuru çalıştırma): Sinyaller hesaplanır ve loglanır ama MT5'e GERÇEK emir GİTMEZ. Test/simülasyon için. Live'a almadan önce kullan.">Dry Run (simülasyon)<input id="dryRunChk" type="checkbox" checked></label>
+          <label title="Emirleri Demo hesaba mı Live hesaba mı gönder? MT5 terminalinde hangisine login olduğunla uyumlu olmalı. Yanlış seçim trade'i reddeder.">Emir Hesabı
+            <select id="targetAccountType">
+              <option value="demo" selected>Demo</option>
+              <option value="live">Live ⚠</option>
+            </select>
+          </label>
+          <label title="Emir tipi: Pending=Bekleyen limit/stop emir (geri çekilme bekler, daha iyi fiyat alır). Market=Anlık piyasa emri (slippage olabilir ama kesin tetiklenir).">Emir Tipi
+            <select id="placementType">
+              <option value="pending" selected>Pending (Limit/Stop)</option>
+              <option value="market">Market (Anlık)</option>
+            </select>
+          </label>
+          <label title="Pending emir geçerlilik süresi (dakika). 0=GTC (broker iptaline kadar geçerli). Önerilen: 5dk = sinyal anı geçerse otomatik iptal, eski sinyale girilmez.">Pending Süresi (dk)<input id="pendingExpireMin" type="number" step="1" min="0" max="1440" value="5"></label>
+          <label title="Pending emir fiyatı, mevcut fiyattan ne kadar geride olsun (point). 10 point = küçük bir geri çekilme bekler, daha iyi giriş.">Pending Pullback (point)<input id="pendingPullbackPts" type="number" step="1" min="0" max="500" value="10"></label>
+          <label title="Pending fiyatı mevcut fiyata çok yakınsa (broker stops_level ihlali), otomatik geriye al. Kapalıysa emir reddedilir.">Yakınsa Kaydır<input id="autoAdjustPending" type="checkbox" checked></label>
+          <label title="Pending emir broker tarafından reddedilirse (stops_level vs.), Market emir olarak gönder. Risk: slippage olabilir. Önerilen: KAPALI.">Reject ise Market'a Düş<input id="allowMarketFallback" type="checkbox"></label>
+        </div>
+        <div class="reason" style="margin-top:14px;margin-bottom:6px"><b>MT5 Hesap Bilgileri:</b> Boş bırakırsan terminalde login olan hesap kullanılır. Doldurursan otomatik login denenir. Birden fazla hesap için yukarıdaki <b>"+ Hesap Kaydet"</b> butonunu kullan.</div>
+        <div class="risk-grid">
+          <label title="MT5 hesap numarası. Boş bırak: terminalde halihazırda login olan hesap kullanılır. Doldur: bu hesaba otomatik login denenir.">Meta Login<input id="metaLogin" type="number" step="1" placeholder="demo hesap no"></label>
+          <label title="MT5 hesap şifresi. Sadece otomatik login için. Boş bırak: terminaldeki açık hesap kullanılır. Şifre tarayıcı localStorage'da saklanır.">Meta Şifre<input id="metaPass" type="password" placeholder="şifre"></label>
+          <label title="MT5 server adı (örn: 'MetaQuotes-Demo' veya broker'ın verdiği). Otomatik login için gerekli. Broker'dan kontrol et.">Meta Server<input id="metaServer" type="text" placeholder="broker-demo server"></label>
+          <label title="Harici emir tetik linki (webhook URL). MT5 yerine farklı bir broker/sistem entegrasyonu için. Örn: TradingView alert webhook. Boş bırak: kullanılmaz." style="grid-column:span 2">Canlı Emir Webhook (opsiyonel)<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
+        </div>
+      </div>
+    </details>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button class="cb" onclick="updatePlanConfig()" style="font-weight:700;padding:8px 18px">💾 Planı Güncelle</button>
+      <button class="cb" onclick="exportSettings()" title="Tüm ayarları JSON dosyası olarak indir (yedek)">⬇ Export</button>
+      <button class="cb" onclick="importSettings()" title="Daha önce indirilmiş JSON ayarlarını yükle">⬆ Import</button>
+      <div class="reason" id="targetAccountWarn" style="margin-left:auto">Emirler DEMO hesaba gidecek.</div>
     </div>
-    <button class="cb" style="margin-top:8px" onclick="updatePlanConfig()">Planı Güncelle</button>
-    <div class="reason" id="targetAccountWarn">Emirler DEMO hesaba gidecek.</div>
-    <div class="reason" id="healthInfo">Health: —</div>
+    <div class="reason" id="healthInfo" style="margin-top:4px">Health: —</div>
     <div class="kgrid" id="planGrid" style="margin-top:10px"></div>
   </div>
   <div class="tcard"><h3>Tüm Tarama Sonuçları</h3><div class="reason">Not: <b>Bölge %</b> sinyalden sonraki değişim değil, sinyal anındaki range genişliğidir. Formül: <code>(CRH-CRL)/Mid * 100</code>.</div><table><thead><tr><th>Parite</th><th>Fiyat</th><th>Trend</th><th>Sinyal</th><th>Giriş</th><th>SL</th><th>TP</th><th>R:R</th><th>Takip TF</th><th>CRH</th><th>CRL</th><th>Bölge%</th></tr></thead><tbody id="tbl"></tbody></table></div>
@@ -2482,6 +2579,14 @@ function deleteAccountProfile(){
   if(getActiveProfileName()===v)setActiveProfileName('');
   refreshAccountProfileSelect();
   pushFeed(`${new Date().toLocaleTimeString()} · 🗑 Hesap profili silindi: "${v}"`,'tf-info');
+}
+function scrollToSection(id){
+  const el=document.getElementById(id);if(!el){return;}
+  // master bar sticky oldugu icin offset birak (60px)
+  const y=el.getBoundingClientRect().top+window.scrollY-72;
+  window.scrollTo({top:y,behavior:'smooth'});
+  // gorsel ipucu: kart kisaca highlight olsun
+  try{el.style.transition='box-shadow .35s';el.style.boxShadow='0 0 0 3px rgba(25,118,210,0.35)';setTimeout(()=>{el.style.boxShadow='';},900);}catch(_){ }
 }
 function switchAccountProfile(encName){
   const name=encName?decodeURIComponent(encName):'';
