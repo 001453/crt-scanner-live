@@ -1082,6 +1082,40 @@ async function handleManagePositions(req, res) {
   }
 }
 
+// Tum portfoy + kategori trail state'lerini sifirla. Frontend, tum pozisyonlar kapandiginda cagirir.
+async function handleResetPortfolioState(req, res) {
+  const startedAt = Date.now();
+  try {
+    const pyCode = [
+      'import json,sys,sqlite3,os,datetime',
+      'db_path=sys.argv[1]',
+      'os.makedirs(os.path.dirname(db_path), exist_ok=True)',
+      'conn=sqlite3.connect(db_path)',
+      'cur=conn.cursor()',
+      'cur.execute("""CREATE TABLE IF NOT EXISTS portfolio_state (id INTEGER PRIMARY KEY, peak_profit REAL DEFAULT 0, trail_armed INTEGER DEFAULT 0, updated_at TEXT)""")',
+      'cur.execute("""CREATE TABLE IF NOT EXISTS category_portfolio_state (category TEXT PRIMARY KEY, peak_profit REAL DEFAULT 0, trail_armed INTEGER DEFAULT 0, updated_at TEXT)""")',
+      'now=datetime.datetime.utcnow().isoformat()',
+      '# Global state sifirla (sticky id=1)',
+      'cur.execute("INSERT INTO portfolio_state(id,peak_profit,trail_armed,updated_at) VALUES(1,0,0,?) ON CONFLICT(id) DO UPDATE SET peak_profit=0, trail_armed=0, updated_at=excluded.updated_at",(now,))',
+      '# Tum kategori state row\'larini sifirla',
+      'rows=cur.execute("SELECT category FROM category_portfolio_state").fetchall()',
+      'cats=[r[0] for r in rows] if rows else []',
+      'for c in cats:',
+      '  cur.execute("UPDATE category_portfolio_state SET peak_profit=0, trail_armed=0, updated_at=? WHERE category=?",(now,c))',
+      'conn.commit()',
+      'conn.close()',
+      'print(json.dumps({"ok":True,"reset_global":True,"reset_categories":cats,"count":len(cats)+1}, ensure_ascii=False), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode, [DB_PATH]);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+    logEvent('info', 'reset_portfolio_state.ok', { elapsed_ms: Date.now() - startedAt, reset_count: Number(j.count || 0) });
+  } catch (err) {
+    logEvent('error', 'reset_portfolio_state.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'reset_portfolio_state_failed', detail: err.message });
+  }
+}
+
 async function handleExecuteOrder(req, res) {
   const startedAt = Date.now();
   try {
@@ -1404,6 +1438,10 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/manage-positions' && req.method === 'POST') {
     handleManagePositions(req, res);
+    return;
+  }
+  if (routePath === '/api/reset-portfolio-state' && req.method === 'POST') {
+    handleResetPortfolioState(req, res);
     return;
   }
   if (routePath === '/api/debug-log' && req.method === 'GET') {
