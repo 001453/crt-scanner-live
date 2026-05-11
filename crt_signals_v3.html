@@ -1230,7 +1230,22 @@ function canAutoExecute(d){
   if(!isAPlusSignal(d))return{ok:false,reason:'aplus_not_qualified'};
   if(!isSessionOpen())return{ok:false,reason:'session_closed'};
   const dailyLossLimitUsd=Math.max(1,(riskCfg.balance*Number(planCfg.maxDailyLossPct||2))/100);
-  if(Math.abs(currentDayLossUsd())>=dailyLossLimitUsd)return{ok:false,reason:'daily_loss_limit_reached'};
+  if(Math.abs(currentDayLossUsd())>=dailyLossLimitUsd){
+    // Gunde 1 kez Telegram'a kritik bildirim gonder
+    try{
+      if(telegramCfg.enabled){
+        const todayKey=`${utcDayString()}:loss_limit`;
+        if(window._tgDailyLossNotified!==todayKey){
+          window._tgDailyLossNotified=todayKey;
+          const lossUsd=Math.abs(currentDayLossUsd()).toFixed(2);
+          const balance=Number(riskCfg.balance||0).toFixed(2);
+          const pct=Number(planCfg.maxDailyLossPct||0).toFixed(1);
+          sendTelegram(`<b>⚠️ GÜNLÜK ZARAR LİMİTİ AŞILDI</b>\n\nBugünkü zarar: <b>-${lossUsd} USD</b>\nLimit: %${pct} (${(riskCfg.balance*pct/100).toFixed(2)} USD)\nBakiye: <b>${balance} USD</b>\n\n🛑 Yeni emirler ENGELLENDİ\nAçık pozisyonlar: ${(realOpenPositions||[]).length}\n\nResetlemek istersen status banner'daki RESET butonunu kullan.\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+        }
+      }
+    }catch(_){ }
+    return{ok:false,reason:'daily_loss_limit_reached'};
+  }
   const pairCooldownMs=Math.max(0,Number(planCfg.pairCooldownMin||0))*60000;
   if(pairCooldownMs>0){
     const now=Date.now();
@@ -1309,6 +1324,9 @@ async function checkHealth(){
     if(ok){
       if(healthFailStreak>=HEALTH_FAIL_THRESHOLD){
         pushTradeFeed('success',`🟢 MT5 BAGLANTI GERI GELDI · account=${j.account||'-'}`);
+        if(telegramCfg.enabled){
+          sendTelegram(`<b>🟢 MT5 BAĞLANTI GERİ GELDİ</b>\nHesap: <code>${j.account||'-'}</code>\nMod: ${j.trade_mode||'-'}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+        }
       }
       healthFailStreak=0;
       showAlertBanner('');
@@ -1317,6 +1335,9 @@ async function checkHealth(){
       if(healthFailStreak===HEALTH_FAIL_THRESHOLD){
         pushTradeFeed('error',`🔴 MT5 BAGLANTI KOPTU · ${HEALTH_FAIL_THRESHOLD} ardisik basarisiz health · oto retry sürüyor`);
         showAlertBanner('🔴 <b>MT5 BAĞLANTI YOK</b> — proxy veya terminal düşmüş olabilir. Auto-execute durduruldu. <button class="cb" onclick="checkHealth()">Tekrar Dene</button>','error');
+        if(telegramCfg.enabled){
+          sendTelegram(`<b>🔴 MT5 BAĞLANTI KOPTU</b>\n\n${HEALTH_FAIL_THRESHOLD} ardışık başarısız health check.\nProxy veya MT5 terminali kapanmış olabilir.\n\n⚠️ Yeni emirler GİTMİYOR\nAçık pozisyonlar: ${(realOpenPositions||[]).length}\n\nOto retry sürüyor...\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+        }
       }
       // Adaptif retry: hizla yeniden dene (kademeli backoff)
       const delay=Math.min(30000,1500*Math.pow(1.6,Math.min(8,healthFailStreak)));
@@ -1330,6 +1351,9 @@ async function checkHealth(){
     if(healthFailStreak===HEALTH_FAIL_THRESHOLD){
       pushTradeFeed('error',`🔴 PROXY ULAŞILAMIYOR · ${e.message}`);
       showAlertBanner('🔴 <b>PROXY ULAŞILAMIYOR</b> — backend kapalı veya port erişilemez. <button class="cb" onclick="checkHealth()">Tekrar Dene</button>','error');
+      if(telegramCfg.enabled){
+        sendTelegram(`<b>🔴 PROXY ULAŞILAMIYOR</b>\n\nBackend kapalı veya port erişilemez.\nHata: <code>${(e.message||'').slice(0,200)}</code>\n\n⚠️ Yeni emirler GİTMİYOR\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+      }
     }
     const delay=Math.min(30000,1500*Math.pow(1.6,Math.min(8,healthFailStreak)));
     setTimeout(()=>checkHealth(),delay);
@@ -3299,6 +3323,11 @@ async function emergencyStop(){
     }
     await refreshTradeSnapshot();
     pushTradeFeed('error',`🛑 ACİL DUR TAMAMLANDI · oto tekrar acmak istersen ust panelden ac.`);
+    if(telegramCfg.enabled){
+      const lvlTxt=lvl===1?'Sadece auto durdur':lvl===2?'Auto + pending iptal':'Auto + pending iptal + tüm pozisyonları kapat';
+      const balance=Number(riskCfg.balance||0).toFixed(2);
+      sendTelegram(`<b>🚨 ACİL DUR TETİKLENDİ — Seviye ${lvl}</b>\n${lvlTxt}\n\nHesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nKalan açık: ${(realOpenPositions||[]).length}\nKalan bekleyen: ${(realPendingOrders||[]).length}\n\n⚠️ Strateji DURDU. Manuel kontrol gerekli.\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+    }
   }catch(e){pushTradeFeed('error',`🛑 ACİL DUR HATA · ${e.message}`);}
   finally{
     if(btn){btn.classList.remove('active');btn.disabled=false;btn.textContent='🛑 ACİL DUR';}
