@@ -60,6 +60,24 @@ body.night-paper .status-banner{background:rgba(214,201,178,0.18);border-color:r
 .estop-btn{font-size:12px;padding:6px 14px;border-radius:8px;border:2px solid #dc2626;background:#fee2e2;color:#7f1d1d;font-weight:700;cursor:pointer;transition:all .15s}
 .estop-btn:hover{background:#dc2626;color:#fff;transform:scale(1.03)}
 .estop-btn.active{background:#dc2626;color:#fff;animation:pulse 1.2s infinite}
+.master-strategy-bar{display:flex;gap:10px;align-items:center;padding:10px 14px;margin-bottom:10px;border-radius:10px;border:2px solid #cbd5e1;background:#f8fafc;flex-wrap:wrap}
+.master-strategy-bar.active{border-color:#16a34a;background:linear-gradient(90deg,#dcfce7,#f0fdf4);box-shadow:0 0 0 3px rgba(22,163,74,0.1)}
+.master-strategy-bar.stopped{border-color:#dc2626;background:linear-gradient(90deg,#fee2e2,#fef2f2)}
+.master-btn{font-size:14px;padding:10px 22px;border-radius:10px;border:2px solid;font-weight:800;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.master-btn.start{border-color:#16a34a;background:#dcfce7;color:#14532d}
+.master-btn.start:hover{background:#16a34a;color:#fff;transform:scale(1.03)}
+.master-btn.stop{border-color:#dc2626;background:#fee2e2;color:#7f1d1d;animation:pulse 2s infinite}
+.master-btn.stop:hover{background:#dc2626;color:#fff;transform:scale(1.03)}
+.master-state{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.master-state .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.master-state.on .dot{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,0.25);animation:pulse 1.5s infinite}
+.master-state.off .dot{background:#9ca3af}
+.acct-select{font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #cbd5e1;background:#fff;cursor:pointer}
+.acct-quick{font-size:11px;padding:3px 8px;border-radius:5px;border:1px solid #cbd5e1;background:#f8fafc;cursor:pointer}
+.acct-quick:hover{background:#e2e8f0}
+body.night-paper .master-strategy-bar{background:rgba(60,50,38,0.4);border-color:#776347}
+body.night-paper .master-strategy-bar.active{background:linear-gradient(90deg,rgba(22,163,74,0.2),rgba(22,163,74,0.05));border-color:#22c55e}
+body.night-paper .master-strategy-bar.stopped{background:linear-gradient(90deg,rgba(220,38,38,0.2),rgba(220,38,38,0.05));border-color:#dc2626}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.7)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0)}}
 .feed,.chartmeta,.src{font-size:12px;color:#6B7280;margin-bottom:8px}
 .level-readout{font-size:12px;color:#5f513d;margin-bottom:8px}
@@ -218,16 +236,30 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
 <div class="db">
   <div class="hdr"><div><h2>CRT Scanner</h2><p>Candle Range Theory · İşlem Adayları</p></div><span class="pill ld" id="pill">Taranıyor...</span></div>
   <div class="src" id="srcNote">—</div>
+  <div id="masterStrategyBar" class="master-strategy-bar stopped">
+    <button id="masterStrategyBtn" class="master-btn start" onclick="toggleStrategyMaster()" title="Stratejiyi başlat: hem tarama hem otomatik emir gönderme aktif olur. Hesap ayarları doğru olmalı! Başlatmadan önce sağdan hesap seçin/girin.">▶ STRATEJİYİ BAŞLAT</button>
+    <span id="masterStrategyState" class="master-state off"><span class="dot"></span><span id="masterStateText">DURDU · Ayarları yapın ve BAŞLAT'a basın</span></span>
+    <span style="flex:1"></span>
+    <label class="acct-quick" title="Aktif MT5 hesabı. Birden fazla hesap kaydedebilir, başlatmadan önce seçebilirsin. Stratejiyi başlatınca seçili hesaba login denenir.">
+      Hesap:
+      <select id="activeAccountProfile" class="acct-select" onchange="switchAccountProfile(this.value)" style="margin-left:4px">
+        <option value="">— Plan ayarlarındaki (default) —</option>
+      </select>
+    </label>
+    <button class="acct-quick" onclick="saveAccountProfile()" title="Mevcut Meta Login/Password/Server bilgilerini bir profil olarak kaydet. Birden fazla demo/live hesap arası geçiş için.">+ Hesap Kaydet</button>
+    <button class="acct-quick" onclick="deleteAccountProfile()" title="Seçili hesap profilini sil. Mevcut canlı bağlantıyı etkilemez, sadece kaydı kaldırır.">🗑 Sil</button>
+    <button class="acct-quick" onclick="document.getElementById('plan').scrollIntoView({behavior:'smooth'})" title="Tüm strateji/risk/hesap ayarlarına git">⚙ Ayarlar</button>
+  </div>
   <div id="statusBanner" class="status-banner">Sistem hazirlaniyor...</div>
   <div id="alertBanner" class="alert-banner" style="display:none"></div>
   <div class="ctrl">
-    <button class="cb on" onclick="setCat('all',this)">Tümü</button><button class="cb" onclick="setCat('forex',this)">Forex</button><button class="cb" onclick="setCat('metals',this)">Metaller</button><button class="cb" onclick="setCat('crypto',this)">Kripto</button><button class="cb" onclick="setCat('indices',this)">Endeksler</button>
-    <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)">AI Filtre: Açık</button>
-    <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))">İşlem limit: 6</button>
-    <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)">Gece Gazetesi: Kapalı</button>
-    <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
-    <button class="rbtn" onclick="refreshAll()">Tara</button>
-    <button class="estop-btn" id="estopBtn" onclick="emergencyStop()" title="Tüm pending iptal + auto kapat (Acil Dur)">🛑 ACİL DUR</button>
+    <button class="cb on" onclick="setCat('all',this)" title="Tüm ürün kategorilerini göster (forex+metal+endeks+kripto karışık liste).">Tümü</button><button class="cb" onclick="setCat('forex',this)" title="Sadece forex çiftlerini göster (EURUSD, GBPJPY vb).">Forex</button><button class="cb" onclick="setCat('metals',this)" title="Sadece metaller (XAUUSD=Altın, XAGUSD=Gümüş).">Metaller</button><button class="cb" onclick="setCat('crypto',this)" title="Sadece kripto CFD'leri (BTCUSD, ETHUSD vb).">Kripto</button><button class="cb" onclick="setCat('indices',this)" title="Sadece endeksler (NAS100, US30, GER40 vb).">Endeksler</button>
+    <button class="cb on" id="aiBtn" onclick="toggleAiFilter(this)" title="AI Filtresi: Sinyalleri GPT modeli ile çapraz doğrula. Açıkken sadece AI'nın onayladığı sinyaller geçer (daha kaliteli ama az). Kapalıyken tüm sinyaller geçer.">AI Filtre: Açık</button>
+    <button class="cb on" id="limitLbl" onclick="setTradeLimit(prompt('İşlem limiti (1-20):', tradeLimit))" title="Aynı anda kart olarak gösterilecek max sinyal sayısı. Sadece görselleştirme, gerçek pozisyon limiti değil. Yüksek = ekranda daha çok kart.">İşlem limit: 6</button>
+    <button class="cb" id="themeBtn" onclick="toggleNightTheme(this)" title="Gece modu: koyu kahve/sepya 'eski gazete' teması. Gözünü yormaz, uzun süre kullanım için.">Gece Gazetesi: Kapalı</button>
+    <button class="cb on" id="autoBtn" onclick="toggleAutoScan(this)" title="Oto Tarama: Her 2 dakikada bir tüm pariteleri otomatik tara ve sinyal üret. Kapalıyken sadece manuel 'Tara' butonu ile tarar.">Oto Tarama: Açık</button><span class="scan-note" id="scanNote">Sonraki tarama: —</span>
+    <button class="rbtn" onclick="refreshAll()" title="Şu anda tüm pariteleri TEK SEFERLİK tara. Oto Tarama'dan bağımsız, anında çalışır.">Tara</button>
+    <button class="estop-btn" id="estopBtn" onclick="emergencyStop()" title="ACİL DUR: Tüm pending emirleri iptal et + Auto Trade'i kapat. Mevcut açık pozisyonlara dokunmaz (manuel kapat). Felaket durumunda kullan.">🛑 ACİL DUR</button>
   </div>
   <div class="mg"><div class="mc"><div class="lb">Taranan</div><div class="vl muted" id="m0">—</div></div><div class="mc"><div class="lb">Long</div><div class="vl pos" id="m1">—</div></div><div class="mc"><div class="lb">Short</div><div class="vl neg" id="m2">—</div></div><div class="mc"><div class="lb">Yatay Bölge</div><div class="vl muted" id="m3">—</div></div><div class="mc"><div class="lb">Yönetimde</div><div class="vl" id="m4" style="color:#7c3aed">—</div></div><div class="mc"><div class="lb">Bekleyen</div><div class="vl" id="m5" style="color:#0891b2">—</div></div></div>
   <div class="sig-grid" id="sigGrid"><div class="wait-msg">Tarama başlatılıyor...</div></div>
@@ -263,98 +295,105 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
   <div class="tcard">
     <h3>Tek Tık Emir Planı</h3>
     <div class="risk-grid">
-      <label>Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="2"></label>
-      <label>Max Günlük Trade Sayısı<input id="maxTradesPerDay" type="number" step="1" min="1" max="50" value="10"></label>
-      <label>Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="1"></label>
+      <label title="Hesap bakiyesinin yüzdesi olarak günlük toplam risk bütçesi. Tüm açık pozisyonların risk toplamı bu yüzdeyi aşarsa yeni emir alınmaz. Örn: 2% = 1000$ bakiyede 20$ günlük risk.">Max Günlük Risk %<input id="dailyRiskPct" type="number" step="0.1" value="2"></label>
+      <label title="24 saat içinde gönderilebilecek MAX yeni emir sayısı. Bu sayıya ulaşılınca otomatik trading durur, ertesi gün 00:00 UTC'de sıfırlanır.">Max Günlük Trade Sayısı<input id="maxTradesPerDay" type="number" step="1" min="1" max="50" value="10"></label>
+      <label title="Aynı anda MT5'te açık+pending olabilecek MAKSİMUM pozisyon sayısı (TÜM kategoriler dahil). Aşılırsa hiç yeni emir gönderilmez. Status banner'da [open/cap] gösterir.">Aynı Anda Açık Pozisyon<input id="maxOpenPos" type="number" step="1" value="1"></label>
       <label title="Aynı yönde (LONG veya SHORT) maksimum acik+pending pozisyon. 0=sinirsiz">Aynı Yön Max (LONG/SHORT)<input id="maxSameDirection" type="number" step="1" min="0" max="20" value="3"></label>
       <label title="Korelasyon bazli net maruziyet limiti. Faktor basina (USD/EUR/RISK_ON/JPY/METAL/CRYPTO vb) |net|>X iken o yonu kotulestiren sinyaller reddedilir, dengeleyiciler kabul edilir. 0=kapali. ONERILEN: 2">Korelasyon Limiti (faktör başı)<input id="maxCorrelatedExposure" type="number" step="1" min="0" max="20" value="2"></label>
       <label title="ESKI: Basit |LONG-SHORT| farki limiti. Korelasyon kullanmaz, sayisaldir. 0=kapali (onerilen, Korelasyon Limiti daha akilli).">Basit Net Yön (|L−S|) Max<input id="maxNetExposureCount" type="number" step="1" min="0" max="20" value="0"></label>
-      <label>Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="30"></label>
-      <label>Max Spread (point, pending=3x)<input id="maxSpreadPts" type="number" step="1" min="5" max="300" value="60"></label>
-      <label>Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="40"></label>
-      <label>Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
-      <label>Seans Baslangic (UTC saat)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
-      <label>Seans Bitis (UTC saat)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
+      <label title="Tek bir pozisyonun kullanabileceği max marjin yüzdesi (hesabın toplam free margin'ine göre). Aşılırsa lot otomatik küçültülür. Örn: 30% = 1000$ free margin'de max 300$ marjin tutar.">Max Marjin Kullanım %<input id="maxMarginUse" type="number" step="1" value="30"></label>
+      <label title="Sinyal alınırken kabul edilen max spread (point cinsinden). Pending emirler için bu değer otomatik 3x büyütülür çünkü tetiklenme anında spread değişebilir. Yüksek spread = trade reddedilir.">Max Spread (point, pending=3x)<input id="maxSpreadPts" type="number" step="1" min="5" max="300" value="60"></label>
+      <label title="Aynı paritede peş peşe trade'i engellemek için bekleme süresi (dakika). Bir EURUSD trade'i sonra 40dk EURUSD'ye dokunulmaz. 0=cooldown yok.">Ayni Parite Cooldown (dk)<input id="pairCooldownMin" type="number" step="1" value="40"></label>
+      <label title="UTC seans saat filtresi açık mı? Sadece belirli saatlerde işlem yapmak için. Örn: Asya seansı kapalı kalsın istiyorsan.">Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
+      <label title="Trading başlangıç saati (UTC). Örn: 7 = sabah 7:00 UTC = TR saatiyle 10:00. Bu saatten önce hiç emir gönderilmez.">Seans Baslangic (UTC saat)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
+      <label title="Trading bitiş saati (UTC). Örn: 21 = akşam 21:00 UTC = TR saatiyle 00:00. Bu saatten sonra yeni emir gönderilmez ama açık pozisyonlar yönetilmeye devam eder.">Seans Bitis (UTC saat)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
       <label title="UTC saatleri, virgülle ayır (örn: 08:30, 12:30, 14:00). Bu saatlerden ±buffer dakika içinde auto-execute durur">Haber Blackout (UTC HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
-      <label>Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
-      <label>A+ Modu<input id="aPlusMode" type="checkbox" checked></label>
-      <label>Gunluk Zarar Limiti %<input id="maxDailyLossPct" type="number" step="0.1" min="0.1" value="1.5"></label>
-      <label>Zayif Stratejiyi Ele<input id="disableWeakStrategies" type="checkbox" checked></label>
-      <label>Institutional Mod<input id="institutionalMode" type="checkbox" checked></label>
-      <label>Institutional Min RR<input id="institutionalMinRR" type="number" step="0.1" min="1" value="1.8"></label>
-      <label>Turtle Scalp'a Izin Ver<input id="allowTurtleScalp" type="checkbox"></label>
-      <label>Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
-      <label>Canlı Emir Linki<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
-      <label>Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
-      <label>Strateji Modu
+      <label title="Haber blackout penceresi ±X dakika. Örn: 15 = haber saatinden 15dk önce ve 15dk sonra hiç emir gönderilmez. Volatilite riskinden korur.">Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
+      <label title="A+ Modu: Sadece YÜKSEK kaliteli sinyaller kabul edilir (RR≥2.5 + AI onayı + confluence skoru ≥7). Kapatırsan daha çok sinyal alır ama daha düşük kalite.">A+ Modu<input id="aPlusMode" type="checkbox" checked></label>
+      <label title="Hesap bakiyesinin yüzdesi olarak günlük max zarar. Örn: 1.5% = 1000$ bakiyede günlük -15$ zarar etse auto-trade durur. Status banner'da RESET butonuyla manuel sıfırlanabilir.">Gunluk Zarar Limiti %<input id="maxDailyLossPct" type="number" step="0.1" min="0.1" value="1.5"></label>
+      <label title="Son 20 trade'de net negatif performans gösteren stratejileri otomatik devre dışı bırak. Kötü performans gösteren strateji geçici olarak susturulur.">Zayif Stratejiyi Ele<input id="disableWeakStrategies" type="checkbox" checked></label>
+      <label title="Institutional Mod: Sıkı RR (≥1.8 default) ve daha temiz sinyal kalıpları. Kapatırsan daha agresif scalping mümkün ama risk artar.">Institutional Mod<input id="institutionalMode" type="checkbox" checked></label>
+      <label title="Institutional Mod aktifken kabul edilecek minimum Risk:Reward oranı. 1.8 = 1$ riske karşı en az 1.8$ kar potansiyeli olmalı. Daha düşük sinyaller reddedilir.">Institutional Min RR<input id="institutionalMinRR" type="number" step="0.1" min="1" value="1.8"></label>
+      <label title="Turtle Sopa scalp stratejisi izin ver mi? Kısa süreli (M1/M3/M5) hızlı setup'lar. Riskli ama agresif fırsatlar için.">Turtle Scalp'a Izin Ver<input id="allowTurtleScalp" type="checkbox"></label>
+      <label title="Turtle scalp aktifken kabul edilecek minimum RR. Scalp'lar hızlı kapanır, küçük RR (1.6) yeterli olabilir.">Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
+      <label title="Harici emir tetik linki (webhook URL). MT5 yerine farklı bir broker/sistem entegrasyonu için. Örn: TradingView alert webhook. Boş bırak: kullanılmaz.">Canlı Emir Linki<input id="liveOrderUrl" type="text" placeholder="https://..."></label>
+      <label title="Bir sinyalin geçerlilik süresi (dakika). Sinyal üretildikten X dakika sonra hala execute edilmediyse çöpe atılır. Eski sinyalle trade'i engeller.">Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
+      <label title="Genel strateji modu seçimi. Hybrid: tüm stratejileri kullan (önerilen). Core: sadece CRT + Price Action + Elliott. Turtle: hızlı scalp odaklı (M1/M3/M5).">Strateji Modu
         <select id="strategyMode" onchange="syncChecksFromStrategyMode()">
           <option value="hybrid" selected>Hybrid (CRT + Turtle Sopa)</option>
           <option value="core">CRT + PA + Elliott</option>
           <option value="turtle_sopa">Turtle Sopa (M1/M3/M5)</option>
         </select>
       </label>
-      <label>Tarama Stratejileri
+      <label title="Hangi tarama stratejilerinin aktif olacağını seç. En az 1 tane açık olmalı. Core=CRT+PA temel. Turtle=hızlı scalp. VWAP=hacim ortalaması toparlanması. S/R Breakout=destek/direnç kırılımı.">Tarama Stratejileri
         <div class="strat-pick">
-          <label><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core</label>
-          <label><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
-          <label><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
-          <label><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
+          <label title="Core: CRT (Candle Range Theory) + Price Action + Elliott Wave temel sistemi. En kapsamlı strateji."><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core</label>
+          <label title="Turtle Sopa: M1/M3/M5 timeframe'lerde hızlı momentum scalp. Yüksek frekanslı, küçük kâr/zararlar."><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
+          <label title="VWAP Reclaim: Hacim ağırlıklı ortalama kırılımı sonrası geri-toparlanma yakalar. Trend devamı stratejisi."><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
+          <label title="S/R Breakout: Destek/direnç kırılımı sonrası takip. Yatay konsolidasyon sonrası patlamaları yakalar."><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
         </div>
       </label>
-      <label>Tarama Kategorileri (Ürün Tipi)
+      <label title="Hangi ürün kategorileri taransın? Sadece seçili olanlar scan listesine girer. Çoklu seç. Boş bırakma!">Tarama Kategorileri (Ürün Tipi)
         <div class="strat-pick" id="scanCategoriesGrid">
-          <label><input type="checkbox" data-cat="forex" onchange="updatePlanConfig()"> Forex (FX)</label>
-          <label><input type="checkbox" data-cat="metals" onchange="updatePlanConfig()"> Metal (Altın/Gümüş)</label>
-          <label><input type="checkbox" data-cat="indices" onchange="updatePlanConfig()"> Endeks (NAS/DAX/DJ)</label>
-          <label><input type="checkbox" data-cat="energies" onchange="updatePlanConfig()"> Enerji (WTI/Brent)</label>
-          <label><input type="checkbox" data-cat="crypto" onchange="updatePlanConfig()"> Kripto (BTC/ETH)</label>
-          <label><input type="checkbox" data-cat="commodities" onchange="updatePlanConfig()"> Emtia (Wheat/Cocoa)</label>
-          <label><input type="checkbox" data-cat="bonds" onchange="updatePlanConfig()"> Tahvil (Bonds)</label>
-          <label><input type="checkbox" data-cat="stocks" onchange="updatePlanConfig()"> Hisse CFD</label>
+          <label title="Forex çiftleri: EURUSD, GBPJPY, AUDCAD vb. En likit, en düşük spread'li enstrümanlar."><input type="checkbox" data-cat="forex" onchange="updatePlanConfig()"> Forex (FX)</label>
+          <label title="Değerli metaller: XAUUSD (Altın), XAGUSD (Gümüş), XPTUSD (Platin). Volatil ama trend güçlü."><input type="checkbox" data-cat="metals" onchange="updatePlanConfig()"> Metal (Altın/Gümüş)</label>
+          <label title="Endeksler: NAS100, US30 (DJ), SPX500, GER40 (DAX), UK100. ABD seansında çok aktif."><input type="checkbox" data-cat="indices" onchange="updatePlanConfig()"> Endeks (NAS/DAX/DJ)</label>
+          <label title="Enerji: WTI Petrol, Brent Petrol, Natural Gas. Haber duyarlı, volatil."><input type="checkbox" data-cat="energies" onchange="updatePlanConfig()"> Enerji (WTI/Brent)</label>
+          <label title="Kripto CFD: BTCUSD, ETHUSD, vb. 7/24 işlem, çok volatil, hafta sonu da aktif. Spread genelde yüksek."><input type="checkbox" data-cat="crypto" onchange="updatePlanConfig()"> Kripto (BTC/ETH)</label>
+          <label title="Emtia: Wheat (Buğday), Cocoa (Kakao), Coffee (Kahve), Sugar (Şeker). Mevsimsel, az likit."><input type="checkbox" data-cat="commodities" onchange="updatePlanConfig()"> Emtia (Wheat/Cocoa)</label>
+          <label title="Tahvil/Bonds: US10Y, BUND vb. Faiz hareketleriyle ilgili. Düşük volatil, makro odaklı."><input type="checkbox" data-cat="bonds" onchange="updatePlanConfig()"> Tahvil (Bonds)</label>
+          <label title="Tek hisse CFD: AAPL, TSLA, NVDA gibi. Çok fazla sembol ve spread yüksek olabilir. Önerilen: KAPALI."><input type="checkbox" data-cat="stocks" onchange="updatePlanConfig()"> Hisse CFD</label>
         </div>
         <div class="reason" style="margin-top:4px;font-size:11px">Sadece secili kategoriler taranir. Default: forex+metal+endeks+enerji acik, kripto/emtia/tahvil/hisse kapali.</div>
       </label>
       <!-- ESKI tek toggle (backward compat icin gizli) -->
       <input id="scanStocks" type="checkbox" style="display:none">
-      <label>Strateji Profili
+      <label title="Strateji eşik profili. Conservative: sıkı filtreler, az ama kaliteli sinyal. Balanced: dengeli (önerilen). Aggressive: gevşek filtreler, çok sinyal ama daha düşük kalite.">Strateji Profili
         <select id="strategyProfile">
           <option value="conservative">Conservative</option>
           <option value="balanced" selected>Balanced</option>
           <option value="aggressive">Aggressive</option>
         </select>
       </label>
-      <label>Standart R:R (TP/SL, 0=kapali)<input id="standardRR" type="number" step="0.1" min="0" max="10" value="3.0"></label>
-      <label>TP1 (R)<input id="tp1RR" type="number" step="0.1" value="1.0"></label>
-      <label>TP2 (R)<input id="tp2RR" type="number" step="0.1" value="2.0"></label>
-      <label>Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
-      <label>Trailing Baslangic (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
+      <label title="Standart Risk:Reward oranı. 3.0 = TP, SL'in 3 katı uzaklıkta. Sinyal kendi RR'sini önerse bile bu değere zorlanır. 0=zorlama yok, sinyalin önerdiği RR kullanılır.">Standart R:R (TP/SL, 0=kapali)<input id="standardRR" type="number" step="0.1" min="0" max="10" value="3.0"></label>
+      <label title="TP1 (Kısmi Kapama Seviyesi) R cinsinden. 1.0 = 1R kâra ulaşınca pozisyonun %50'si kapatılır, kalan trailing/BE ile yönetilir.">TP1 (R)<input id="tp1RR" type="number" step="0.1" value="1.0"></label>
+      <label title="TP2 (Hedef Kapama Seviyesi) R cinsinden. 2.0 = 2R kâra ulaşınca kalan pozisyon kapatılır.">TP2 (R)<input id="tp2RR" type="number" step="0.1" value="2.0"></label>
+      <label title="Break-even (zarara kapatılmama noktası) R cinsinden. 1.0 = 1R kâra ulaşınca SL otomatik olarak entry seviyesine çekilir, artık zarara kapatamaz.">Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
+      <label title="Trailing stop'un başlangıç R seviyesi. 1.5 = 1.5R kâra ulaşınca trailing aktif olur, SL fiyatı takip eder.">Trailing Baslangic (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
       <label title="Bu USD kar esigi asilirsa BE + TP1 partial + Trailing hepsi aninda devreye girer. 0=kapali">Erken Yonetim (USD kar)<input id="earlyManageUsd" type="number" step="1" min="0" value="13"></label>
       <label title="HIGH-WATER MARK TRAIL: Toplam kar bu esige ulasinca peak takibi aktif olur. 0=kapali. ONERILEN: 15">Portföy Trail Aktivasyon (USD)<input id="portfolioTrailActivateUsd" type="number" step="1" min="0" value="15"></label>
       <label title="TRAIL DRAWDOWN: Trail aktifken, peak'ten bu kadar geri cekilirse tum pozisyonlar kapatilir. Max karda durmak icin: kucuk=siki (3-5), buyuk=gevsek (10-15). 0=kapali. ONERILEN: 8">Portföy Trail Pullback (USD)<input id="portfolioTrailDrawdownUsd" type="number" step="1" min="0" value="8"></label>
       <label title="SABIT BASKET TP: Toplam kar bu degere ulasinca hepsi kapatilir (trailing'i pas geçer). 0=kapali. Trailing kullaniyorsan 0 birak.">Portföy TP (Sabit, Toplam Kar USD)<input id="portfolioTpUsd" type="number" step="1" min="0" value="0"></label>
       <label title="BASKET SL: Tum acik pozisyonlarin toplam zarari -X USD'ye ulasirsa hepsi otomatik kapatilir (acil dur). 0=kapali">Portföy SL (Toplam Zarar USD)<input id="portfolioSlUsd" type="number" step="1" min="0" value="50"></label>
       <label title="BASKET BE: Tum acik pozisyonlarin toplam kari bu degere ulasirsa, kapamadan once tum SL'leri entry'e ceker (riski sifirlar). 0=kapali">Portföy BE (Toplam Kar USD)<input id="portfolioBeUsd" type="number" step="1" min="0" value="20"></label>
-      <label>Auto Trade<input id="autoTradeChk" type="checkbox"></label>
-      <label>Dry Run<input id="dryRunChk" type="checkbox" checked></label>
-      <label>Emir Hesabı
+      <div style="grid-column:1/-1;border-top:1px dashed #cbd5e1;margin-top:8px;padding-top:8px">
+        <details>
+          <summary style="cursor:pointer;font-weight:700;font-size:13px;color:#1976d2" title="Kategori bazli basket TP/SL: Her urun kategorisinin kendi total profit esigi olabilir. Kapaliyken global Portfoy TP/SL uygulanir. Acikken o kategorinin pozisyonlari sadece kendi esikleriyle yonetilir.">📦 Kategori Bazlı Basket (gelişmiş) — global yerine kategori başı TP/SL/BE</summary>
+          <div class="reason" style="margin:6px 0 8px 0;font-size:11px">Bir kategoriyi <b>Aktif</b> ettiğinde, o kategorinin total karı/zararı global Portföy esiklerini değil, buradaki esikleri kullanır. Kapalı kalan kategoriler global esikle yönetilir. Trailing/BE/TP/SL bağımsız çalışır.</div>
+          <div id="categoryBasketGrid" style="display:grid;grid-template-columns:minmax(0,1fr);gap:6px"></div>
+        </details>
+      </div>
+      <label title="Otomatik trade açık mı? Açıkken sinyal geldikçe MT5'e emir gönderilir. Kapalıyken sadece tarama yapılır, emir gitmez. (Status banner'daki BAŞLAT/DURDUR butonu daha hızlıdır)">Auto Trade<input id="autoTradeChk" type="checkbox"></label>
+      <label title="Dry Run (kuru çalıştırma): Sinyaller hesaplanır ve loglanır ama MT5'e GERÇEK emir GİTMEZ. Test/simülasyon için. Live'a almadan önce kullan.">Dry Run<input id="dryRunChk" type="checkbox" checked></label>
+      <label title="Emirleri Demo hesaba mı Live hesaba mı gönder? MT5 terminalinde hangisine login olduğunla uyumlu olmalı. Yanlış seçim trade'i reddeder.">Emir Hesabı
         <select id="targetAccountType">
           <option value="demo" selected>Demo</option>
           <option value="live">Live</option>
         </select>
       </label>
-      <label>Emir Tipi
+      <label title="Emir tipi: Pending=Bekleyen limit/stop emir (geri çekilme bekler, daha iyi fiyat alır). Market=Anlık piyasa emri (slippage olabilir ama kesin tetiklenir).">Emir Tipi
         <select id="placementType">
           <option value="pending" selected>Pending (Limit/Stop)</option>
           <option value="market">Market (Anlık)</option>
         </select>
       </label>
-      <label>Pending Süresi (dk, 0=GTC)<input id="pendingExpireMin" type="number" step="1" min="0" max="1440" value="5"></label>
-      <label>Pending Geri Çekme (point)<input id="pendingPullbackPts" type="number" step="1" min="0" max="500" value="10"></label>
-      <label>Çok yakınsa Pending'i kaydır<input id="autoAdjustPending" type="checkbox" checked></label>
-      <label>Pending olmuyorsa Market'a düş<input id="allowMarketFallback" type="checkbox"></label>
-      <label>Meta Login<input id="metaLogin" type="number" step="1" placeholder="demo hesap no"></label>
-      <label>Meta Şifre<input id="metaPass" type="password" placeholder="şifre"></label>
-      <label>Meta Server<input id="metaServer" type="text" placeholder="broker-demo server"></label>
+      <label title="Pending emir geçerlilik süresi (dakika). 0=GTC (broker iptaline kadar geçerli). Önerilen: 5dk = sinyal anı geçerse otomatik iptal, eski sinyale girilmez.">Pending Süresi (dk, 0=GTC)<input id="pendingExpireMin" type="number" step="1" min="0" max="1440" value="5"></label>
+      <label title="Pending emir fiyatı, mevcut fiyattan ne kadar geride olsun (point). 10 point = küçük bir geri çekilme bekler, daha iyi giriş.">Pending Geri Çekme (point)<input id="pendingPullbackPts" type="number" step="1" min="0" max="500" value="10"></label>
+      <label title="Pending fiyatı mevcut fiyata çok yakınsa (broker stops_level ihlali), otomatik geriye al. Kapalıysa emir reddedilir.">Çok yakınsa Pending'i kaydır<input id="autoAdjustPending" type="checkbox" checked></label>
+      <label title="Pending emir broker tarafından reddedilirse (stops_level vs.), Market emir olarak gönder. Risk: slippage olabilir. Önerilen: KAPALI.">Pending olmuyorsa Market'a düş<input id="allowMarketFallback" type="checkbox"></label>
+      <label title="MT5 hesap numarası. Boş bırak: terminalde halihazırda login olan hesap kullanılır. Doldur: bu hesaba otomatik login denenir.">Meta Login<input id="metaLogin" type="number" step="1" placeholder="demo hesap no"></label>
+      <label title="MT5 hesap şifresi. Sadece otomatik login için. Boş bırak: terminaldeki açık hesap kullanılır. Şifre tarayıcı localStorage'da saklanır.">Meta Şifre<input id="metaPass" type="password" placeholder="şifre"></label>
+      <label title="MT5 server adı (örn: 'MetaQuotes-Demo' veya broker'ın verdiği). Otomatik login için gerekli. Broker'dan kontrol et.">Meta Server<input id="metaServer" type="text" placeholder="broker-demo server"></label>
     </div>
     <button class="cb" style="margin-top:8px" onclick="updatePlanConfig()">Planı Güncelle</button>
     <div class="reason" id="targetAccountWarn">Emirler DEMO hesaba gidecek.</div>
@@ -408,11 +447,23 @@ const ALL_SYMBOLS_TTL_MS=24*60*60*1000;
 const SCAN_CATEGORIES=new Set(['forex','metals','indices','crypto','energies','commodities','bonds']);
 // Kategori basina max pair: 100'e cikarildi (broker zaten kendisi filtreler). Buyuk tarama icin gerekli.
 const MAX_SYMBOLS_PER_CATEGORY=100;
-let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
+let MKT={},activeCat='all',autoScanOn=false,aiFilterOn=true,tradeLimit=6,isScanning=false,selectedPairId=null,pinnedPairId=null,prevSignalMap={},chartRef=null,candleSeries=null,lines=[];
 let chartLiveTimer=null,chartLiveBusy=false,chartLivePair=null,chartLiveTF='M15',chartLastTickMs=0;
 const CHART_LIVE_INTERVAL_MS=5000;
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
-let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15};
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,
+  // Kategori bazli basket TP/SL: her kategori icin ayri esik. Enabled=false ise global basket kullanilir.
+  // Defaults: kategoriye ozel mantikli baslangic degerleri. User UI'dan ayarlar.
+  categoryBaskets:{
+    forex:{enabled:false,tpUsd:0,slUsd:30,beUsd:15,trailActivateUsd:10,trailDrawdownUsd:5},
+    metals:{enabled:false,tpUsd:0,slUsd:50,beUsd:25,trailActivateUsd:20,trailDrawdownUsd:10},
+    indices:{enabled:false,tpUsd:0,slUsd:80,beUsd:40,trailActivateUsd:30,trailDrawdownUsd:15},
+    energies:{enabled:false,tpUsd:0,slUsd:60,beUsd:30,trailActivateUsd:25,trailDrawdownUsd:12},
+    crypto:{enabled:false,tpUsd:0,slUsd:100,beUsd:50,trailActivateUsd:40,trailDrawdownUsd:20},
+    commodities:{enabled:false,tpUsd:0,slUsd:50,beUsd:25,trailActivateUsd:20,trailDrawdownUsd:10},
+    bonds:{enabled:false,tpUsd:0,slUsd:30,beUsd:15,trailActivateUsd:10,trailDrawdownUsd:5},
+    stocks:{enabled:false,tpUsd:0,slUsd:50,beUsd:25,trailActivateUsd:20,trailDrawdownUsd:10}
+  }};
 const AI_CONFIRM_REQUIRED=true;
 let signalSeenAt={};
 let signalHistory=[];
@@ -1358,6 +1409,16 @@ function loadConfigs(){
       planCfg.portfolioBeUsd=Math.max(0,Number(('portfolioBeUsd' in pc)?pc.portfolioBeUsd:planCfg.portfolioBeUsd));
       planCfg.portfolioTrailActivateUsd=Math.max(0,Number(('portfolioTrailActivateUsd' in pc)?pc.portfolioTrailActivateUsd:planCfg.portfolioTrailActivateUsd));
       planCfg.portfolioTrailDrawdownUsd=Math.max(0,Number(('portfolioTrailDrawdownUsd' in pc)?pc.portfolioTrailDrawdownUsd:planCfg.portfolioTrailDrawdownUsd));
+      if(pc.categoryBaskets&&typeof pc.categoryBaskets==='object'){
+        Object.keys(planCfg.categoryBaskets).forEach(cat=>{
+          const src=pc.categoryBaskets[cat];if(!src||typeof src!=='object')return;
+          const dst=planCfg.categoryBaskets[cat];
+          if('enabled' in src)dst.enabled=!!src.enabled;
+          ['tpUsd','slUsd','beUsd','trailActivateUsd','trailDrawdownUsd'].forEach(k=>{
+            if(k in src && Number.isFinite(Number(src[k])))dst[k]=Math.max(0,Number(src[k]));
+          });
+        });
+      }
     }
   }catch(e){}
   try{
@@ -1425,7 +1486,8 @@ function saveConfigs(){
     portfolioSlUsd:planCfg.portfolioSlUsd,
     portfolioBeUsd:planCfg.portfolioBeUsd,
     portfolioTrailActivateUsd:planCfg.portfolioTrailActivateUsd,
-    portfolioTrailDrawdownUsd:planCfg.portfolioTrailDrawdownUsd
+    portfolioTrailDrawdownUsd:planCfg.portfolioTrailDrawdownUsd,
+    categoryBaskets:planCfg.categoryBaskets
   }));
   localStorage.setItem(TRADE_CFG_KEY,JSON.stringify({
     autoEnabled:tradeCfg.autoEnabled,
@@ -1668,17 +1730,45 @@ async function runPositionManager(){
   // Boylece manuel acilan veya SL/TP'siz pozisyonlar da sahiplenilir ve takip edilir.
   if(!Array.isArray(realOpenPositions)||realOpenPositions.length===0)return;
   try{
-    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50,early_manage_usd:Number(planCfg.earlyManageUsd||0),portfolio_tp_usd:Number(planCfg.portfolioTpUsd||0),portfolio_sl_usd:Number(planCfg.portfolioSlUsd||0),portfolio_be_usd:Number(planCfg.portfolioBeUsd||0),portfolio_trail_activate_usd:Number(planCfg.portfolioTrailActivateUsd||0),portfolio_trail_drawdown_usd:Number(planCfg.portfolioTrailDrawdownUsd||0)};
+    // category_baskets: backend bu mapi okuyup, enabled=true olan kategorilerin pozisyonlarini
+    // o kategorinin kendi esikleriyle ayri yonetir. Enabled=false ise global portfolio_*_usd uygulanir.
+    // pair_categories: backend symbol -> category resolution icin (broker symbol_info'dan da turetiyor).
+    const catBaskets={};
+    try{
+      Object.entries(planCfg.categoryBaskets||{}).forEach(([cat,cfg])=>{
+        if(!cfg||!cfg.enabled)return;
+        catBaskets[cat]={
+          tp_usd:Math.max(0,Number(cfg.tpUsd||0)),
+          sl_usd:Math.max(0,Number(cfg.slUsd||0)),
+          be_usd:Math.max(0,Number(cfg.beUsd||0)),
+          trail_activate_usd:Math.max(0,Number(cfg.trailActivateUsd||0)),
+          trail_drawdown_usd:Math.max(0,Number(cfg.trailDrawdownUsd||0))
+        };
+      });
+    }catch(_){ }
+    // Frontend tarafi pozisyon->kategori mapi (PAIRS lookup ile en hizli yol)
+    const pairCats={};
+    try{
+      (realOpenPositions||[]).forEach(p=>{
+        const sym=String(p.symbol||p.label||'').toUpperCase();if(!sym)return;
+        const pair=(PAIRS||[]).find(pp=>String(pp.id||'').toUpperCase()===sym||String(pp.label||'').toUpperCase()===sym);
+        if(pair&&pair.category)pairCats[sym]=String(pair.category||'');
+      });
+    }catch(_){ }
+    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50,early_manage_usd:Number(planCfg.earlyManageUsd||0),portfolio_tp_usd:Number(planCfg.portfolioTpUsd||0),portfolio_sl_usd:Number(planCfg.portfolioSlUsd||0),portfolio_be_usd:Number(planCfg.portfolioBeUsd||0),portfolio_trail_activate_usd:Number(planCfg.portfolioTrailActivateUsd||0),portfolio_trail_drawdown_usd:Number(planCfg.portfolioTrailDrawdownUsd||0),category_baskets:catBaskets,pair_categories:pairCats};
     const r=await fetch(MANAGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){pushDebug(`manage_http_error status=${r.status}`);return;}
     const j=await r.json();
     // Portföy toplam profit'i, peak ve son basket aksiyon durumu (status banner icin sakla)
     try{
       window._lastTotalProfit=Number.isFinite(Number(j.total_profit))?Number(j.total_profit):null;
+      window._lastGlobalProfit=Number.isFinite(Number(j.global_profit))?Number(j.global_profit):null;
       window._lastPeakProfit=Number.isFinite(Number(j.peak_profit))?Number(j.peak_profit):null;
       window._lastDrawdown=Number.isFinite(Number(j.drawdown))?Number(j.drawdown):null;
       window._lastTrailArmed=Number(j.trail_armed||0)===1;
       window._lastPortfolioAction=String(j.portfolio_action||'')||null;
+      window._lastCategoryResults=(j.category_results&&typeof j.category_results==='object')?j.category_results:{};
+      window._lastEnabledCats=Array.isArray(j.enabled_categories)?j.enabled_categories:[];
       updateStatusBanner();
     }catch(_){ }
     if(!Array.isArray(j.actions)||!j.actions.length)return;
@@ -2245,8 +2335,178 @@ function quickToggleAplus(){
 function quickToggleAuto(){
   tradeCfg.autoEnabled=!tradeCfg.autoEnabled;
   const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=tradeCfg.autoEnabled;
-  saveConfigs();updateStatusBanner();
+  saveConfigs();updateStatusBanner();updateMasterStrategyBar();
   pushFeed(`${new Date().toLocaleTimeString()} · Auto Trade ${tradeCfg.autoEnabled?'AÇILDI':'KAPATILDI'}`);
+}
+// ============================================================
+// MASTER STRATEGY START/STOP — ana acma kapama butonu
+// ============================================================
+// Strateji aktif demek: hem Oto Tarama hem Auto Trade ACIK demektir.
+// Stratejiyi durdur: Auto Trade kapanir (yeni emir gitmez), tarama isteyene gore acik kalir.
+// Live moda gecislerde dogrulama: kullanici 'tamam' demeden gerek emir gitmez.
+// Strateji aktif demek: auto trade ACIK. Tarama bagimsizdir (sinyalleri gormek icin acik kalir).
+function isStrategyActive(){return !!tradeCfg.autoEnabled;}
+async function toggleStrategyMaster(){
+  if(isStrategyActive()){
+    // Stop: sadece auto-trade kapanir, scan devam eder (kullanici sinyal goruyor)
+    const ok=confirm('Stratejiyi DURDURMAK uzeresin.\n\n· Yeni emirler gonderilmeyecek (Auto Trade KAPALI)\n· Oto Tarama acik kalir (sinyalleri gorursun)\n· Mevcut acik pozisyonlar etkilenmez (manuel veya basket TP/SL ile yonetilir)\n\nDevam edilsin mi?');
+    if(!ok){return;}
+    tradeCfg.autoEnabled=false;
+    const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=false;
+    saveConfigs();updateStatusBanner();updateMasterStrategyBar();
+    pushFeed(`${new Date().toLocaleTimeString()} · 🛑 STRATEJİ DURDURULDU (auto-trade KAPALI, scan devam · acik pozlar etkilenmedi)`,'tf-error');
+    return;
+  }
+  // Start: ayarlari kontrol et
+  const issues=preStartValidation();
+  if(issues.length){
+    const msg='Strateji BAŞLATILAMAZ — eksik/yanlis ayar(lar):\n\n· '+issues.join('\n· ')+'\n\nAyarlari Plan bolumunden duzelt ve tekrar dene.';
+    alert(msg);
+    return;
+  }
+  // LIVE mod onayi
+  if(tradeCfg.targetAccountType==='live' && !tradeCfg.dryRun){
+    const liveOk=confirm('⚠️ DİKKAT — LIVE HESAP\n\nBu strateji GERCEK PARA ile islem yapacak!\n\n· Hesap tipi: LIVE\n· Dry-run: KAPALI\n· Max gunluk risk: %'+(planCfg.dailyRiskPct||0)+'\n· Aynı anda max pozisyon: '+(planCfg.maxOpenPos||1)+'\n· Acil dur butonu hazır\n\nGercekten LIVE modda baslatmak istiyor musun?');
+    if(!liveOk){pushFeed(`${new Date().toLocaleTimeString()} · Iptal: LIVE basla onaylanmadi`,'tf-skip');return;}
+    const liveOk2=confirm('Son onay: LIVE modda strateji baslatilacak. EMIN MISIN?');
+    if(!liveOk2){pushFeed(`${new Date().toLocaleTimeString()} · Iptal: LIVE basla 2. onayda durdu`,'tf-skip');return;}
+  }
+  // Aktif hesap profili varsa MT5'e login dene
+  try{await applyActiveAccountProfile();}catch(e){pushDebug(`profile_apply_warn ${e.message}`);}
+  tradeCfg.autoEnabled=true;
+  autoScanOn=true;
+  const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=true;
+  const ab=document.getElementById('autoBtn');if(ab){ab.textContent='Oto Tarama: Açık';ab.classList.add('on');}
+  try{startAuto();}catch(_){ }
+  saveConfigs();updateStatusBanner();updateMasterStrategyBar();
+  const acctTxt=tradeCfg.targetAccountType==='live'?'LIVE ⚠':'DEMO';
+  pushFeed(`${new Date().toLocaleTimeString()} · ✅ STRATEJİ BAŞLADI (${acctTxt} · dry=${tradeCfg.dryRun?'on':'off'} · scan+auto acik)`,'tf-success');
+}
+function preStartValidation(){
+  const issues=[];
+  if(!Number.isFinite(riskCfg.balance)||riskCfg.balance<=0)issues.push('Hesap bakiyesi tanimsiz (Risk bolumu).');
+  if(!Number.isFinite(planCfg.dailyRiskPct)||planCfg.dailyRiskPct<=0)issues.push('Gunluk risk % tanimsiz.');
+  if(!Number.isFinite(planCfg.maxOpenPos)||planCfg.maxOpenPos<1)issues.push('Aynı anda acik pozisyon limiti gecersiz.');
+  const sc=planCfg.scanCategories||{};
+  const anyCat=Object.values(sc).some(v=>!!v);
+  if(!anyCat)issues.push('Hicbir tarama kategorisi secili degil (en az 1 sec).');
+  const stratOn=[planCfg.scanCore,planCfg.scanTurtle,planCfg.scanVWAP,planCfg.scanSRBreak].some(Boolean);
+  if(!stratOn)issues.push('Hicbir tarama stratejisi secili degil.');
+  if(tradeCfg.targetAccountType==='live'&&!tradeCfg.lastHealth)issues.push('MT5 saglik durumu bilinmiyor (proxy/health kontrol et).');
+  return issues;
+}
+function updateMasterStrategyBar(){
+  const bar=document.getElementById('masterStrategyBar');
+  const btn=document.getElementById('masterStrategyBtn');
+  const st=document.getElementById('masterStrategyState');
+  const stTxt=document.getElementById('masterStateText');
+  if(!bar||!btn||!st||!stTxt)return;
+  const active=isStrategyActive();
+  const health=tradeCfg.lastHealth||'?';
+  const healthOk=String(health).toLowerCase()==='ok';
+  const healthBadge=healthOk?'<span style="color:#16a34a">MT5 ✓</span>':'<span style="color:#dc2626">MT5 ✗</span>';
+  const profileName=getActiveProfileName()||'default';
+  if(active){
+    bar.classList.remove('stopped');bar.classList.add('active');
+    btn.classList.remove('start');btn.classList.add('stop');
+    btn.innerHTML='⏸ STRATEJİYİ DURDUR';
+    btn.title='Stratejiyi durdur: yeni emir gonderilmez. Mevcut pozisyonlar etkilenmez.';
+    st.classList.remove('off');st.classList.add('on');
+    const acct=tradeCfg.targetAccountType==='live'?'LIVE ⚠':'DEMO';
+    const dry=tradeCfg.dryRun?' · dry-run':'';
+    stTxt.innerHTML=`ÇALIŞIYOR · ${healthBadge} · <b>${acct}${dry}</b> · profil: ${profileName}`;
+  }else{
+    bar.classList.remove('active');bar.classList.add('stopped');
+    btn.classList.remove('stop');btn.classList.add('start');
+    btn.innerHTML='▶ STRATEJİYİ BAŞLAT';
+    btn.title='Stratejiyi baslat: ayarlar dogrulanir, gerekirse LIVE onayi alinir, sonra tarama+auto trade acilir.';
+    st.classList.remove('on');st.classList.add('off');
+    stTxt.innerHTML=`DURDU · ${healthBadge} · profil: ${profileName} · <small>Ayarları yapın ve BAŞLAT'a basın</small>`;
+  }
+}
+// ============================================================
+// MULTI-ACCOUNT PROFILES — birden fazla MT5 hesabini saklayip secebilme
+// ============================================================
+const ACCOUNT_PROFILES_KEY='crt_account_profiles_v1';
+const ACTIVE_PROFILE_KEY='crt_active_profile_v1';
+function loadAccountProfiles(){
+  try{const raw=localStorage.getItem(ACCOUNT_PROFILES_KEY);if(!raw)return [];const arr=JSON.parse(raw);return Array.isArray(arr)?arr:[];}catch(_){return [];}
+}
+function saveAccountProfiles(list){try{localStorage.setItem(ACCOUNT_PROFILES_KEY,JSON.stringify(list));}catch(_){ }}
+function getActiveProfileName(){try{return localStorage.getItem(ACTIVE_PROFILE_KEY)||'';}catch(_){return '';}}
+function setActiveProfileName(n){try{if(n)localStorage.setItem(ACTIVE_PROFILE_KEY,n);else localStorage.removeItem(ACTIVE_PROFILE_KEY);}catch(_){ }}
+function refreshAccountProfileSelect(){
+  const sel=document.getElementById('activeAccountProfile');if(!sel)return;
+  const list=loadAccountProfiles();
+  const active=getActiveProfileName();
+  const opts=['<option value="">— Plan ayarlarındaki (default) —</option>'];
+  list.forEach(p=>{
+    const lbl=`${p.name} (${p.targetAccountType==='live'?'LIVE':'DEMO'} · ${p.metaLogin||'-'})`;
+    opts.push(`<option value="${encodeURIComponent(p.name)}"${active===p.name?' selected':''}>${lbl}</option>`);
+  });
+  sel.innerHTML=opts.join('');
+}
+function saveAccountProfile(){
+  const name=(prompt('Hesap profili icin isim ver (orn: "Demo-Forex", "Live-Indices"):','')||'').trim();
+  if(!name){return;}
+  const list=loadAccountProfiles();
+  const existing=list.findIndex(p=>p.name===name);
+  const profile={
+    name,
+    metaLogin:tradeCfg.metaLogin||'',
+    metaPass:tradeCfg.metaPass||'',
+    metaServer:tradeCfg.metaServer||'',
+    targetAccountType:tradeCfg.targetAccountType||'demo',
+    dryRun:!!tradeCfg.dryRun,
+    balance:riskCfg.balance||0,
+    riskPct:riskCfg.riskPct||0,
+    riskUsd:riskCfg.riskUsd||0,
+    savedAt:Date.now()
+  };
+  if(existing>=0){
+    if(!confirm(`"${name}" zaten var, ustune yazilsin mi?`))return;
+    list[existing]=profile;
+  }else{list.push(profile);}
+  saveAccountProfiles(list);
+  setActiveProfileName(name);
+  refreshAccountProfileSelect();
+  pushFeed(`${new Date().toLocaleTimeString()} · 💾 Hesap profili kaydedildi: "${name}"`,'tf-info');
+}
+function deleteAccountProfile(){
+  const sel=document.getElementById('activeAccountProfile');if(!sel)return;
+  const v=sel.value?decodeURIComponent(sel.value):'';
+  if(!v){alert('Once silinecek profili sec.');return;}
+  if(!confirm(`"${v}" profili silinsin mi? Mevcut canli baglanti etkilenmez.`))return;
+  const list=loadAccountProfiles().filter(p=>p.name!==v);
+  saveAccountProfiles(list);
+  if(getActiveProfileName()===v)setActiveProfileName('');
+  refreshAccountProfileSelect();
+  pushFeed(`${new Date().toLocaleTimeString()} · 🗑 Hesap profili silindi: "${v}"`,'tf-info');
+}
+function switchAccountProfile(encName){
+  const name=encName?decodeURIComponent(encName):'';
+  setActiveProfileName(name);
+  if(!name){pushFeed(`${new Date().toLocaleTimeString()} · Aktif profil sifirlandi (default).`,'tf-info');return;}
+  const p=loadAccountProfiles().find(x=>x.name===name);
+  if(!p){pushFeed(`${new Date().toLocaleTimeString()} · Profil bulunamadi: ${name}`,'tf-error');return;}
+  pushFeed(`${new Date().toLocaleTimeString()} · 🔁 Aktif profil: "${name}" (${p.targetAccountType==='live'?'LIVE':'DEMO'} · ${p.metaLogin||'-'}). Baslatinca login denenecek.`,'tf-info');
+}
+async function applyActiveAccountProfile(){
+  const name=getActiveProfileName();if(!name)return;
+  const p=loadAccountProfiles().find(x=>x.name===name);if(!p)return;
+  tradeCfg.metaLogin=p.metaLogin||'';
+  tradeCfg.metaPass=p.metaPass||'';
+  tradeCfg.metaServer=p.metaServer||'';
+  tradeCfg.targetAccountType=p.targetAccountType||'demo';
+  tradeCfg.dryRun=!!p.dryRun;
+  if(Number.isFinite(p.balance)&&p.balance>0)riskCfg.balance=p.balance;
+  if(Number.isFinite(p.riskPct)&&p.riskPct>0)riskCfg.riskPct=p.riskPct;
+  if(Number.isFinite(p.riskUsd)&&p.riskUsd>0)riskCfg.riskUsd=p.riskUsd;
+  const ids={metaLogin:'metaLogin',metaPass:'metaPass',metaServer:'metaServer',targetAccountType:'targetAccountType',dryRunChk:'dryRun'};
+  Object.entries(ids).forEach(([id,k])=>{const el=document.getElementById(id);if(!el)return;if(el.type==='checkbox')el.checked=!!tradeCfg[k];else el.value=tradeCfg[k]||'';});
+  const acctEl=document.getElementById('accBal');if(acctEl)acctEl.value=riskCfg.balance;
+  saveConfigs();
+  pushFeed(`${new Date().toLocaleTimeString()} · 🔐 Profil "${name}" uygulandi (login=${tradeCfg.metaLogin||'-'}, server=${tradeCfg.metaServer||'-'}, ${tradeCfg.targetAccountType==='live'?'LIVE':'DEMO'})`,'tf-info');
 }
 function quickSetLossLimit(pct){
   const p=Math.max(0.1,Math.min(50,Number(pct)));
@@ -2346,6 +2606,28 @@ function updateStatusBanner(){
       basketBadge=`<span title="Basket durumu. Trail: peak takibi (max kar'da durmak icin). TP/SL/BE: sabit esikler. Trailing aktif olunca peak'ten pullback kadar geri cekilince hepsi kapanir."><b style="color:${col}">Toplam: ${totStr}USD</b>${thresholds}${hit?'<b style="color:#9A2020">'+hit+'</b>':''}${trailTxt}</span>`;
     }
   }catch(_){ }
+  // Per-category basket badge
+  let catBasketBadge='';
+  try{
+    const cr=window._lastCategoryResults||{};
+    const cats=Object.keys(cr);
+    if(cats.length){
+      const labels={forex:'FX',metals:'Metal',indices:'Endeks',energies:'Enerji',crypto:'Kripto',commodities:'Emtia',bonds:'Tahvil',stocks:'Hisse'};
+      const parts=cats.map(c=>{
+        const r=cr[c];if(!r||!r.positions)return '';
+        const t=Number(r.total_profit||0);
+        const a=String(r.action||'');
+        const armed=Number(r.trail_armed||0)===1;
+        const pk=Number(r.peak||0);
+        const dd=Number(r.drawdown||0);
+        const col=a==='tp_basket'?'#1976d2':(a==='sl_basket'?'#9A2020':(a==='be_basket'?'#b45309':(armed?'#7c3aed':(t>=0?'#2E7D32':'#9A2020'))));
+        const tStr=(t>=0?'+':'')+t.toFixed(1);
+        const extra=armed?` ↑${pk.toFixed(1)}↓${dd.toFixed(1)}`:'';
+        return `<span title="Kategori: ${c}, pozisyon: ${r.positions}, total: ${t.toFixed(2)}USD${armed?', trail armed peak: '+pk.toFixed(2):''}${a?', action: '+a:''}"><b style="color:${col}">${labels[c]||c}:${tStr}${extra}${a?' 🎯':''}</b></span>`;
+      }).filter(Boolean);
+      if(parts.length)catBasketBadge=`<span style="font-size:11px">Kat-Basket: ${parts.join(' · ')}</span>`;
+    }
+  }catch(_){ }
   const corrCap=Math.max(0,Number(planCfg.maxCorrelatedExposure||0));
   let corrBadge='';
   if(corrCap>0){
@@ -2371,7 +2653,8 @@ function updateStatusBanner(){
     if(on.length){catBadge=`<span title="Taranan ürün kategorileri ve toplam parite sayisi. Plan ayarlarinda 'Tarama Kategorileri' grid'inden degistirilebilir."><b>Tarama:</b> ${on.join('+')} <small>(${pairCount} parite)</small></span>`;}
     else{catBadge=`<span style="color:#9A2020"><b>⚠ KATEGORI YOK:</b> Hicbir kategori secili degil! Plan ayarlarindan ac.</span>`;}
   }catch(_){ }
-  el.innerHTML=`<span>Hesap: ${target} ${dry}</span><span>${auto}</span><span>${aplusBtn}</span><span>${tradePill}</span><span title="Acik+pending toplami / Maks Acik Pozisyon limiti. Asilirsa yeni emir gonderilmez.">Açık: <b>${open}</b> · Pending: <b>${pend}</b> · <b style="color:${posCapHit?'#9A2020':(totalActive>=globalPosCap-1?'#b45309':'#2E7D32')}">[${totalActive}/${globalPosCap}]</b>${posCapHit?' <span style="color:#9A2020;font-weight:bold">⚠ DOLU</span>':''}</span>${catBadge?`<span>${catBadge}</span>`:''}${basketBadge?`<span>${basketBadge}</span>`:''}<span>${dirBadge}</span>${corrBadge?`<span>${corrBadge}</span>`:''}<span>PnL bugun: <span class="${pnlCls}"><b>${pnlTxt}</b></span> USD${lossLimitUsd?` (limit ${lossLimitUsd.toFixed(0)}USD, %${lossPct.toFixed(0)})${limitReached?' <span style="color:#9A2020;font-weight:bold">⚠ AŞILDI</span>':''}`:''}</span>${lossControls}<span>${tagBadge}</span><span>${telemetrySummary()}</span>`;
+  el.innerHTML=`<span>Hesap: ${target} ${dry}</span><span>${auto}</span><span>${aplusBtn}</span><span>${tradePill}</span><span title="Acik+pending toplami / Maks Acik Pozisyon limiti. Asilirsa yeni emir gonderilmez.">Açık: <b>${open}</b> · Pending: <b>${pend}</b> · <b style="color:${posCapHit?'#9A2020':(totalActive>=globalPosCap-1?'#b45309':'#2E7D32')}">[${totalActive}/${globalPosCap}]</b>${posCapHit?' <span style="color:#9A2020;font-weight:bold">⚠ DOLU</span>':''}</span>${catBadge?`<span>${catBadge}</span>`:''}${basketBadge?`<span>${basketBadge}</span>`:''}${catBasketBadge?`<span>${catBasketBadge}</span>`:''}<span>${dirBadge}</span>${corrBadge?`<span>${corrBadge}</span>`:''}<span>PnL bugun: <span class="${pnlCls}"><b>${pnlTxt}</b></span> USD${lossLimitUsd?` (limit ${lossLimitUsd.toFixed(0)}USD, %${lossPct.toFixed(0)})${limitReached?' <span style="color:#9A2020;font-weight:bold">⚠ AŞILDI</span>':''}`:''}</span>${lossControls}<span>${tagBadge}</span><span>${telemetrySummary()}</span>`;
+  try{updateMasterStrategyBar();}catch(_){ }
 }
 function renderPendingOrders(){
   const card=document.getElementById('pendingCard');
@@ -3113,6 +3396,48 @@ function updatePlanConfig(){
     }
   }
 }if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.standardRR=Math.max(0,Math.min(10,Number((document.getElementById('standardRR')||{}).value||3)));planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));{const _emu=document.getElementById('earlyManageUsd');planCfg.earlyManageUsd=Math.max(0,Number((_emu&&_emu.value)||planCfg.earlyManageUsd||0));}{const _msd=document.getElementById('maxSameDirection');planCfg.maxSameDirection=Math.max(0,Math.min(20,Number((_msd&&_msd.value)||planCfg.maxSameDirection||0)));}{const _mne=document.getElementById('maxNetExposureCount');planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number((_mne&&_mne.value)||planCfg.maxNetExposureCount||0)));}{const _mce=document.getElementById('maxCorrelatedExposure');planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number((_mce&&_mce.value)||planCfg.maxCorrelatedExposure||0)));}{const _ptp=document.getElementById('portfolioTpUsd');planCfg.portfolioTpUsd=Math.max(0,Number((_ptp&&_ptp.value)||planCfg.portfolioTpUsd||0));}{const _psl=document.getElementById('portfolioSlUsd');planCfg.portfolioSlUsd=Math.max(0,Number((_psl&&_psl.value)||planCfg.portfolioSlUsd||0));}{const _pbe=document.getElementById('portfolioBeUsd');planCfg.portfolioBeUsd=Math.max(0,Number((_pbe&&_pbe.value)||planCfg.portfolioBeUsd||0));}{const _ptra=document.getElementById('portfolioTrailActivateUsd');planCfg.portfolioTrailActivateUsd=Math.max(0,Number((_ptra&&_ptra.value)||planCfg.portfolioTrailActivateUsd||0));}{const _ptrd=document.getElementById('portfolioTrailDrawdownUsd');planCfg.portfolioTrailDrawdownUsd=Math.max(0,Number((_ptrd&&_ptrd.value)||planCfg.portfolioTrailDrawdownUsd||0));}tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();tradeCfg.placement=(String((document.getElementById('placementType')||{}).value||'pending').toLowerCase()==='market'?'market':'pending');tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number((document.getElementById('pendingExpireMin')||{}).value||0)));tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number((document.getElementById('pendingPullbackPts')||{}).value||0)));tradeCfg.allowMarketFallback=!!(document.getElementById('allowMarketFallback')||{}).checked;tradeCfg.autoAdjustPending=!!(document.getElementById('autoAdjustPending')||{}).checked;saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk · seans:${planCfg.sessionEnabled?`${planCfg.sessionStartHour}-${planCfg.sessionEndHour} UTC`:'off'} · A+:${planCfg.aPlusMode?'on':'off'} · loss<=${planCfg.maxDailyLossPct}% · inst:${planCfg.institutionalMode?'on':'off'} rr>=${planCfg.institutionalMinRR} · turtleScalp:${planCfg.allowTurtleScalp?'on':'off'} rr>=${planCfg.turtleScalpMinRR})`)}
+// Kategori basket grid'i render et — her kategori icin enabled toggle + tp/sl/be/trail inputlari
+function renderCategoryBasketGrid(){
+  const host=document.getElementById('categoryBasketGrid');if(!host)return;
+  const labels={forex:'Forex (FX)',metals:'Metal (Altın/Gümüş)',indices:'Endeks (NAS/DAX/DJ)',energies:'Enerji (WTI/Brent)',crypto:'Kripto (BTC/ETH)',commodities:'Emtia',bonds:'Tahvil',stocks:'Hisse CFD'};
+  const cats=planCfg.categoryBaskets||{};
+  const rows=Object.keys(labels).map(cat=>{
+    const cfg=cats[cat]||{};
+    const en=!!cfg.enabled;
+    const lbl=labels[cat]||cat;
+    return `<div class="cat-basket-row" data-cat="${cat}" style="display:grid;grid-template-columns:18px 130px repeat(5,minmax(0,1fr));gap:6px;align-items:center;padding:4px 6px;border-radius:6px;background:${en?'#f0fdf4':'#f8fafc'};border:1px solid ${en?'#86efac':'#e2e8f0'}">
+      <input type="checkbox" data-cb-en title="Bu kategori icin ozel basket aktif et" ${en?'checked':''}>
+      <div style="font-size:12px;font-weight:600;color:${en?'#14532d':'#475569'}">${lbl}</div>
+      <label title="Bu kategorinin total kari bu USD'ye ulasinca tum acik pozisyonlari kapat (TP). 0=kapali, trailing kullaniyorsan 0 birak." style="display:flex;flex-direction:column;font-size:10px;color:#475569">TP <input type="number" step="1" min="0" data-cb-tp value="${cfg.tpUsd||0}" style="width:100%;padding:3px"></label>
+      <label title="Bu kategorinin total zarari -USD'ye ulasinca tum acik pozisyonlari kapat (acil SL). 0=kapali." style="display:flex;flex-direction:column;font-size:10px;color:#475569">SL (zarar) <input type="number" step="1" min="0" data-cb-sl value="${cfg.slUsd||0}" style="width:100%;padding:3px"></label>
+      <label title="Bu kategorinin total kari bu USD'ye ulasinca tum SL'leri entry'e cek (risk sifir). 0=kapali." style="display:flex;flex-direction:column;font-size:10px;color:#475569">BE <input type="number" step="1" min="0" data-cb-be value="${cfg.beUsd||0}" style="width:100%;padding:3px"></label>
+      <label title="Trail aktivasyon: total kar bu USD'ye ulasinca peak takibi baslar. 0=kapali." style="display:flex;flex-direction:column;font-size:10px;color:#475569">Trail Akt <input type="number" step="1" min="0" data-cb-tra value="${cfg.trailActivateUsd||0}" style="width:100%;padding:3px"></label>
+      <label title="Trail pullback: trail aktifken peak'ten bu kadar geri cekilirse hepsi kapat. 0=kapali." style="display:flex;flex-direction:column;font-size:10px;color:#475569">Trail Pull <input type="number" step="1" min="0" data-cb-trd value="${cfg.trailDrawdownUsd||0}" style="width:100%;padding:3px"></label>
+    </div>`;
+  }).join('');
+  host.innerHTML=rows;
+  host.querySelectorAll('.cat-basket-row').forEach(row=>{
+    row.querySelectorAll('input').forEach(inp=>{inp.addEventListener('change',()=>readCategoryBasketGrid());});
+  });
+}
+function readCategoryBasketGrid(){
+  const host=document.getElementById('categoryBasketGrid');if(!host)return;
+  host.querySelectorAll('.cat-basket-row').forEach(row=>{
+    const cat=row.dataset.cat;if(!cat||!planCfg.categoryBaskets[cat])return;
+    const dst=planCfg.categoryBaskets[cat];
+    const get=(sel)=>row.querySelector(sel);
+    const en=get('[data-cb-en]');if(en)dst.enabled=!!en.checked;
+    const fn=(sel,key)=>{const e=get(sel);if(e)dst[key]=Math.max(0,Number(e.value||0));};
+    fn('[data-cb-tp]','tpUsd');fn('[data-cb-sl]','slUsd');fn('[data-cb-be]','beUsd');fn('[data-cb-tra]','trailActivateUsd');fn('[data-cb-trd]','trailDrawdownUsd');
+    // Visual update
+    const on=!!dst.enabled;
+    row.style.background=on?'#f0fdf4':'#f8fafc';
+    row.style.borderColor=on?'#86efac':'#e2e8f0';
+    const lbl=row.querySelector('div[style*="font-weight"]');if(lbl)lbl.style.color=on?'#14532d':'#475569';
+  });
+  saveConfigs();
+  pushDebug(`category_baskets_updated ${Object.entries(planCfg.categoryBaskets).filter(([_k,v])=>v.enabled).map(([k,v])=>`${k}:tp${v.tpUsd}/sl${v.slUsd}/be${v.beUsd}/tr${v.trailActivateUsd}-${v.trailDrawdownUsd}`).join(' ')}`);
+}
 let autoT=null,countT=null;
 function tick(){
   try{checkDailyRollover();}catch(_){ }
@@ -3125,5 +3450,15 @@ function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterva
 function stopAuto(){clearInterval(autoT);clearInterval(countT)}
 async function runAI(){const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));const lines=sigs.map(d=>`${d.pair.label} ${d.sig.action} RR=${(d.sig.rr||0).toFixed(2)} TF=${recommendTF(d)}`).join('\n')||'Aktif sinyal yok';try{const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt:`CRT olarak değerlendir:\n${lines}`})});const j=await r.json();aio.textContent=(j.text||'Analiz alınamadı').toString()}catch(e){aio.textContent='AI hatası: '+e.message}}
 loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;{const _mtp=document.getElementById('maxTradesPerDay');if(_mtp)_mtp.value=Number.isFinite(planCfg.maxTradesPerDay)?planCfg.maxTradesPerDay:10;const _nbt=document.getElementById('newsBlackoutTimes');if(_nbt)_nbt.value=String(planCfg.newsBlackoutTimes||'');const _nbb=document.getElementById('newsBlackoutBufferMin');if(_nbb)_nbb.value=Number.isFinite(planCfg.newsBlackoutBufferMin)?planCfg.newsBlackoutBufferMin:15;}maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;sessionEnabled.checked=!!planCfg.sessionEnabled;sessionStartHour.value=planCfg.sessionStartHour;aPlusMode.checked=!!planCfg.aPlusMode;maxDailyLossPct.value=planCfg.maxDailyLossPct;disableWeakStrategies.checked=!!planCfg.disableWeakStrategies;institutionalMode.checked=!!planCfg.institutionalMode;institutionalMinRR.value=planCfg.institutionalMinRR;allowTurtleScalp.checked=!!planCfg.allowTurtleScalp;turtleScalpMinRR.value=planCfg.turtleScalpMinRR;sessionEndHour.value=planCfg.sessionEndHour;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;{const _ss=document.getElementById('scanStocks');if(_ss)_ss.checked=!!planCfg.scanStocks;}
-{const grid=document.getElementById('scanCategoriesGrid');if(grid){grid.querySelectorAll('input[type=checkbox][data-cat]').forEach(el=>{const k=el.dataset.cat;el.checked=!!(planCfg.scanCategories&&planCfg.scanCategories[k]);});}}strategyProfile.value=planCfg.strategyProfile||'balanced';{const _srr=document.getElementById('standardRR');if(_srr)_srr.value=Number.isFinite(planCfg.standardRR)?planCfg.standardRR:3;}tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;{const _emu=document.getElementById('earlyManageUsd');if(_emu)_emu.value=Number.isFinite(planCfg.earlyManageUsd)?planCfg.earlyManageUsd:13;}{const _msd=document.getElementById('maxSameDirection');if(_msd)_msd.value=Number.isFinite(planCfg.maxSameDirection)?planCfg.maxSameDirection:3;}{const _mne=document.getElementById('maxNetExposureCount');if(_mne)_mne.value=Number.isFinite(planCfg.maxNetExposureCount)?planCfg.maxNetExposureCount:0;}{const _mce=document.getElementById('maxCorrelatedExposure');if(_mce)_mce.value=Number.isFinite(planCfg.maxCorrelatedExposure)?planCfg.maxCorrelatedExposure:2;}{const _ptp=document.getElementById('portfolioTpUsd');if(_ptp)_ptp.value=Number.isFinite(planCfg.portfolioTpUsd)?planCfg.portfolioTpUsd:30;}{const _psl=document.getElementById('portfolioSlUsd');if(_psl)_psl.value=Number.isFinite(planCfg.portfolioSlUsd)?planCfg.portfolioSlUsd:50;}{const _pbe=document.getElementById('portfolioBeUsd');if(_pbe)_pbe.value=Number.isFinite(planCfg.portfolioBeUsd)?planCfg.portfolioBeUsd:20;}{const _ptra=document.getElementById('portfolioTrailActivateUsd');if(_ptra)_ptra.value=Number.isFinite(planCfg.portfolioTrailActivateUsd)?planCfg.portfolioTrailActivateUsd:15;}{const _ptrd=document.getElementById('portfolioTrailDrawdownUsd');if(_ptrd)_ptrd.value=Number.isFinite(planCfg.portfolioTrailDrawdownUsd)?planCfg.portfolioTrailDrawdownUsd:8;}autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';(document.getElementById('placementType')||{}).value=tradeCfg.placement||'pending';(document.getElementById('pendingExpireMin')||{}).value=Number.isFinite(tradeCfg.pendingExpireMin)?tradeCfg.pendingExpireMin:5;{const _ppb=document.getElementById('pendingPullbackPts');if(_ppb)_ppb.value=Number.isFinite(tradeCfg.pendingPullbackPts)?tradeCfg.pendingPullbackPts:10;const _amf=document.getElementById('allowMarketFallback');if(_amf)_amf.checked=!!tradeCfg.allowMarketFallback;const _aap=document.getElementById('autoAdjustPending');if(_aap)_aap.checked=tradeCfg.autoAdjustPending!==false;}updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>startAuto());
+{const grid=document.getElementById('scanCategoriesGrid');if(grid){grid.querySelectorAll('input[type=checkbox][data-cat]').forEach(el=>{const k=el.dataset.cat;el.checked=!!(planCfg.scanCategories&&planCfg.scanCategories[k]);});}}strategyProfile.value=planCfg.strategyProfile||'balanced';{const _srr=document.getElementById('standardRR');if(_srr)_srr.value=Number.isFinite(planCfg.standardRR)?planCfg.standardRR:3;}tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;{const _emu=document.getElementById('earlyManageUsd');if(_emu)_emu.value=Number.isFinite(planCfg.earlyManageUsd)?planCfg.earlyManageUsd:13;}{const _msd=document.getElementById('maxSameDirection');if(_msd)_msd.value=Number.isFinite(planCfg.maxSameDirection)?planCfg.maxSameDirection:3;}{const _mne=document.getElementById('maxNetExposureCount');if(_mne)_mne.value=Number.isFinite(planCfg.maxNetExposureCount)?planCfg.maxNetExposureCount:0;}{const _mce=document.getElementById('maxCorrelatedExposure');if(_mce)_mce.value=Number.isFinite(planCfg.maxCorrelatedExposure)?planCfg.maxCorrelatedExposure:2;}{const _ptp=document.getElementById('portfolioTpUsd');if(_ptp)_ptp.value=Number.isFinite(planCfg.portfolioTpUsd)?planCfg.portfolioTpUsd:30;}{const _psl=document.getElementById('portfolioSlUsd');if(_psl)_psl.value=Number.isFinite(planCfg.portfolioSlUsd)?planCfg.portfolioSlUsd:50;}{const _pbe=document.getElementById('portfolioBeUsd');if(_pbe)_pbe.value=Number.isFinite(planCfg.portfolioBeUsd)?planCfg.portfolioBeUsd:20;}{const _ptra=document.getElementById('portfolioTrailActivateUsd');if(_ptra)_ptra.value=Number.isFinite(planCfg.portfolioTrailActivateUsd)?planCfg.portfolioTrailActivateUsd:15;}{const _ptrd=document.getElementById('portfolioTrailDrawdownUsd');if(_ptrd)_ptrd.value=Number.isFinite(planCfg.portfolioTrailDrawdownUsd)?planCfg.portfolioTrailDrawdownUsd:8;}autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';(document.getElementById('placementType')||{}).value=tradeCfg.placement||'pending';(document.getElementById('pendingExpireMin')||{}).value=Number.isFinite(tradeCfg.pendingExpireMin)?tradeCfg.pendingExpireMin:5;{const _ppb=document.getElementById('pendingPullbackPts');if(_ppb)_ppb.value=Number.isFinite(tradeCfg.pendingPullbackPts)?tradeCfg.pendingPullbackPts:10;const _amf=document.getElementById('allowMarketFallback');if(_amf)_amf.checked=!!tradeCfg.allowMarketFallback;const _aap=document.getElementById('autoAdjustPending');if(_aap)_aap.checked=tradeCfg.autoAdjustPending!==false;}// GUVENLIK: canli link senaryosu icin tradeCfg.autoEnabled ve autoScanOn her zaman KAPALI baslar.
+// Kullanici ayarlari kontrol edip "STRATEJIYI BASLAT" butonuna basana kadar emir gitmez.
+tradeCfg.autoEnabled=false;autoScanOn=false;
+const _autoChk=document.getElementById('autoTradeChk');if(_autoChk)_autoChk.checked=false;
+const _autoBtn=document.getElementById('autoBtn');if(_autoBtn){_autoBtn.textContent='Oto Tarama: Kapalı';_autoBtn.classList.remove('on');}
+updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }
+// Sembol cache'i + 1 kez manuel tarama yap (kullanici sinyalleri gorur), ama auto-scan ve auto-trade KAPALI.
+// User "STRATEJIYI BASLAT"a basinca otomatik scan + auto-trade aktif olur.
+loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>{
+  pushFeed(`${new Date().toLocaleTimeString()} · 🛡 Strateji durdurulmus durumda. Ayarlari kontrol edip yukaridan "STRATEJIYI BASLAT" tikla.`,'tf-info');
+});
 </script>
