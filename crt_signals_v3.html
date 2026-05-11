@@ -315,6 +315,9 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
       <label>Break-even (R)<input id="breakEvenAtR" type="number" step="0.1" value="1.0"></label>
       <label>Trailing Baslangic (R)<input id="trailAtR" type="number" step="0.1" value="1.5"></label>
       <label title="Bu USD kar esigi asilirsa BE + TP1 partial + Trailing hepsi aninda devreye girer. 0=kapali">Erken Yonetim (USD kar)<input id="earlyManageUsd" type="number" step="1" min="0" value="13"></label>
+      <label title="BASKET TP: Tum acik pozisyonlarin toplam kari bu degere ulasirsa hepsi otomatik kapatilir (kar kilitlenir). 0=kapali">Portföy TP (Toplam Kar USD)<input id="portfolioTpUsd" type="number" step="1" min="0" value="30"></label>
+      <label title="BASKET SL: Tum acik pozisyonlarin toplam zarari -X USD'ye ulasirsa hepsi otomatik kapatilir (acil dur). 0=kapali">Portföy SL (Toplam Zarar USD)<input id="portfolioSlUsd" type="number" step="1" min="0" value="50"></label>
+      <label title="BASKET BE: Tum acik pozisyonlarin toplam kari bu degere ulasirsa, kapamadan once tum SL'leri entry'e ceker (riski sifirlar). 0=kapali">Portföy BE (Toplam Kar USD)<input id="portfolioBeUsd" type="number" step="1" min="0" value="20"></label>
       <label>Auto Trade<input id="autoTradeChk" type="checkbox"></label>
       <label>Dry Run<input id="dryRunChk" type="checkbox" checked></label>
       <label>Emir Hesabı
@@ -393,7 +396,7 @@ let MKT={},activeCat='all',autoScanOn=true,aiFilterOn=true,tradeLimit=6,isScanni
 let chartLiveTimer=null,chartLiveBusy=false,chartLivePair=null,chartLiveTF='M15',chartLastTickMs=0;
 const CHART_LIVE_INTERVAL_MS=5000;
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
-let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,newsBlackoutTimes:'',newsBlackoutBufferMin:15};
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:30,portfolioSlUsd:50,portfolioBeUsd:20,newsBlackoutTimes:'',newsBlackoutBufferMin:15};
 const AI_CONFIRM_REQUIRED=true;
 let signalSeenAt={};
 let signalHistory=[];
@@ -1330,6 +1333,9 @@ function loadConfigs(){
       planCfg.maxSameDirection=Math.max(0,Math.min(20,Number(('maxSameDirection' in pc)?pc.maxSameDirection:planCfg.maxSameDirection)));
       planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number(('maxNetExposureCount' in pc)?pc.maxNetExposureCount:planCfg.maxNetExposureCount)));
       planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number(('maxCorrelatedExposure' in pc)?pc.maxCorrelatedExposure:planCfg.maxCorrelatedExposure)));
+      planCfg.portfolioTpUsd=Math.max(0,Number(('portfolioTpUsd' in pc)?pc.portfolioTpUsd:planCfg.portfolioTpUsd));
+      planCfg.portfolioSlUsd=Math.max(0,Number(('portfolioSlUsd' in pc)?pc.portfolioSlUsd:planCfg.portfolioSlUsd));
+      planCfg.portfolioBeUsd=Math.max(0,Number(('portfolioBeUsd' in pc)?pc.portfolioBeUsd:planCfg.portfolioBeUsd));
     }
   }catch(e){}
   try{
@@ -1390,7 +1396,10 @@ function saveConfigs(){
     earlyManageUsd:planCfg.earlyManageUsd,
     maxSameDirection:planCfg.maxSameDirection,
     maxNetExposureCount:planCfg.maxNetExposureCount,
-    maxCorrelatedExposure:planCfg.maxCorrelatedExposure
+    maxCorrelatedExposure:planCfg.maxCorrelatedExposure,
+    portfolioTpUsd:planCfg.portfolioTpUsd,
+    portfolioSlUsd:planCfg.portfolioSlUsd,
+    portfolioBeUsd:planCfg.portfolioBeUsd
   }));
   localStorage.setItem(TRADE_CFG_KEY,JSON.stringify({
     autoEnabled:tradeCfg.autoEnabled,
@@ -1633,12 +1642,18 @@ async function runPositionManager(){
   // Boylece manuel acilan veya SL/TP'siz pozisyonlar da sahiplenilir ve takip edilir.
   if(!Array.isArray(realOpenPositions)||realOpenPositions.length===0)return;
   try{
-    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50,early_manage_usd:Number(planCfg.earlyManageUsd||0)};
+    const body={tp1_rr:planCfg.tp1RR,be_at_r:planCfg.breakEvenAtR,trail_at_r:planCfg.trailAtR,partial_close_pct:50,early_manage_usd:Number(planCfg.earlyManageUsd||0),portfolio_tp_usd:Number(planCfg.portfolioTpUsd||0),portfolio_sl_usd:Number(planCfg.portfolioSlUsd||0),portfolio_be_usd:Number(planCfg.portfolioBeUsd||0)};
     const r=await fetch(MANAGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok){pushDebug(`manage_http_error status=${r.status}`);return;}
     const j=await r.json();
+    // Portföy toplam profit'i ve son basket aksiyon durumu (status banner icin sakla)
+    try{
+      window._lastTotalProfit=Number.isFinite(Number(j.total_profit))?Number(j.total_profit):null;
+      window._lastPortfolioAction=String(j.portfolio_action||'')||null;
+      updateStatusBanner();
+    }catch(_){ }
     if(!Array.isArray(j.actions)||!j.actions.length)return;
-    j.actions.slice(0,8).forEach(a=>{
+    j.actions.slice(0,16).forEach(a=>{
       const sym=String(a.symbol||'-');
       const type=String(a.type||'').toLowerCase();
       const rc=Number(a.retcode||0);
@@ -1666,6 +1681,22 @@ async function runPositionManager(){
       }else if(type==='tp1_partial_close'){
         const v=Number(a.closed_volume||0).toFixed(2);
         pushTradeFeed(ok?'manage':'error',`PARSIYEL TP · ${sym} · kapanan lot:${v}${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else if(type==='tp_basket'){
+        const tot=Number(a.total_profit||0).toFixed(2);
+        const thr=Number(a.threshold||0).toFixed(2);
+        const v=Number(a.closed_volume||0).toFixed(2);
+        const pp=Number(a.pos_profit||0).toFixed(2);
+        pushTradeFeed(ok?'success':'error',`🎯 PORTFOY TP · Toplam:+${tot}USD ≥ esik:+${thr}USD · ${sym} kapatildi (lot:${v} kar:${pp})${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else if(type==='sl_basket'){
+        const tot=Number(a.total_profit||0).toFixed(2);
+        const thr=Number(a.threshold||0).toFixed(2);
+        const v=Number(a.closed_volume||0).toFixed(2);
+        const pp=Number(a.pos_profit||0).toFixed(2);
+        pushTradeFeed(ok?'error':'error',`🛑 PORTFOY SL · Toplam:${tot}USD ≤ esik:${thr}USD · ${sym} kapatildi (lot:${v} P/L:${pp})${ok?'':` · BASARISIZ rc:${rc}`}`);
+      }else if(type==='portfolio_be'){
+        const sl=Number(a.new_sl||0).toFixed(5);
+        const tot=Number(a.total_profit||0).toFixed(2);
+        pushTradeFeed(ok?'manage':'error',`🔒 PORTFOY BE · ${sym} SL→entry:${sl} (toplam kar:+${tot}USD)${ok?'':` · BASARISIZ rc:${rc}`}`);
       }else{
         const label={be:"BE'ye cekildi",trail:'Trailing guncellendi',partial:'Parsiyel TP',close:'Pozisyon kapatildi'}[type]||type;
         pushTradeFeed(ok?'manage':'error',`YONETIM · ${sym} · ${label}${rc?` · rc:${rc}`:''}${a.detail?` · ${a.detail}`:''}`);
@@ -2226,6 +2257,9 @@ function updateStatusBanner(){
   const pnlCls=pnl>=0?'stat-demo':'stat-live';
   const open=(realOpenPositions||[]).length;
   const pend=(realPendingOrders||[]).length;
+  const globalPosCap=Math.max(1,Number(planCfg.maxOpenPos||1));
+  const totalActive=open+pend;
+  const posCapHit=totalActive>=globalPosCap;
   const longC=countBySide('LONG');
   const shortC=countBySide('SHORT');
   const dirCap=Math.max(0,Number(planCfg.maxSameDirection||0));
@@ -2238,6 +2272,25 @@ function updateStatusBanner(){
   const deltaCol=Math.abs(delta)>=Math.max(1,netCap)?'#9A2020':(delta===0?'#2E7D32':'#666');
   const deltaTxt=netCap>0?`<span title="Net yon farki (L-S). |${delta}|${netHit?'>=':'<'}${netCap}. Asilirsa o yonde yeni emir bloklanir, karsi yon dengeler."> · Net: <b style="color:${deltaCol}">${deltaStr}</b>${netHit?' <span style="color:#9A2020">⚠ DENGE</span>':''}</span>`:'';
   const dirBadge=`<span title="LONG ve SHORT yon sayilari (acik+pending). Limit asilirsa yeni emir o yonde acilmaz."><b style="color:${longHit?'#9A2020':'#2E7D32'}">L:${longC.total}${dirCap>0?'/'+dirCap:''}</b> · <b style="color:${shortHit?'#9A2020':'#9A2020'};opacity:${shortHit?1:.7}">S:${shortC.total}${dirCap>0?'/'+dirCap:''}</b>${(longHit||shortHit)?' <span style="color:#9A2020;font-weight:bold">⚠</span>':''}</span>${deltaTxt}`;
+  // Portfoy basket TP/SL/BE durum gostergesi
+  let basketBadge='';
+  try{
+    const tot=Number(window._lastTotalProfit);
+    if(Number.isFinite(tot)&&(realOpenPositions||[]).length>0){
+      const tpThr=Math.max(0,Number(planCfg.portfolioTpUsd||0));
+      const slThr=Math.max(0,Number(planCfg.portfolioSlUsd||0));
+      const beThr=Math.max(0,Number(planCfg.portfolioBeUsd||0));
+      const totStr=(tot>=0?'+':'')+tot.toFixed(2);
+      const col=tot>=tpThr&&tpThr>0?'#1976d2':(tot<=-slThr&&slThr>0?'#9A2020':(tot>=beThr&&beThr>0?'#b45309':(tot>=0?'#2E7D32':'#9A2020')));
+      const parts=[];
+      if(tpThr>0)parts.push(`TP:+${tpThr}`);
+      if(beThr>0)parts.push(`BE:+${beThr}`);
+      if(slThr>0)parts.push(`SL:-${slThr}`);
+      const thresholds=parts.length?` (esik ${parts.join(' / ')})`:'';
+      const hit=tot>=tpThr&&tpThr>0?' 🎯 TP':(tot<=-slThr&&slThr>0?' 🛑 SL':(tot>=beThr&&beThr>0?' 🔒 BE':''));
+      basketBadge=`<span title="Basket: tum acik pozisyonlarin toplam unrealized profit'i. Esikler asilirsa otomatik hareket: TP→hepsi kapanir, SL→hepsi kapanir, BE→tum SL\\'ler entry'e cekilir."><b style="color:${col}">Toplam: ${totStr}USD</b>${thresholds}${hit?'<b style="color:#9A2020">'+hit+'</b>':''}</span>`;
+    }
+  }catch(_){ }
   const corrCap=Math.max(0,Number(planCfg.maxCorrelatedExposure||0));
   let corrBadge='';
   if(corrCap>0){
@@ -2253,7 +2306,7 @@ function updateStatusBanner(){
   const curPct=Number(planCfg.maxDailyLossPct||0).toFixed(1);
   const resetStyle=limitReached?'padding:2px 8px;font-size:12px;border-color:#9A2020;color:#9A2020;font-weight:bold':'padding:1px 6px;font-size:11px;border-color:#666;color:#666';
   const lossControls=`<span title="Gunluk Loss Limiti (%)">Loss limit: <b>%${curPct}</b> <button class="tf-clr" onclick="quickSetLossLimit(1)" style="padding:1px 5px;font-size:11px">1%</button><button class="tf-clr" onclick="quickSetLossLimit(2)" style="padding:1px 5px;font-size:11px">2%</button><button class="tf-clr" onclick="quickSetLossLimit(5)" style="padding:1px 5px;font-size:11px">5%</button><button class="tf-clr" onclick="quickSetLossLimit(10)" style="padding:1px 5px;font-size:11px">10%</button> <button class="tf-clr" onclick="quickResetDayLoss()" style="${resetStyle}" title="Bugunun zarar/trade sayaclarini sifirla">${limitReached?'RESET ⚠':'RESET'}</button></span>`;
-  el.innerHTML=`<span>Hesap: ${target} ${dry}</span><span>${auto}</span><span>${aplusBtn}</span><span>${tradePill}</span><span>Açık: <b>${open}</b> · Pending: <b>${pend}</b></span><span>${dirBadge}</span>${corrBadge?`<span>${corrBadge}</span>`:''}<span>PnL bugun: <span class="${pnlCls}"><b>${pnlTxt}</b></span> USD${lossLimitUsd?` (limit ${lossLimitUsd.toFixed(0)}USD, %${lossPct.toFixed(0)})${limitReached?' <span style="color:#9A2020;font-weight:bold">⚠ AŞILDI</span>':''}`:''}</span>${lossControls}<span>${tagBadge}</span><span>${telemetrySummary()}</span>`;
+  el.innerHTML=`<span>Hesap: ${target} ${dry}</span><span>${auto}</span><span>${aplusBtn}</span><span>${tradePill}</span><span title="Acik+pending toplami / Maks Acik Pozisyon limiti. Asilirsa yeni emir gonderilmez.">Açık: <b>${open}</b> · Pending: <b>${pend}</b> · <b style="color:${posCapHit?'#9A2020':(totalActive>=globalPosCap-1?'#b45309':'#2E7D32')}">[${totalActive}/${globalPosCap}]</b>${posCapHit?' <span style="color:#9A2020;font-weight:bold">⚠ DOLU</span>':''}</span>${basketBadge?`<span>${basketBadge}</span>`:''}<span>${dirBadge}</span>${corrBadge?`<span>${corrBadge}</span>`:''}<span>PnL bugun: <span class="${pnlCls}"><b>${pnlTxt}</b></span> USD${lossLimitUsd?` (limit ${lossLimitUsd.toFixed(0)}USD, %${lossPct.toFixed(0)})${limitReached?' <span style="color:#9A2020;font-weight:bold">⚠ AŞILDI</span>':''}`:''}</span>${lossControls}<span>${tagBadge}</span><span>${telemetrySummary()}</span>`;
 }
 function renderPendingOrders(){
   const card=document.getElementById('pendingCard');
@@ -2819,6 +2872,18 @@ async function refreshAll(){
       const ranked=ready.filter(x=>x.rec==='Hemen'||(allowBekle&&x.rec==='Bekle')).map(x=>x.d).sort((a,b)=>weightedSignalQuality(b)-weightedSignalQuality(a));
       let executed=0;
       const dailyCap=Math.max(1,Number(planCfg.maxTradesPerDay||10));
+      // KRITIK: maxOpenPos GLOBAL cap (acik+pending+bu cycle'da acilan). Per-cycle degil.
+      const curOpenN=(realOpenPositions||[]).length;
+      const curPendN=(realPendingOrders||[]).length;
+      const curOpenTotal=curOpenN+curPendN;
+      const globalCap=Math.max(1,Number(planCfg.maxOpenPos||1));
+      if(curOpenTotal>=globalCap){
+        pushTradeFeed('warn',`🚫 AÇIK POZISYON LIMITI · ${curOpenTotal}/${globalCap} (acik:${curOpenN} pending:${curPendN}) · Yeni emir gonderilmeyecek`);
+        pushDebug(`max_open_pos_reached open=${curOpenN} pending=${curPendN} cap=${globalCap}`);
+        savePassBacktest();
+        if(realOpenPositions&&realOpenPositions.length)await refreshTradeSnapshot();
+        return;
+      }
       if((dailyState.tradeCount||0)>=dailyCap){
         pushTradeFeed('warn',`🚫 GÜNLÜK TRADE LIMITI · ${dailyState.tradeCount}/${dailyCap} · Yeni emir gönderilmeyecek (yarın 00:00 UTC reset)`);
         pushDebug(`daily_cap_reached count=${dailyState.tradeCount} cap=${dailyCap}`);
@@ -2829,7 +2894,13 @@ async function refreshAll(){
       pushDebug(`auto_threshold profile=${planCfg.strategyProfile||'balanced'} rrNow=${t.rrNow} zoneNow=${t.zoneNow} scoreNow=${t.scoreNow} rrWatch=${t.rrWatch} zoneWatch=${t.zoneWatch} scoreWatch=${t.scoreWatch}`);
       ready.forEach(x=>{const d=x.d;const rr=Number(d?.sig?.rr||0).toFixed(2);const zone=Number(d?.sig?.pct||0).toFixed(2);const sc=confluenceScore(d);const sq=Math.round(weightedSignalQuality(d));const age=signalAgeMin(d);const ageStr=Number.isFinite(age)?age.toFixed(1):'?';pushDebug(`signal_eval ${d.pair.id} ${d.sig?.action||'-'} tag=${d.strategyTag||'core'} tf=${d.timeframe||'-'} age=${ageStr}min ai=${d.aiStatus||'unknown'} rr=${rr} zone=${zone} score=${sc} sq=${sq} base=${x.base} rec=${x.rec} fresh=${freshnessReason(d)} reason=${x.reason}`);});
       for(const d of ranked){
-        if(executed>=planCfg.maxOpenPos)break;
+        // KRITIK: Global cap her emir oncesi tekrar kontrol edilir (mevcut acik+pending+bu cycle'da gonderilen).
+        const liveOpen=(realOpenPositions||[]).length;
+        const livePend=(realPendingOrders||[]).length;
+        if((liveOpen+livePend+executed)>=globalCap){
+          pushDebug(`max_open_pos_break open=${liveOpen} pending=${livePend} executed=${executed} cap=${globalCap}`);
+          break;
+        }
         const gate=canAutoExecute(d);
         if(!gate.ok){
           autoSkip[gate.reason]=(autoSkip[gate.reason]||0)+1;
@@ -2877,7 +2948,9 @@ async function refreshAll(){
         else upsertPassBacktestFromBlocked(d,`blocked:${res?.error||res?.detail||'order_failed'}`);
       }
       savePassBacktest();
-      pushDebug(`auto_executed ${executed}/${planCfg.maxOpenPos} dailyCount=${dailyState.tradeCount}/${dailyCap}`);
+      const finalOpen=(realOpenPositions||[]).length;
+      const finalPend=(realPendingOrders||[]).length;
+      pushDebug(`auto_executed newOrders=${executed} totalActive=${finalOpen+finalPend}/${globalCap} (acik:${finalOpen} pending:${finalPend}) dailyCount=${dailyState.tradeCount}/${dailyCap}`);
       }
     }
   }
@@ -2959,7 +3032,7 @@ function updatePlanConfig(){
       }
     }
   }catch(_){ }
-  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||10)));planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));planCfg.aPlusMode=!!aPlusMode.checked;planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);if(newVal!==planCfg.scanStocks){planCfg.scanStocks=newVal;try{const cached=loadCachedAllSymbols();if(cached&&cached.length){PAIRS=buildPairsFromSymbols(cached);pushDebug(`pairs_rebuilt scanStocks=${planCfg.scanStocks?'on':'off'} total=${PAIRS.length}`);}}catch(_){}}planCfg.scanStocks=newVal;}if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.standardRR=Math.max(0,Math.min(10,Number((document.getElementById('standardRR')||{}).value||3)));planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));{const _emu=document.getElementById('earlyManageUsd');planCfg.earlyManageUsd=Math.max(0,Number((_emu&&_emu.value)||planCfg.earlyManageUsd||0));}{const _msd=document.getElementById('maxSameDirection');planCfg.maxSameDirection=Math.max(0,Math.min(20,Number((_msd&&_msd.value)||planCfg.maxSameDirection||0)));}{const _mne=document.getElementById('maxNetExposureCount');planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number((_mne&&_mne.value)||planCfg.maxNetExposureCount||0)));}{const _mce=document.getElementById('maxCorrelatedExposure');planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number((_mce&&_mce.value)||planCfg.maxCorrelatedExposure||0)));}tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();tradeCfg.placement=(String((document.getElementById('placementType')||{}).value||'pending').toLowerCase()==='market'?'market':'pending');tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number((document.getElementById('pendingExpireMin')||{}).value||0)));tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number((document.getElementById('pendingPullbackPts')||{}).value||0)));tradeCfg.allowMarketFallback=!!(document.getElementById('allowMarketFallback')||{}).checked;tradeCfg.autoAdjustPending=!!(document.getElementById('autoAdjustPending')||{}).checked;saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk · seans:${planCfg.sessionEnabled?`${planCfg.sessionStartHour}-${planCfg.sessionEndHour} UTC`:'off'} · A+:${planCfg.aPlusMode?'on':'off'} · loss<=${planCfg.maxDailyLossPct}% · inst:${planCfg.institutionalMode?'on':'off'} rr>=${planCfg.institutionalMinRR} · turtleScalp:${planCfg.allowTurtleScalp?'on':'off'} rr>=${planCfg.turtleScalpMinRR})`)}
+  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||10)));planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));planCfg.aPlusMode=!!aPlusMode.checked;planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);if(newVal!==planCfg.scanStocks){planCfg.scanStocks=newVal;try{const cached=loadCachedAllSymbols();if(cached&&cached.length){PAIRS=buildPairsFromSymbols(cached);pushDebug(`pairs_rebuilt scanStocks=${planCfg.scanStocks?'on':'off'} total=${PAIRS.length}`);}}catch(_){}}planCfg.scanStocks=newVal;}if(!planCfg.scanCore&&!planCfg.scanTurtle&&!planCfg.scanVWAP&&!planCfg.scanSRBreak){planCfg.scanCore=true;scanCore.checked=true;syncStrategyModeFromChecks();pushDebug('scan_strategy_guard core forced on')}planCfg.strategyProfile=['conservative','balanced','aggressive'].includes(String(strategyProfile.value||''))?String(strategyProfile.value):'balanced';planCfg.standardRR=Math.max(0,Math.min(10,Number((document.getElementById('standardRR')||{}).value||3)));planCfg.tp1RR=Math.max(0.2,Number(tp1RR.value||1));planCfg.tp2RR=Math.max(planCfg.tp1RR,Number(tp2RR.value||2));planCfg.breakEvenAtR=Math.max(0.2,Number(breakEvenAtR.value||1));planCfg.trailAtR=Math.max(0.2,Number(trailAtR.value||1.5));{const _emu=document.getElementById('earlyManageUsd');planCfg.earlyManageUsd=Math.max(0,Number((_emu&&_emu.value)||planCfg.earlyManageUsd||0));}{const _msd=document.getElementById('maxSameDirection');planCfg.maxSameDirection=Math.max(0,Math.min(20,Number((_msd&&_msd.value)||planCfg.maxSameDirection||0)));}{const _mne=document.getElementById('maxNetExposureCount');planCfg.maxNetExposureCount=Math.max(0,Math.min(20,Number((_mne&&_mne.value)||planCfg.maxNetExposureCount||0)));}{const _mce=document.getElementById('maxCorrelatedExposure');planCfg.maxCorrelatedExposure=Math.max(0,Math.min(20,Number((_mce&&_mce.value)||planCfg.maxCorrelatedExposure||0)));}{const _ptp=document.getElementById('portfolioTpUsd');planCfg.portfolioTpUsd=Math.max(0,Number((_ptp&&_ptp.value)||planCfg.portfolioTpUsd||0));}{const _psl=document.getElementById('portfolioSlUsd');planCfg.portfolioSlUsd=Math.max(0,Number((_psl&&_psl.value)||planCfg.portfolioSlUsd||0));}{const _pbe=document.getElementById('portfolioBeUsd');planCfg.portfolioBeUsd=Math.max(0,Number((_pbe&&_pbe.value)||planCfg.portfolioBeUsd||0));}tradeCfg.autoEnabled=!!autoTradeChk.checked;tradeCfg.dryRun=!!dryRunChk.checked;tradeCfg.targetAccountType=(String(targetAccountType.value||'demo').toLowerCase()==='live'?'live':'demo');tradeCfg.metaLogin=String(metaLogin.value||'').trim();tradeCfg.metaPass=String(metaPass.value||'');tradeCfg.metaServer=String(metaServer.value||'').trim();tradeCfg.placement=(String((document.getElementById('placementType')||{}).value||'pending').toLowerCase()==='market'?'market':'pending');tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number((document.getElementById('pendingExpireMin')||{}).value||0)));tradeCfg.pendingPullbackPts=Math.max(0,Math.min(500,Number((document.getElementById('pendingPullbackPts')||{}).value||0)));tradeCfg.allowMarketFallback=!!(document.getElementById('allowMarketFallback')||{}).checked;tradeCfg.autoAdjustPending=!!(document.getElementById('autoAdjustPending')||{}).checked;saveConfigs();const warnEl=document.getElementById('targetAccountWarn');if(warnEl){warnEl.textContent=tradeCfg.targetAccountType==='live'?'UYARI: Emirler LIVE hesaba gidecek.':'Emirler DEMO hesaba gidecek.';warnEl.style.color=tradeCfg.targetAccountType==='live'?'#9A2020':'#2E7D32'}renderOrderPlan();renderReviewCards();renderHistory();checkHealth();pushFeed(`${new Date().toLocaleTimeString()} · Plan ayarlari kaydedildi (${titleCaseAccount(tradeCfg.targetAccountType)} · mod:${planCfg.strategyMode} · core:${planCfg.scanCore?'on':'off'} turtle:${planCfg.scanTurtle?'on':'off'} vwap:${planCfg.scanVWAP?'on':'off'} sr:${planCfg.scanSRBreak?'on':'off'} · profil:${planCfg.strategyProfile} · spread<=${planCfg.maxSpreadPts}pt · cooldown:${planCfg.pairCooldownMin}dk · seans:${planCfg.sessionEnabled?`${planCfg.sessionStartHour}-${planCfg.sessionEndHour} UTC`:'off'} · A+:${planCfg.aPlusMode?'on':'off'} · loss<=${planCfg.maxDailyLossPct}% · inst:${planCfg.institutionalMode?'on':'off'} rr>=${planCfg.institutionalMinRR} · turtleScalp:${planCfg.allowTurtleScalp?'on':'off'} rr>=${planCfg.turtleScalpMinRR})`)}
 let autoT=null,countT=null;
 function tick(){
   try{checkDailyRollover();}catch(_){ }
@@ -2971,5 +3044,5 @@ function tick(){
 function startAuto(){clearInterval(autoT);clearInterval(countT);autoT=setInterval(()=>refreshAll(),AUTO_SCAN_MS);countT=setInterval(tick,1000);tick()}
 function stopAuto(){clearInterval(autoT);clearInterval(countT)}
 async function runAI(){const sigs=Object.values(MKT).filter(d=>d.sig&&['LONG','SHORT'].includes(d.sig.action));const lines=sigs.map(d=>`${d.pair.label} ${d.sig.action} RR=${(d.sig.rr||0).toFixed(2)} TF=${recommendTF(d)}`).join('\n')||'Aktif sinyal yok';try{const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:700,prompt:`CRT olarak değerlendir:\n${lines}`})});const j=await r.json();aio.textContent=(j.text||'Analiz alınamadı').toString()}catch(e){aio.textContent='AI hatası: '+e.message}}
-loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;{const _mtp=document.getElementById('maxTradesPerDay');if(_mtp)_mtp.value=Number.isFinite(planCfg.maxTradesPerDay)?planCfg.maxTradesPerDay:10;const _nbt=document.getElementById('newsBlackoutTimes');if(_nbt)_nbt.value=String(planCfg.newsBlackoutTimes||'');const _nbb=document.getElementById('newsBlackoutBufferMin');if(_nbb)_nbb.value=Number.isFinite(planCfg.newsBlackoutBufferMin)?planCfg.newsBlackoutBufferMin:15;}maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;sessionEnabled.checked=!!planCfg.sessionEnabled;sessionStartHour.value=planCfg.sessionStartHour;aPlusMode.checked=!!planCfg.aPlusMode;maxDailyLossPct.value=planCfg.maxDailyLossPct;disableWeakStrategies.checked=!!planCfg.disableWeakStrategies;institutionalMode.checked=!!planCfg.institutionalMode;institutionalMinRR.value=planCfg.institutionalMinRR;allowTurtleScalp.checked=!!planCfg.allowTurtleScalp;turtleScalpMinRR.value=planCfg.turtleScalpMinRR;sessionEndHour.value=planCfg.sessionEndHour;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;{const _ss=document.getElementById('scanStocks');if(_ss)_ss.checked=!!planCfg.scanStocks;}strategyProfile.value=planCfg.strategyProfile||'balanced';{const _srr=document.getElementById('standardRR');if(_srr)_srr.value=Number.isFinite(planCfg.standardRR)?planCfg.standardRR:3;}tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;{const _emu=document.getElementById('earlyManageUsd');if(_emu)_emu.value=Number.isFinite(planCfg.earlyManageUsd)?planCfg.earlyManageUsd:13;}{const _msd=document.getElementById('maxSameDirection');if(_msd)_msd.value=Number.isFinite(planCfg.maxSameDirection)?planCfg.maxSameDirection:3;}{const _mne=document.getElementById('maxNetExposureCount');if(_mne)_mne.value=Number.isFinite(planCfg.maxNetExposureCount)?planCfg.maxNetExposureCount:0;}{const _mce=document.getElementById('maxCorrelatedExposure');if(_mce)_mce.value=Number.isFinite(planCfg.maxCorrelatedExposure)?planCfg.maxCorrelatedExposure:2;}autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';(document.getElementById('placementType')||{}).value=tradeCfg.placement||'pending';(document.getElementById('pendingExpireMin')||{}).value=Number.isFinite(tradeCfg.pendingExpireMin)?tradeCfg.pendingExpireMin:5;{const _ppb=document.getElementById('pendingPullbackPts');if(_ppb)_ppb.value=Number.isFinite(tradeCfg.pendingPullbackPts)?tradeCfg.pendingPullbackPts:10;const _amf=document.getElementById('allowMarketFallback');if(_amf)_amf.checked=!!tradeCfg.allowMarketFallback;const _aap=document.getElementById('autoAdjustPending');if(_aap)_aap.checked=tradeCfg.autoAdjustPending!==false;}updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>startAuto());
+loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDealsCache.slice();loadConfigs();renderHistory();renderPassBacktest();dailyRiskPct.value=planCfg.dailyRiskPct;maxOpenPos.value=planCfg.maxOpenPos;{const _mtp=document.getElementById('maxTradesPerDay');if(_mtp)_mtp.value=Number.isFinite(planCfg.maxTradesPerDay)?planCfg.maxTradesPerDay:10;const _nbt=document.getElementById('newsBlackoutTimes');if(_nbt)_nbt.value=String(planCfg.newsBlackoutTimes||'');const _nbb=document.getElementById('newsBlackoutBufferMin');if(_nbb)_nbb.value=Number.isFinite(planCfg.newsBlackoutBufferMin)?planCfg.newsBlackoutBufferMin:15;}maxMarginUse.value=planCfg.maxMarginUse;maxSpreadPts.value=planCfg.maxSpreadPts;pairCooldownMin.value=planCfg.pairCooldownMin;sessionEnabled.checked=!!planCfg.sessionEnabled;sessionStartHour.value=planCfg.sessionStartHour;aPlusMode.checked=!!planCfg.aPlusMode;maxDailyLossPct.value=planCfg.maxDailyLossPct;disableWeakStrategies.checked=!!planCfg.disableWeakStrategies;institutionalMode.checked=!!planCfg.institutionalMode;institutionalMinRR.value=planCfg.institutionalMinRR;allowTurtleScalp.checked=!!planCfg.allowTurtleScalp;turtleScalpMinRR.value=planCfg.turtleScalpMinRR;sessionEndHour.value=planCfg.sessionEndHour;liveOrderUrl.value=planCfg.liveOrderUrl;signalTtlMin.value=planCfg.signalTtlMin;strategyMode.value=planCfg.strategyMode||'hybrid';scanCore.checked=!!planCfg.scanCore;scanTurtle.checked=!!planCfg.scanTurtle;scanVWAP.checked=!!planCfg.scanVWAP;scanSRBreak.checked=!!planCfg.scanSRBreak;{const _ss=document.getElementById('scanStocks');if(_ss)_ss.checked=!!planCfg.scanStocks;}strategyProfile.value=planCfg.strategyProfile||'balanced';{const _srr=document.getElementById('standardRR');if(_srr)_srr.value=Number.isFinite(planCfg.standardRR)?planCfg.standardRR:3;}tp1RR.value=planCfg.tp1RR;tp2RR.value=planCfg.tp2RR;breakEvenAtR.value=planCfg.breakEvenAtR;trailAtR.value=planCfg.trailAtR;{const _emu=document.getElementById('earlyManageUsd');if(_emu)_emu.value=Number.isFinite(planCfg.earlyManageUsd)?planCfg.earlyManageUsd:13;}{const _msd=document.getElementById('maxSameDirection');if(_msd)_msd.value=Number.isFinite(planCfg.maxSameDirection)?planCfg.maxSameDirection:3;}{const _mne=document.getElementById('maxNetExposureCount');if(_mne)_mne.value=Number.isFinite(planCfg.maxNetExposureCount)?planCfg.maxNetExposureCount:0;}{const _mce=document.getElementById('maxCorrelatedExposure');if(_mce)_mce.value=Number.isFinite(planCfg.maxCorrelatedExposure)?planCfg.maxCorrelatedExposure:2;}{const _ptp=document.getElementById('portfolioTpUsd');if(_ptp)_ptp.value=Number.isFinite(planCfg.portfolioTpUsd)?planCfg.portfolioTpUsd:30;}{const _psl=document.getElementById('portfolioSlUsd');if(_psl)_psl.value=Number.isFinite(planCfg.portfolioSlUsd)?planCfg.portfolioSlUsd:50;}{const _pbe=document.getElementById('portfolioBeUsd');if(_pbe)_pbe.value=Number.isFinite(planCfg.portfolioBeUsd)?planCfg.portfolioBeUsd:20;}autoTradeChk.checked=tradeCfg.autoEnabled;dryRunChk.checked=tradeCfg.dryRun;targetAccountType.value=tradeCfg.targetAccountType||'demo';metaLogin.value=tradeCfg.metaLogin||'';metaPass.value=tradeCfg.metaPass||'';metaServer.value=tradeCfg.metaServer||'';(document.getElementById('placementType')||{}).value=tradeCfg.placement||'pending';(document.getElementById('pendingExpireMin')||{}).value=Number.isFinite(tradeCfg.pendingExpireMin)?tradeCfg.pendingExpireMin:5;{const _ppb=document.getElementById('pendingPullbackPts');if(_ppb)_ppb.value=Number.isFinite(tradeCfg.pendingPullbackPts)?tradeCfg.pendingPullbackPts:10;const _amf=document.getElementById('allowMarketFallback');if(_amf)_amf.checked=!!tradeCfg.allowMarketFallback;const _aap=document.getElementById('autoAdjustPending');if(_aap)_aap.checked=tradeCfg.autoAdjustPending!==false;}updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>startAuto());
 </script>
