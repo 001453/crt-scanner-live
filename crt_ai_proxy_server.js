@@ -751,6 +751,8 @@ async function handleManagePositions(req, res) {
     const portfolioTpUsd = Math.max(0, Number(payload.portfolio_tp_usd || 0));
     const portfolioSlUsd = Math.max(0, Number(payload.portfolio_sl_usd || 0));
     const portfolioBeUsd = Math.max(0, Number(payload.portfolio_be_usd || 0));
+    const portfolioTrailActivateUsd = Math.max(0, Number(payload.portfolio_trail_activate_usd || 0));
+    const portfolioTrailDrawdownUsd = Math.max(0, Number(payload.portfolio_trail_drawdown_usd || 0));
     const pyCode = [
       'import json,sys,sqlite3,os,datetime,math',
       'import MetaTrader5 as mt5',
@@ -768,6 +770,9 @@ async function handleManagePositions(req, res) {
       'portfolio_tp_usd=float(p.get("portfolio_tp_usd",0) or 0)',
       'portfolio_sl_usd=float(p.get("portfolio_sl_usd",0) or 0)',
       'portfolio_be_usd=float(p.get("portfolio_be_usd",0) or 0)',
+      'portfolio_trail_activate_usd=float(p.get("portfolio_trail_activate_usd",0) or 0)',
+      'portfolio_trail_drawdown_usd=float(p.get("portfolio_trail_drawdown_usd",0) or 0)',
+      'cur.execute("""CREATE TABLE IF NOT EXISTS portfolio_state (id INTEGER PRIMARY KEY, peak_profit REAL DEFAULT 0, trail_armed INTEGER DEFAULT 0, updated_at TEXT)""")',
       'if not mt5.initialize():',
       '  out={"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}',
       '  conn.close()',
@@ -889,15 +894,43 @@ async function handleManagePositions(req, res) {
       '  total_profit+=float(getattr(pp,"profit",0) or 0)',
       'portfolio_action=None',
       'threshold_used=0.0',
+      '# High-water mark trailing state',
+      'peak_profit=0.0',
+      'trail_armed=0',
+      'try:',
+      '  rrow=cur.execute("SELECT peak_profit,trail_armed FROM portfolio_state WHERE id=1").fetchone()',
+      '  if rrow:',
+      '    peak_profit=float(rrow[0] or 0)',
+      '    trail_armed=int(rrow[1] or 0)',
+      'except Exception:',
+      '  peak_profit=0.0; trail_armed=0',
+      '# Pozisyon yoksa peak\'i sifirla (yeni basket icin temiz baslangic)',
+      'if len(fresh_positions)==0:',
+      '  peak_profit=0.0; trail_armed=0',
+      'else:',
+      '  # Peak guncelleme: total artiyorsa peak buyur',
+      '  if total_profit>peak_profit:',
+      '    peak_profit=total_profit',
+      '  # Activate esigine ulasildiysa trailing armed (sticky: bir kere armed olunca total negatife de gitse hala kapatma kontrolu yapar)',
+      '  if portfolio_trail_activate_usd>0.0 and total_profit>=portfolio_trail_activate_usd:',
+      '    trail_armed=1',
+      'cur.execute("INSERT INTO portfolio_state(id,peak_profit,trail_armed,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET peak_profit=excluded.peak_profit, trail_armed=excluded.trail_armed, updated_at=excluded.updated_at",(float(peak_profit),int(trail_armed),datetime.datetime.utcnow().isoformat()))',
+      'drawdown=peak_profit-total_profit',
       'if len(fresh_positions)>0:',
-      '  if portfolio_tp_usd>0.0 and total_profit>=portfolio_tp_usd:',
+      '  # Oncelik: 1) Trail tetiklendi (peak\'ten geri cekildi) 2) sabit TP 3) sabit SL 4) BE',
+      '  if trail_armed and portfolio_trail_drawdown_usd>0.0 and drawdown>=portfolio_trail_drawdown_usd and total_profit>0:',
+      '    portfolio_action="trail_basket"; threshold_used=peak_profit',
+      '  elif portfolio_tp_usd>0.0 and total_profit>=portfolio_tp_usd:',
       '    portfolio_action="tp_basket"; threshold_used=portfolio_tp_usd',
       '  elif portfolio_sl_usd>0.0 and total_profit<=-portfolio_sl_usd:',
       '    portfolio_action="sl_basket"; threshold_used=-portfolio_sl_usd',
       '  elif portfolio_be_usd>0.0 and total_profit>=portfolio_be_usd:',
       '    portfolio_action="be_basket"; threshold_used=portfolio_be_usd',
-      'if portfolio_action in ("tp_basket","sl_basket"):',
+      'if portfolio_action in ("tp_basket","sl_basket","trail_basket"):',
       '  # Tum pozisyonlari kapat (basket exit)',
+      '  # Trail tetiklendiyse peak\'i sifirla (yeni cycle icin)',
+      '  if portfolio_action=="trail_basket":',
+      '    cur.execute("INSERT INTO portfolio_state(id,peak_profit,trail_armed,updated_at) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET peak_profit=excluded.peak_profit, trail_armed=excluded.trail_armed, updated_at=excluded.updated_at",(0.0,0,datetime.datetime.utcnow().isoformat()))',
       '  for pos in fresh_positions:',
       '    ticket=int(getattr(pos,"ticket",0) or 0)',
       '    symbol=str(getattr(pos,"symbol","") or "")',
@@ -914,7 +947,7 @@ async function handleManagePositions(req, res) {
       '    req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(volume),"type":close_type,"position":ticket,"price":close_price,"deviation":30,"magic":20260506,"comment":f"crt-{portfolio_action}","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
       '    rr=mt5.order_send(req)',
       '    ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
-      '    actions.append({"ticket":ticket,"symbol":symbol,"side":side,"type":portfolio_action,"ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"closed_volume":float(volume),"pos_profit":pos_profit,"total_profit":float(total_profit),"threshold":float(threshold_used)})',
+      '    actions.append({"ticket":ticket,"symbol":symbol,"side":side,"type":portfolio_action,"ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"closed_volume":float(volume),"pos_profit":pos_profit,"total_profit":float(total_profit),"threshold":float(threshold_used),"peak":float(peak_profit),"drawdown":float(drawdown)})',
       'elif portfolio_action=="be_basket":',
       '  # Tum pozisyonlarin SL\'sini entry\'e cek (risk sifirla)',
       '  for pos in fresh_positions:',
@@ -943,9 +976,9 @@ async function handleManagePositions(req, res) {
       'conn.commit()',
       'conn.close()',
       'mt5.shutdown()',
-      'print(json.dumps({"ok":True,"managed_count":len(positions),"actions":actions,"total_profit":float(total_profit),"portfolio_action":portfolio_action}, ensure_ascii=False), flush=True)'
+      'print(json.dumps({"ok":True,"managed_count":len(positions),"actions":actions,"total_profit":float(total_profit),"peak_profit":float(peak_profit),"drawdown":float(drawdown),"trail_armed":int(trail_armed),"portfolio_action":portfolio_action}, ensure_ascii=False), flush=True)'
     ].join('\n');
-    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct, early_manage_usd: earlyManageUsd, portfolio_tp_usd: portfolioTpUsd, portfolio_sl_usd: portfolioSlUsd, portfolio_be_usd: portfolioBeUsd }), DB_PATH]);
+    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct, early_manage_usd: earlyManageUsd, portfolio_tp_usd: portfolioTpUsd, portfolio_sl_usd: portfolioSlUsd, portfolio_be_usd: portfolioBeUsd, portfolio_trail_activate_usd: portfolioTrailActivateUsd, portfolio_trail_drawdown_usd: portfolioTrailDrawdownUsd }), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
     writeJson(res, 200, j);
     logEvent('info', 'manage_positions.ok', {
