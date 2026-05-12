@@ -1719,7 +1719,11 @@ async function _executeSignalOrderInner(d,lotAdj,key){
   const payload={symbol:d.sourceSymbol||d.pair.id,side:d.sig.action,lot:Number(lotAdj),sl:Number(adjSL),tp:Number(adjTP),max_spread_points:Number(planCfg.maxSpreadPts||0),dry_run:tradeCfg.dryRun,target_account_type:tradeCfg.targetAccountType,strategy_tag:String(d.strategyTag||'core'),placement,desired_entry:Number(adjEntry),entry_offset_pts:0,expire_min:expireMin,allow_market_fallback:!!tradeCfg.allowMarketFallback,auto_adjust_pending:tradeCfg.autoAdjustPending!==false,meta_login:tradeCfg.metaLogin?Number(tradeCfg.metaLogin):undefined,meta_password:tradeCfg.metaPass||undefined,meta_server:tradeCfg.metaServer||undefined};
   const dpx=dp(d.pair.id);
   const pullbackTxt=(placement==='pending'&&pullbackPts>0)?` · geri çek:${pullbackPts}pt (${sigEntry.toFixed(dpx)}→${adjEntry.toFixed(dpx)}, SL ${sigSL.toFixed(dpx)}→${adjSL.toFixed(dpx)})`:'';
-  pushTradeFeed('info',`EMİR GÖNDERİLİYOR · ${d.pair.label} ${d.sig.action} · lot:${lotAdj} · niyet:${adjEntry.toFixed(dpx)} · mod:${placement}${expireMin?` (${expireMin}dk TTL)`:' (GTC)'} · max_spread:${planCfg.maxSpreadPts}pt · strateji:${d.strategyTag||'core'}${pullbackTxt}`);
+  const _slUsd=Number(d._actualSlUsd||0);
+  const _tpUsd=Number(d._actualTpUsd||0);
+  const _devPct=Number(d._riskDeviationPct||0);
+  const _devTxt=_slUsd>0?` · SL:$${_slUsd.toFixed(2)} TP:$${_tpUsd.toFixed(2)}${Math.abs(_devPct)>20?` (hedef sapma ${_devPct>0?'+':''}${_devPct.toFixed(0)}%)`:''}`:'';
+  pushTradeFeed('info',`EMİR GÖNDERİLİYOR · ${d.pair.label} ${d.sig.action} · lot:${lotAdj}${_devTxt} · niyet:${adjEntry.toFixed(dpx)} · mod:${placement}${expireMin?` (${expireMin}dk TTL)`:' (GTC)'} · max_spread:${planCfg.maxSpreadPts}pt · strateji:${d.strategyTag||'core'}${pullbackTxt}`);
   const t0=Date.now();
   let r,j;
   try{
@@ -1756,7 +1760,10 @@ async function _executeSignalOrderInner(d,lotAdj,key){
     pushFeed(`${new Date().toLocaleTimeString()} · ${verb} ${mode} ${d.pair.label} ${d.sig.action} lot:${lotAdj} · tip:${pl}${j.pending_adjusted?' (kaydirildi)':''} · hesap:${tradeCfg.targetAccountType}`);
     const finalSL=Number(j.sl||adjSL||d.sig.sl||0);
     const finalTP=Number(j.tp||adjTP||d.sig.tp||0);
-    pushTradeFeed('success',`${statusLabel} ${mode} · ${d.pair.label} ${d.sig.action} · tip:${pl}${ttlTxt} · lot:${lotAdj} · ${isPending?'tetik':'giris'}:${fillPx.toFixed(dp2)} · SL:${finalSL.toFixed(dp2)} · TP:${finalTP.toFixed(dp2)}${adjTxt} · hesap:${tradeCfg.targetAccountType}${ticket}${spread}${slipTxt}${rcTxt} · ${elapsed}ms`);
+    const _slUsdOk=Number(d._actualSlUsd||0);
+    const _tpUsdOk=Number(d._actualTpUsd||0);
+    const _riskTxt=_slUsdOk>0?` · risk:$${_slUsdOk.toFixed(2)}/$${_tpUsdOk.toFixed(2)}`:'';
+    pushTradeFeed('success',`${statusLabel} ${mode} · ${d.pair.label} ${d.sig.action} · tip:${pl}${ttlTxt} · lot:${lotAdj}${_riskTxt} · ${isPending?'tetik':'giris'}:${fillPx.toFixed(dp2)} · SL:${finalSL.toFixed(dp2)} · TP:${finalTP.toFixed(dp2)}${adjTxt} · hesap:${tradeCfg.targetAccountType}${ticket}${spread}${slipTxt}${rcTxt} · ${elapsed}ms`);
     pushDebug(`order_ok ${d.pair.id} ${d.sig.action} ${pl} lot=${lotAdj} dry=${tradeCfg.dryRun} px=${fillPx} slip=${slipPts}pt rc=${j.retcode||0}`);
     telemetryUpdate(elapsed,slipPts,true);
     await refreshTradeSnapshot();
@@ -4586,11 +4593,11 @@ async function refreshAll(){
           upsertPassBacktestFromBlocked(d,'blocked:no_lot');
           continue;
         }
-        const budget=(riskCfg.balance*planCfg.dailyRiskPct)/100;
         const vMin=Number(d.pair?.volumeMin||riskCfg.minLot||0.01);
         const vStep=Number(d.pair?.volumeStep||riskCfg.lotStep||0.01);
-        let lotAdjNum=Math.max(vMin,roundStep(Math.min(lot.lot,(budget/Math.max(planCfg.maxOpenPos,1))/Math.max(lot.riskAmount||1,0.0001)*lot.lot),vStep));
-        // Marjin cap kontrolu — eger lot anlik marjin sinirini geciyorsa, sinira indir
+        // Tek dogru kaynak: riskUsd. lot.lot zaten riskUsd / lossPerLot'tan geliyor.
+        // Per-slot daily budget shrinkage'i KALDIRILDI — minLot'a indirip risk varyansi yaratiyordu.
+        let lotAdjNum=Math.max(vMin,roundStep(lot.lot,vStep));
         const mBefore=marginUsagePct(d,lotAdjNum);
         let marginShrunk=false;
         if(mBefore>planCfg.maxMarginUse){
@@ -4607,10 +4614,25 @@ async function refreshAll(){
         }
         const lotAdj=lotAdjNum.toFixed(2);
         const mAfter=marginUsagePct(d,Number(lotAdj));
-        pushDebug(`lot_calc ${d.pair.id} side=${d.sig.action} riskUsd=${Number(lot.riskAmount||0).toFixed(2)} slUsd=${Number(lot.slUsd||0).toFixed(2)} lotRaw=${Number(lot.lot||0).toFixed(2)} lotFinal=${lotAdj} margin=${mAfter.toFixed(1)}%${marginShrunk?` (cap'lendi from ${mBefore.toFixed(1)}%)`:''}`);
+        // Gerçek risk hesaplama — minLot floor lotu yukari iteklediyse oversize uyarisi
+        const actualSlUsd=lossPerLot(d.pair,Math.abs((d.sig.entry||0)-(d.sig.sl||0)),d.price||d.sig.entry||0)*Number(lotAdj);
+        const actualTpUsd=actualSlUsd*Math.max(d.sig.rr||0,0);
+        const targetRiskUsd=Number(lot.riskAmount||0);
+        const riskDeviationPct=targetRiskUsd>0?((actualSlUsd-targetRiskUsd)/targetRiskUsd)*100:0;
+        // GUARD: minLot floor yuzunden risk hedeften >+150% ise (yani 2.5x'ten fazla) emir verme
+        if(Number(lotAdj)<=vMin+1e-9&&actualSlUsd>targetRiskUsd*2.5&&targetRiskUsd>0){
+          autoSkip.min_lot_overrisk=(autoSkip.min_lot_overrisk||0)+1;
+          upsertPassBacktestFromBlocked(d,`blocked:min_lot_overrisk slUsd=$${actualSlUsd.toFixed(2)} target=$${targetRiskUsd.toFixed(2)}`);
+          pushTradeFeed('warn',`⚠️ MIN LOT ASIRI RISK · ${d.pair.label} ${d.sig.action} · lot ${lotAdj} → SL $${actualSlUsd.toFixed(2)} (hedef $${targetRiskUsd.toFixed(2)}, +${riskDeviationPct.toFixed(0)}%) · ATLANDI`);
+          pushDebug(`lot_calc_skip ${d.pair.id} min_lot_overrisk sl=$${actualSlUsd.toFixed(2)} target=$${targetRiskUsd.toFixed(2)}`);
+          continue;
+        }
+        pushDebug(`lot_calc ${d.pair.id} side=${d.sig.action} riskUsd=$${targetRiskUsd.toFixed(2)} actualSL=$${actualSlUsd.toFixed(2)} actualTP=$${actualTpUsd.toFixed(2)} lotRaw=${Number(lot.lot||0).toFixed(2)} lotFinal=${lotAdj} margin=${mAfter.toFixed(1)}% dev=${riskDeviationPct.toFixed(0)}%${marginShrunk?` (cap'lendi from ${mBefore.toFixed(1)}%)`:''}`);
         if(marginShrunk){
           pushTradeFeed('info',`LOT KUCULULTULDU · ${d.pair.label} ${d.sig.action} · marjin %${mBefore.toFixed(1)} → %${mAfter.toFixed(1)} · lot:${lot.lot.toFixed(2)} → ${lotAdj}`);
         }
+        // Risk seffafligi: lot ile birlikte SL/TP $ degerini de execution feed'e ekle
+        const _origExecRef=d;_origExecRef._actualSlUsd=actualSlUsd;_origExecRef._actualTpUsd=actualTpUsd;_origExecRef._riskDeviationPct=riskDeviationPct;
         if((dailyState.tradeCount||0)>=dailyCap){
           pushTradeFeed('warn',`🚫 GÜNLÜK LIMIT ULASTIRIDI · ${dailyState.tradeCount}/${dailyCap} · tarama sirasinda · kalan adaylar atlandi`);
           break;
