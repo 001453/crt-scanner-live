@@ -1999,6 +1999,10 @@ async function refreshAccountInfo(opts){
         window._equityPeak=Number(j.equity||j.balance||0);
         window._dailyEquityPeak=null;
         window._dailyStartEquity=Number(j.equity||j.balance||0);
+        // KRITIK: Sonraki snapshot'ta diff bildirimleri/CB tetiklerini ATLA.
+        // Cunku reset sonrasi cache bos, MT5 yeni hesabin gecmis trade'lerini "yeni" sanir,
+        // duplicate POZ. KAPANDI bildirimleri ve sahte CB tripleri olusur.
+        window._skipNextSnapshotDiff=true;
         // Closed deals cache'i temizle (demo + real karismasin, stats karismasin)
         try{
           closedDealsCache=[];
@@ -2007,6 +2011,8 @@ async function refreshAccountInfo(opts){
           // Strategy performance state'i sifirla (yeni hesap icin tepeden basla)
           strategyPerf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
         }catch(_){ }
+        // Mevcut acik pozisyonlari da bos kabul et ki yeni hesabin pozisyonlari "yeni acildi" diye bildirilmesin
+        try{realOpenPositions=[];realPendingOrders=[];}catch(_){ }
         // Circuit breaker: yeni hesaba sifirla
         try{
           circuitBreaker.tripped=false;
@@ -2051,6 +2057,13 @@ async function refreshAccountInfo(opts){
           pushDebug(`cb_self_heal stale_tripped_state_cleared login=${curLogin} reason="${reason}"`);
           pushTradeFeed('info',`♻️ Circuit Breaker otomatik temizlendi · onceki session'dan stale state (${reason})`);
         }
+      }
+      // Sayfa yenilemede `_equityPeak` undefined ise (yeni session) baselining yap.
+      // Bu baselining ANINDA snapshot diff guvenligi gerektirir cunku eski cache hala demo trade'lerini iceriyor olabilir.
+      // Eger localStorage'daki son hesap yeni hesaptan farkliysa zaten yukardaki switch logici cache temizler.
+      // Ama ek olarak, ilk yuklemede `_equityPeak`'i baselineiz ki CB hatali tetiklenmesin.
+      if(!window._equityPeak&&accountInfoMT5===null){
+        window._equityPeak=Number(j.equity||j.balance||0);
       }
       window._lastAccountLogin=curLogin;
       window._lastAccountMode=curMode;
@@ -2462,10 +2475,20 @@ async function refreshTradeSnapshot(){
       if(j.ok===false){tradeCfg.lastHealth='SNAPSHOT_ERR';}
       return;
     }
-    const prevClosedKeys=new Set((closedDealsCache||[]).map(x=>String(x.ticket||x.position_id||'')+':'+String(x.symbol||'')));
+    // KRITIK: Hesap degisimi sonrasi ILK snapshot ozel davranis. Yeni hesabin gecmis trade'lerini
+    // "yeni" sanip duplicate bildirim/sahte CB tetiklemesin diye TUM gelen veriyi "zaten biliniyordu" kabul et.
+    const _skipDiff=!!window._skipNextSnapshotDiff;
+    if(_skipDiff){
+      pushDebug(`snapshot_diff_skipped account_switch_baseline_in_progress`);
+    }
+    // prevClosedKeys: normalde cache'den; skipDiff modunda GELEN datadan kur ki forEach hicbirini "yeni" gormesin
+    const prevClosedKeys=new Set((
+      _skipDiff?(Array.isArray(j.closed_deals)?j.closed_deals:[]):closedDealsCache||[]
+    ).map(x=>String(x.ticket||x.position_id||x.deal||'')+':'+String(x.symbol||'')));
     // Detayli prev state (Telegram bildirim diff'i icin)
-    const prevPendingMap=new Map((realPendingOrders||[]).map(x=>[String(x.ticket||''),x]));
-    const prevPositionMap=new Map((realOpenPositions||[]).map(x=>[String(x.ticket||''),x]));
+    // skipDiff modunda gelen incoming datadan kur ki "yeni acildi" bildirimi gonderilmesin
+    const prevPendingMap=new Map(((_skipDiff?(Array.isArray(j.pending_orders)?j.pending_orders:[]):realPendingOrders)||[]).map(x=>[String(x.ticket||''),x]));
+    const prevPositionMap=new Map(((_skipDiff?(Array.isArray(j.open_positions)?j.open_positions:[]):realOpenPositions)||[]).map(x=>[String(x.ticket||''),x]));
     realOpenPositions=Array.isArray(j.open_positions)?j.open_positions:[];
     const prevPendingKeys=new Set(prevPendingMap.keys());
     realPendingOrders=Array.isArray(j.pending_orders)?j.pending_orders:[];
@@ -2678,7 +2701,11 @@ async function refreshTradeSnapshot(){
     try{renderManagedPositions();}catch(_){ }
     try{renderStrategyDashboard();}catch(_){ }
     try{updateStatusBanner();}catch(_){ }
-    try{checkCircuitBreaker();}catch(_){ }
+    // Hesap degisimi sonrasi ilk snapshot'ta CB check'i de atla (yeni hesabin baseline'i kurulurken sahte trigger olmasin)
+    if(!_skipDiff){try{checkCircuitBreaker();}catch(_){ }}
+    else{pushDebug('cb_check_skipped baseline_snapshot_after_account_switch');}
+    // Skip flag'ini bu snapshot bittikten sonra temizle (sonraki snapshot normal calissin)
+    if(_skipDiff){window._skipNextSnapshotDiff=false;}
   }catch(e){
     pushDebug(`snapshot_failed ${e.message||e}`);
     tradeCfg.lastHealth='SNAPSHOT_ERR';
