@@ -2547,6 +2547,26 @@ async function refreshTradeSnapshot(){
     // Bu sayede frontend cache'i ile snapshot kaynagi arasinda race condition olmaz.
     const snapAccountLogin=Number(j.account_login||0);
     const snapAccountMode=String(j.account_mode||'');
+    // AUTO-SYNC: Eger backend connection modu (real/demo) tradeCfg.targetAccountType ile uyumsuzsa otomatik senkronize et.
+    // Bu sayede kullanici "target_account_mismatch" hatasiyla ugrasmaz.
+    try{
+      if(snapAccountMode==='real'||snapAccountMode==='demo'){
+        const desired=(snapAccountMode==='real')?'live':'demo';
+        if(tradeCfg.targetAccountType!==desired){
+          const prev=tradeCfg.targetAccountType;
+          tradeCfg.targetAccountType=desired;
+          // UI dropdown'unu da guncelle
+          try{const el=document.getElementById('targetAccountType');if(el){el.value=desired;}}catch(_){ }
+          try{saveConfigs();}catch(_){ }
+          try{updateMasterStrategyBar();updateStatusBanner();}catch(_){ }
+          pushDebug(`target_account_auto_sync prev=${prev} new=${desired} mt5_mode=${snapAccountMode}`);
+          pushTradeFeed('info',`♻️ Emir Hesabi otomatik senkronize edildi: ${prev.toUpperCase()} → ${desired.toUpperCase()} (MT5 baglantisi ${snapAccountMode==='real'?'CANLI':'DEMO'})`);
+          if(telegramCfg.enabled){
+            sendTelegram(`<b>♻️ EMIR HESABI SENKRONIZASYONU</b>\nOnce: <b>${prev.toUpperCase()}</b>\nSimdi: <b>${desired.toUpperCase()}</b>\nMT5 modu: <b>${snapAccountMode==='real'?'CANLI':'DEMO'}</b>\nHesap: <code>${snapAccountLogin}</code>\n\nOto-trade artik bu hesaba emir gonderir.\n${new Date().toLocaleTimeString('tr-TR')}`,{force:true});
+          }
+        }
+      }
+    }catch(_){ }
     if(snapAccountLogin>0){
       const cacheLogin=Number(window._closedCacheAccount||0);
       if(cacheLogin>0&&cacheLogin!==snapAccountLogin){
