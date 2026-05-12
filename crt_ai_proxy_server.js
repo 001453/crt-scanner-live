@@ -6,6 +6,31 @@ const fs = require('fs');
 const path = require('path');
 const execFileAsync = promisify(execFile);
 
+// .env loader (built-in, dotenv'siz). Proje root'taki .env'yi okur, mevcut env vars'i override etmez.
+(function loadDotEnv() {
+  try {
+    const envPath = path.join(__dirname, '.env');
+    if (!fs.existsSync(envPath)) return;
+    const raw = fs.readFileSync(envPath, 'utf8');
+    raw.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const idx = trimmed.indexOf('=');
+      if (idx <= 0) return;
+      const key = trimmed.slice(0, idx).trim();
+      let val = trimmed.slice(idx + 1).trim();
+      // Strip surrounding quotes
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (process.env[key] === undefined) process.env[key] = val;
+    });
+    console.log(`[env] .env yuklendi (${envPath})`);
+  } catch (e) {
+    console.log(`[env] .env yuklenemedi: ${e.message}`);
+  }
+})();
+
 const PORT = Number(process.env.PORT || 8787);
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/responses';
