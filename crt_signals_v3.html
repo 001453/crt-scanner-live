@@ -1798,13 +1798,20 @@ function loadClosedDealsCache(){
     window._closedCacheMode=String(meta.mode||'');
   }catch(_){window._closedCacheAccount=0;window._closedCacheMode='';}
 }
-function saveClosedDealsCache(){
+function saveClosedDealsCache(opts){
   try{
     localStorage.setItem(CLOSED_CACHE_KEY,JSON.stringify(closedDealsCache.slice(-500)));
-    if(accountInfoMT5&&accountInfoMT5.login){
-      localStorage.setItem(CLOSED_CACHE_META_KEY,JSON.stringify({login:Number(accountInfoMT5.login||0),mode:String(accountInfoMT5.trade_mode||''),ts:Date.now()}));
-      window._closedCacheAccount=Number(accountInfoMT5.login||0);
-      window._closedCacheMode=String(accountInfoMT5.trade_mode||'');
+    // Login bilgisi onceligi: opts > snapshot meta > accountInfoMT5
+    let metaLogin=Number((opts&&opts.login)||window._closedCacheAccount||0);
+    let metaMode=String((opts&&opts.mode)||window._closedCacheMode||'');
+    if(!metaLogin&&accountInfoMT5&&accountInfoMT5.login){
+      metaLogin=Number(accountInfoMT5.login||0);
+      metaMode=String(accountInfoMT5.trade_mode||'');
+    }
+    if(metaLogin>0){
+      localStorage.setItem(CLOSED_CACHE_META_KEY,JSON.stringify({login:metaLogin,mode:metaMode,ts:Date.now()}));
+      window._closedCacheAccount=metaLogin;
+      window._closedCacheMode=metaMode;
     }
   }catch(_){ }
 }
@@ -2520,7 +2527,33 @@ async function refreshTradeSnapshot(){
       if(j.ok===false){tradeCfg.lastHealth='SNAPSHOT_ERR';}
       return;
     }
-    // KRITIK: Hesap degisimi sonrasi ILK snapshot ozel davranis. Yeni hesabin gecmis trade'lerini
+    // KRITIK: Backend snapshot artik kendi MT5 connection'inin hesap login'ini bildiriyor.
+    // Bu sayede frontend cache'i ile snapshot kaynagi arasinda race condition olmaz.
+    const snapAccountLogin=Number(j.account_login||0);
+    const snapAccountMode=String(j.account_mode||'');
+    if(snapAccountLogin>0){
+      const cacheLogin=Number(window._closedCacheAccount||0);
+      if(cacheLogin>0&&cacheLogin!==snapAccountLogin){
+        // Cache farkli hesaba ait → snapshot icindeki acccount ile eslesmedi → PURGE
+        pushDebug(`closed_cache_purge_via_snapshot cache_acc=${cacheLogin} snap_acc=${snapAccountLogin}`);
+        closedDealsCache=[];
+        realClosedDeals=[];
+        try{strategyPerf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};}catch(_){ }
+        // ANINDA cache meta'sini guncelle (yenisi snapshot'tan geldi, accountInfoMT5'i beklemeden)
+        window._closedCacheAccount=snapAccountLogin;
+        window._closedCacheMode=snapAccountMode;
+        try{localStorage.setItem(CLOSED_CACHE_META_KEY,JSON.stringify({login:snapAccountLogin,mode:snapAccountMode,ts:Date.now()}));}catch(_){ }
+        pushTradeFeed('info',`♻️ Cache temizlendi (snapshot hesabı ${snapAccountLogin} ile cache farkli idi)`);
+        // Bu snapshot'i baseline kabul et, diff/bildirim cikarma
+        window._skipNextSnapshotDiff=true;
+      } else if(cacheLogin===0){
+        // Ilk yukleme, meta yok. Set et.
+        window._closedCacheAccount=snapAccountLogin;
+        window._closedCacheMode=snapAccountMode;
+        try{localStorage.setItem(CLOSED_CACHE_META_KEY,JSON.stringify({login:snapAccountLogin,mode:snapAccountMode,ts:Date.now()}));}catch(_){ }
+      }
+    }
+    // Hesap degisimi sonrasi ILK snapshot ozel davranis. Yeni hesabin gecmis trade'lerini
     // "yeni" sanip duplicate bildirim/sahte CB tetiklemesin diye TUM gelen veriyi "zaten biliniyordu" kabul et.
     const _skipDiff=!!window._skipNextSnapshotDiff;
     if(_skipDiff){
@@ -2661,7 +2694,8 @@ async function refreshTradeSnapshot(){
     }catch(e){pushDebug(`pending_auto_cancel_error ${e.message||e}`);}
     const incomingClosed=Array.isArray(j.closed_deals)?j.closed_deals:[];
     mergeClosedDeals(incomingClosed);
-    saveClosedDealsCache();
+    // Cache meta'yi snapshot'taki hesap bilgisi ile guncelle (accountInfoMT5'in stale olma riskini bypass eder)
+    saveClosedDealsCache(snapAccountLogin>0?{login:snapAccountLogin,mode:snapAccountMode}:null);
     realClosedDeals=closedDealsCache.slice();
     if(tradeFeedReady){
       let tgDailyPnL=0,tgDailyWins=0,tgDailyLosses=0;

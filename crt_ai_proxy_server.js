@@ -758,6 +758,10 @@ async function handleTradeSnapshot(_req, res) {
       'if not mt5.initialize():',
       '  print(json.dumps({"ok": False, "error":"mt5_initialize_failed", "detail": str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
+      'ai = mt5.account_info()',
+      'acc_login = int(getattr(ai, "login", 0) or 0) if ai is not None else 0',
+      'acc_mode_int = int(getattr(ai, "trade_mode", -1) or -1) if ai is not None else -1',
+      'acc_mode = "demo" if acc_mode_int == 0 else ("real" if acc_mode_int == 2 else "unknown")',
       'now = datetime.datetime.now(datetime.timezone.utc)',
       'from_dt = now - datetime.timedelta(days=7)',
       'open_positions = mt5.positions_get() or []',
@@ -838,7 +842,7 @@ async function handleTradeSnapshot(_req, res) {
       '    "strategy_tag": strategy_tag',
       '  })',
       'mt5.shutdown()',
-      'print(json.dumps({"ok": True, "open_positions": open_rows, "closed_deals": closed_rows, "pending_orders": pending_rows}), flush=True)'
+      'print(json.dumps({"ok": True, "account_login": acc_login, "account_mode": acc_mode, "open_positions": open_rows, "closed_deals": closed_rows, "pending_orders": pending_rows}), flush=True)'
     ].join('\n');
     const { stdout } = await pyExec(pyCode);
     const j = JSON.parse((stdout || '').trim() || '{}');
