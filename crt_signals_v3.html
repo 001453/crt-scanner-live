@@ -1788,8 +1788,39 @@ function loadHistory(){try{signalHistory=JSON.parse(localStorage.getItem(HISTORY
 function saveHistory(){localStorage.setItem(HISTORY_KEY,JSON.stringify(signalHistory.slice(-500)))}
 function loadPassBacktest(){try{passBacktest=JSON.parse(localStorage.getItem(PASS_BACKTEST_KEY)||'[]')}catch(e){passBacktest=[]}}
 function savePassBacktest(){localStorage.setItem(PASS_BACKTEST_KEY,JSON.stringify(passBacktest.slice(-800)))}
-function loadClosedDealsCache(){try{closedDealsCache=JSON.parse(localStorage.getItem(CLOSED_CACHE_KEY)||'[]')}catch(e){closedDealsCache=[]}}
-function saveClosedDealsCache(){localStorage.setItem(CLOSED_CACHE_KEY,JSON.stringify(closedDealsCache.slice(-500)))}
+const CLOSED_CACHE_META_KEY='crt_closed_deals_meta_v1';
+function loadClosedDealsCache(){
+  try{closedDealsCache=JSON.parse(localStorage.getItem(CLOSED_CACHE_KEY)||'[]')}catch(e){closedDealsCache=[]}
+  // Cache meta: hangi hesaba ait? Hesap degisirse temizle.
+  try{
+    const meta=JSON.parse(localStorage.getItem(CLOSED_CACHE_META_KEY)||'{}');
+    window._closedCacheAccount=Number(meta.login||0);
+    window._closedCacheMode=String(meta.mode||'');
+  }catch(_){window._closedCacheAccount=0;window._closedCacheMode='';}
+}
+function saveClosedDealsCache(){
+  try{
+    localStorage.setItem(CLOSED_CACHE_KEY,JSON.stringify(closedDealsCache.slice(-500)));
+    if(accountInfoMT5&&accountInfoMT5.login){
+      localStorage.setItem(CLOSED_CACHE_META_KEY,JSON.stringify({login:Number(accountInfoMT5.login||0),mode:String(accountInfoMT5.trade_mode||''),ts:Date.now()}));
+      window._closedCacheAccount=Number(accountInfoMT5.login||0);
+      window._closedCacheMode=String(accountInfoMT5.trade_mode||'');
+    }
+  }catch(_){ }
+}
+function purgeClosedCacheIfMismatch(curLogin,curMode){
+  const cacheLogin=Number(window._closedCacheAccount||0);
+  if(cacheLogin>0&&curLogin>0&&cacheLogin!==Number(curLogin)){
+    pushDebug(`closed_cache_purge mismatch cache_acc=${cacheLogin} cur_acc=${curLogin}`);
+    closedDealsCache=[];
+    realClosedDeals=[];
+    try{strategyPerf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};}catch(_){ }
+    saveClosedDealsCache();
+    pushTradeFeed('info',`♻️ Closed deals cache temizlendi (eski hesap ${cacheLogin} verileri silindi, yeni: ${curLogin})`);
+    return true;
+  }
+  return false;
+}
 function mergeClosedDeals(incoming=[]){
   const map=new Map();
   const add=(x)=>{
@@ -2064,6 +2095,15 @@ async function refreshAccountInfo(opts){
       // Ama ek olarak, ilk yuklemede `_equityPeak`'i baselineiz ki CB hatali tetiklenmesin.
       if(!window._equityPeak&&accountInfoMT5===null){
         window._equityPeak=Number(j.equity||j.balance||0);
+      }
+      // CRITICAL: localStorage'daki cache farkli hesaba aitse SIL. Sayfa yenilemesi sonrasi
+      // eski hesabin trade'leri yeni hesaba karismasin.
+      if(curLogin>0){
+        const purged=purgeClosedCacheIfMismatch(curLogin,curMode);
+        if(purged){
+          // Baseline modu set et ki sonraki snapshot'ta tekrar tum trade'ler "yeni" sanilmasin
+          window._skipNextSnapshotDiff=true;
+        }
       }
       window._lastAccountLogin=curLogin;
       window._lastAccountMode=curMode;
