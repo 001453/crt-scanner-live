@@ -401,6 +401,8 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
           <label title="Turtle Sopa scalp stratejisi izin ver mi? Kısa süreli (M1/M3/M5) hızlı setup'lar. Riskli ama agresif fırsatlar için.">Turtle Scalp İzin<input id="allowTurtleScalp" type="checkbox"></label>
           <label title="Turtle scalp aktifken kabul edilecek minimum RR. Scalp'lar hızlı kapanır, küçük RR (1.6) yeterli olabilir.">Turtle Min RR<input id="turtleScalpMinRR" type="number" step="0.1" min="1" value="1.6"></label>
           <label title="Bir sinyalin geçerlilik süresi (dakika). Sinyal üretildikten X dakika sonra hala execute edilmediyse çöpe atılır. Eski sinyalle trade'i engeller.">Sinyal TTL (dk)<input id="signalTtlMin" type="number" step="5" value="45"></label>
+          <label title="Multi-Timeframe Onay: M15/H1 sinyalleri için H4 trend onayı zorunlu. LONG sinyal → H4 trend YUKARI veya RANGE olmalı. SHORT sinyal → H4 AŞAĞI veya RANGE. Karşı trend sinyaller reddedilir. Daha az ama daha kaliteli trade.">Üst TF Onayı (H4)<input id="requireHigherTFAlign" type="checkbox"></label>
+          <label title="ForexFactory ekonomik takvim API'sinden otomatik haber blokajı. Yüksek etkili haberler 15dk önce/sonra trade durur. Manuel saat girmeye gerek kalmaz.">Auto News Block<input id="newsApiAutoBlock" type="checkbox"></label>
         </div>
         <label style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:11px;color:#6B7280" title="Hangi tarama stratejilerinin aktif olacağını seç. En az 1 tane açık olmalı. Core=CRT+PA temel. Turtle=hızlı scalp. VWAP=hacim ortalaması toparlanması. S/R Breakout=destek/direnç kırılımı.">Aktif Tarama Stratejileri
           <div class="strat-pick">
@@ -424,6 +426,18 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
           <div class="reason" style="font-size:11px">Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji açık, kripto/emtia/tahvil/hisse kapalı.</div>
         </label>
         <input id="scanStocks" type="checkbox" style="display:none">
+        <div style="margin-top:14px;padding:10px;background:rgba(245,158,11,0.06);border:1px dashed #fcd34d;border-radius:8px">
+          <div style="font-size:12px;font-weight:600;color:#7c2d12;margin-bottom:6px">⚡ Circuit Breaker (Otomatik Dur)</div>
+          <div class="reason" style="font-size:11px;margin-bottom:8px">Üst üste kayıplar veya hızlı drawdown tetiklenirse <b>auto-trade otomatik kapanır</b>. Açık pozisyonlara dokunulmaz, manuel resetlersin.</div>
+          <div class="risk-grid">
+            <label title="Circuit breaker aktif mi? Kapalıysa hiçbir otomatik dur tetiklenmez (riskli).">CB Aktif<input id="cbEnabled" type="checkbox" checked></label>
+            <label title="Üst üste kaç kayıpta strateji otomatik dursun. Örn: 4 = 4 kayıplı trade ardarda olursa stratejiyi durdurur. Önerilen: 3-5.">Ardışık Kayıp Max<input id="cbConsecLoss" type="number" step="1" min="2" max="20" value="4"></label>
+            <label title="Günlük drawdown % limiti. Örn: 5 = günde bakiyenin %5'i kaybedilirse durdur. Daily loss limit'ten farklı: bu hard-stop, diğeri uyarı.">Günlük DD %<input id="cbDailyDD" type="number" step="0.5" min="1" max="50" value="5"></label>
+            <label title="Equity peak'ten ne kadar düşerse dursun. Örn: 8 = en yüksek equity'den %8 geri çekilirse dur. Hem günlük hem multi-day korumadır.">Equity Peak DD %<input id="cbEquityDD" type="number" step="0.5" min="1" max="50" value="8"></label>
+          </div>
+          <div id="cbStatus" style="margin-top:8px;font-size:12px;font-weight:600"></div>
+          <button class="cb" onclick="resetCircuitBreaker()" id="cbResetBtn" style="margin-top:6px;font-size:11px;padding:6px 12px;display:none">↺ Resetle (oto-trade tekrar açılabilir)</button>
+        </div>
         <div style="margin-top:14px;padding:10px;background:rgba(220,38,38,0.05);border:1px dashed #fca5a5;border-radius:8px">
           <div style="font-size:12px;font-weight:600;color:#7f1d1d;margin-bottom:6px">🚫 İşlem Yapılmayacak Pariteler (Blacklist)</div>
           <div class="reason" style="font-size:11px;margin-bottom:8px">Bu listedeki sembollerden sinyal gelse bile emir gönderilmez. Tarama sonucu görünür ama auto-execute reddeder.</div>
@@ -584,7 +598,7 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 let PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
-const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,ACCOUNT_INFO_URL=`${PROXY}/api/account-info`,NEWS_CALENDAR_URL=`${PROXY}/api/news-calendar`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
 const ALL_SYMBOLS_CACHE_KEY='crtAllSymbolsCache_v5';
 const ALL_SYMBOLS_TTL_MS=24*60*60*1000;
 // Sentetik (broker icinde uretilen XAUEUR/GAUUSD vb. — gercek likidite olmadan) ve stocks bu sete dahil degil.
@@ -596,7 +610,19 @@ let MKT={},activeCat='all',autoScanOn=false,aiFilterOn=true,tradeLimit=6,isScann
 let chartLiveTimer=null,chartLiveBusy=false,chartLivePair=null,chartLiveTF='M15',chartLastTickMs=0;
 const CHART_LIVE_INTERVAL_MS=5000;
 let riskCfg={balance:1000,riskPct:1,riskUsd:20,leverage:200,minLot:0.01,maxLot:5,lotStep:0.01};
-let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,
+// MT5'ten son cekilen hesap bilgisi (auto-sync). null = henuz cekilmedi.
+let accountInfoMT5=null;
+// Drawdown / consecutive-loss circuit breaker
+let circuitBreaker={tripped:false,trippedAt:0,reason:''};
+// Higher timeframe trend cache (multi-TF confirmation)
+// Anahtar: pairId → {trend, ts, tf}
+const higherTFTrendCache=new Map();
+const HIGHER_TF_TTL_MS=20*60000; // 20dk cache (H4 trend her 20dk yenilenir)
+// News calendar cache (auto-news-blackout)
+let newsEventsCache=[];
+let newsLastFetchTs=0;
+const NEWS_REFRESH_MS=30*60*1000; // 30dk'da bir yenile
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,requireHigherTFAlign:false,newsApiAutoBlock:false,
   // Kategori bazli basket TP/SL: her kategori icin ayri esik. Enabled=false ise global basket kullanilir.
   // Defaults: kategoriye ozel mantikli baslangic degerleri. User UI'dan ayarlar.
   categoryBaskets:{
@@ -1296,8 +1322,29 @@ function isSessionOpen(nowTs=Date.now()){
   if(sh<eh)return h>=sh&&h<eh;
   return h>=sh||h<eh; // overnight window
 }
+function checkHigherTFAlignment(d){
+  // Multi-TF: sinyal TF M15/M1/M3/M5/H1 ise H4 trend ile aynı yönde olmalı (planCfg.requireHigherTFAlign aktifse).
+  if(!planCfg.requireHigherTFAlign)return {ok:true,reason:'disabled'};
+  const sigTF=String(d?.timeframe||'').toUpperCase();
+  // H4 ve uzeri TF'ler icin kontrol gereksiz (zaten ust TF)
+  if(['H4','D1','W1','MN1'].includes(sigTF))return {ok:true,reason:'signal_tf_is_higher'};
+  const cached=higherTFTrendCache.get(d?.pair?.id);
+  if(!cached||(Date.now()-cached.ts)>HIGHER_TF_TTL_MS){
+    // Cache yoksa: yine geçir (yeni paritede tek seferlik fırsat kaybetmemek için)
+    return {ok:true,reason:'no_higher_tf_cache'};
+  }
+  const ht=String(cached.trend||'').toLowerCase();
+  const action=String(d?.sig?.action||'').toUpperCase();
+  if(ht==='range')return {ok:true,reason:'higher_tf_range'}; // range = nötr, hem long hem short OK
+  if(action==='LONG'&&ht==='up')return {ok:true,reason:'aligned_long_up'};
+  if(action==='SHORT'&&ht==='down')return {ok:true,reason:'aligned_short_down'};
+  return {ok:false,reason:`htf_${cached.tf}_against_signal (${ht} trend vs ${action})`};
+}
 function canAutoExecute(d){
+  if(circuitBreaker.tripped)return{ok:false,reason:'circuit_breaker_tripped'};
   if(BLOCKED_TRADE_PAIRS.has(String(d.pair?.id||'').toUpperCase()))return{ok:false,reason:'pair_blocked'};
+  const htf=checkHigherTFAlignment(d);
+  if(!htf.ok)return {ok:false,reason:'htf_misaligned',detail:htf.reason};
   if(tradeCfg.lastHealth!=='MT5 OK')return{ok:false,reason:'health_not_ok'};
   if(AI_CONFIRM_REQUIRED&&d.aiStatus!=='confirmed')return{ok:false,reason:'ai_not_confirmed'};
   if(!isInstitutionalQualified(d))return{ok:false,reason:'institutional_filter'};
@@ -1635,6 +1682,8 @@ function loadConfigs(){
       planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(pc.sessionStartHour??planCfg.sessionStartHour)));
       planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(pc.sessionEndHour??planCfg.sessionEndHour)));
       planCfg.aPlusMode=('aPlusMode' in pc)?!!pc.aPlusMode:planCfg.aPlusMode;
+      planCfg.requireHigherTFAlign=('requireHigherTFAlign' in pc)?!!pc.requireHigherTFAlign:planCfg.requireHigherTFAlign;
+      planCfg.newsApiAutoBlock=('newsApiAutoBlock' in pc)?!!pc.newsApiAutoBlock:planCfg.newsApiAutoBlock;
       planCfg.maxDailyLossPct=Math.max(0.1,Number(pc.maxDailyLossPct??planCfg.maxDailyLossPct));
       planCfg.disableWeakStrategies=('disableWeakStrategies' in pc)?!!pc.disableWeakStrategies:planCfg.disableWeakStrategies;
       planCfg.institutionalMode=('institutionalMode' in pc)?!!pc.institutionalMode:planCfg.institutionalMode;
@@ -1718,6 +1767,8 @@ function saveConfigs(){
     sessionStartHour:planCfg.sessionStartHour,
     sessionEndHour:planCfg.sessionEndHour,
     aPlusMode:planCfg.aPlusMode,
+    requireHigherTFAlign:planCfg.requireHigherTFAlign,
+    newsApiAutoBlock:planCfg.newsApiAutoBlock,
     maxDailyLossPct:planCfg.maxDailyLossPct,
     disableWeakStrategies:planCfg.disableWeakStrategies,
     institutionalMode:planCfg.institutionalMode,
@@ -1769,6 +1820,142 @@ function saveConfigs(){
 function loadTelegramCfg(){
   try{const raw=localStorage.getItem(TELEGRAM_CFG_KEY);if(!raw)return;const tc=JSON.parse(raw);if(!tc||typeof tc!=='object')return;Object.keys(telegramCfg).forEach(k=>{if(k in tc)telegramCfg[k]=tc[k];});}catch(_){ }
 }
+// ============================================================
+// ACCOUNT INFO AUTO-SYNC — MT5'ten taze balance/equity/free_margin
+// ============================================================
+async function refreshAccountInfo(opts){
+  opts=opts||{};
+  try{
+    const r=await fetch(ACCOUNT_INFO_URL,{cache:'no-store'});
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(!j||j.ok===false)return null;
+    accountInfoMT5=j;
+    // riskCfg.balance MT5'ten auto-update (kullanici manuel girmiyor)
+    if(j.balance>0){
+      riskCfg.balance=Number(j.balance);
+      if(Number.isFinite(j.leverage)&&j.leverage>0)riskCfg.leverage=Number(j.leverage);
+      const inp=document.getElementById('balance');if(inp)inp.value=riskCfg.balance.toFixed(2);
+      const lv=document.getElementById('leverage');if(lv)lv.value=riskCfg.leverage;
+      refreshRiskSummary();
+    }
+    // Margin level kritik (< 200%) ise uyari
+    if(j.margin_level>0&&j.margin_level<200&&!opts.silent){
+      pushTradeFeed('warn',`⚠ DUSUK MARGIN LEVEL · ${j.margin_level.toFixed(0)}% (200% altinda risk var · margin call yakin)`);
+      if(j.margin_level<150&&telegramCfg.enabled){
+        sendTelegram(`<b>🚨 KRITIK MARGIN LEVEL</b>\nLevel: <b>${j.margin_level.toFixed(0)}%</b>\nEquity: ${j.equity.toFixed(2)} ${j.currency}\nMargin: ${j.margin.toFixed(2)}\nFree: ${j.margin_free.toFixed(2)}\n\n⚠️ Margin call yakın, pozisyon kapat veya margin ekle!\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+      }
+    }
+    return j;
+  }catch(e){pushDebug(`account_info_err ${e.message}`);return null;}
+}
+let _accountInfoTimer=null;
+function startAccountInfoLoop(){
+  if(_accountInfoTimer)clearInterval(_accountInfoTimer);
+  // Ilk cekim hemen, sonra 30s'de bir
+  refreshAccountInfo({silent:true});
+  _accountInfoTimer=setInterval(()=>refreshAccountInfo({silent:false}),30000);
+}
+
+// ============================================================
+// DRAWDOWN / CONSECUTIVE LOSS CIRCUIT BREAKER
+// ============================================================
+const CIRCUIT_BREAKER_KEY='crt_circuit_breaker_v1';
+let cbCfg={enabled:true,consecutiveLossMax:4,dailyDrawdownPct:5.0,equityPeakDrawdownPct:8.0};
+const CB_CFG_KEY='crt_cb_cfg_v1';
+function loadCbCfg(){
+  try{const raw=localStorage.getItem(CB_CFG_KEY);if(!raw)return;const c=JSON.parse(raw);if(c&&typeof c==='object'){Object.assign(cbCfg,c);}}catch(_){ }
+  try{const raw2=localStorage.getItem(CIRCUIT_BREAKER_KEY);if(raw2){const s=JSON.parse(raw2);if(s&&s.day===utcDayString()){circuitBreaker={...circuitBreaker,...s};}}}catch(_){ }
+}
+function saveCbCfg(){try{localStorage.setItem(CB_CFG_KEY,JSON.stringify(cbCfg));}catch(_){ }}
+function saveCircuitState(){
+  try{localStorage.setItem(CIRCUIT_BREAKER_KEY,JSON.stringify({...circuitBreaker,day:utcDayString()}));}catch(_){ }
+}
+function tripCircuitBreaker(reason){
+  if(circuitBreaker.tripped)return;
+  circuitBreaker.tripped=true;
+  circuitBreaker.trippedAt=Date.now();
+  circuitBreaker.reason=reason||'unspecified';
+  saveCircuitState();
+  // Stratejiyi durdur
+  tradeCfg.autoEnabled=false;
+  const cb=document.getElementById('autoTradeChk');if(cb)cb.checked=false;
+  saveConfigs();
+  updateStatusBanner();updateMasterStrategyBar();
+  pushTradeFeed('error',`🛑 CIRCUIT BREAKER TETIK · ${reason} · Auto-trade DURDU`);
+  pushDebug(`circuit_breaker_tripped ${reason}`);
+  if(telegramCfg.enabled){
+    sendTelegram(`<b>🚨 CIRCUIT BREAKER TETIK</b>\n\nSebep: <b>${reason}</b>\n\nAuto-trade <b>DURDURULDU</b>.\nMevcut açık pozisyonlara dokunulmadı.\nResetlemek için Plan → Risk → 'Resetle' butonu.\n\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+  }
+}
+function resetCircuitBreaker(){
+  circuitBreaker={tripped:false,trippedAt:0,reason:''};saveCircuitState();
+  pushFeed(`${new Date().toLocaleTimeString()} · ✅ Circuit breaker resetlendi`,'tf-success');
+  updateStatusBanner();updateCbStatus();
+}
+function applyCbCfgToUI(){
+  try{
+    const _set=(id,v,prop)=>{const el=document.getElementById(id);if(!el)return;if(prop==='checked')el.checked=!!v;else el.value=v;};
+    _set('cbEnabled',cbCfg.enabled,'checked');
+    _set('cbConsecLoss',cbCfg.consecutiveLossMax);
+    _set('cbDailyDD',cbCfg.dailyDrawdownPct);
+    _set('cbEquityDD',cbCfg.equityPeakDrawdownPct);
+    updateCbStatus();
+    // Inputlara change listener bagla
+    ['cbEnabled','cbConsecLoss','cbDailyDD','cbEquityDD'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el&&!el.dataset.bound){el.dataset.bound='1';el.addEventListener('change',readCbCfgFromUI);}
+    });
+  }catch(_){ }
+}
+function readCbCfgFromUI(){
+  try{
+    const _get=(id,prop)=>{const el=document.getElementById(id);if(!el)return null;return prop==='checked'?!!el.checked:Number(el.value||0);};
+    const ne=_get('cbEnabled','checked');if(ne!==null)cbCfg.enabled=ne;
+    const cl=_get('cbConsecLoss');if(cl>=2)cbCfg.consecutiveLossMax=Math.min(20,cl);
+    const dd=_get('cbDailyDD');if(dd>0)cbCfg.dailyDrawdownPct=Math.min(50,dd);
+    const ed=_get('cbEquityDD');if(ed>0)cbCfg.equityPeakDrawdownPct=Math.min(50,ed);
+    saveCbCfg();
+    updateCbStatus();
+  }catch(_){ }
+}
+function updateCbStatus(){
+  const el=document.getElementById('cbStatus');if(!el)return;
+  const btn=document.getElementById('cbResetBtn');
+  if(circuitBreaker.tripped){
+    el.innerHTML=`🔴 <b>TETIKLENDI</b> · ${circuitBreaker.reason||'-'} · ${new Date(circuitBreaker.trippedAt).toLocaleTimeString('tr-TR')}`;
+    el.style.color='#dc2626';
+    if(btn)btn.style.display='inline-block';
+  } else {
+    el.innerHTML=cbCfg.enabled?`🟢 Aktif · korunuyor`:`⚪ Devre dışı`;
+    el.style.color=cbCfg.enabled?'#059669':'#6b7280';
+    if(btn)btn.style.display='none';
+  }
+}
+function checkCircuitBreaker(){
+  if(!cbCfg.enabled||circuitBreaker.tripped)return;
+  // 1) Ardisik kayip sayisi
+  const recent=(realClosedDeals||[]).slice().sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,Math.max(2,cbCfg.consecutiveLossMax));
+  if(recent.length>=cbCfg.consecutiveLossMax){
+    const allLoss=recent.slice(0,cbCfg.consecutiveLossMax).every(x=>Number(x.profit||0)<0);
+    if(allLoss){tripCircuitBreaker(`${cbCfg.consecutiveLossMax} ardisik kayip`);return;}
+  }
+  // 2) Gunluk drawdown %
+  const balance=Number(riskCfg.balance||0);
+  if(balance>0){
+    const dayLoss=Math.abs(currentDayLossUsd());
+    const dayPct=(dayLoss/balance)*100;
+    if(dayPct>=cbCfg.dailyDrawdownPct){tripCircuitBreaker(`Gunluk drawdown %${dayPct.toFixed(2)} ≥ %${cbCfg.dailyDrawdownPct}`);return;}
+  }
+  // 3) Equity peak drawdown (sadece accountInfoMT5 varsa)
+  if(accountInfoMT5&&accountInfoMT5.equity>0){
+    if(!window._equityPeak)window._equityPeak=accountInfoMT5.equity;
+    if(accountInfoMT5.equity>window._equityPeak)window._equityPeak=accountInfoMT5.equity;
+    const ddPct=((window._equityPeak-accountInfoMT5.equity)/window._equityPeak)*100;
+    if(ddPct>=cbCfg.equityPeakDrawdownPct){tripCircuitBreaker(`Equity peak DD %${ddPct.toFixed(2)} ≥ %${cbCfg.equityPeakDrawdownPct}`);return;}
+  }
+}
+
 // ============================================================
 // TELEGRAM NOTIFICATION HELPER + RATE-LIMIT QUEUE
 // ============================================================
@@ -2262,6 +2449,7 @@ async function refreshTradeSnapshot(){
     try{renderPendingOrders();}catch(_){ }
     try{renderManagedPositions();}catch(_){ }
     try{updateStatusBanner();}catch(_){ }
+    try{checkCircuitBreaker();}catch(_){ }
   }catch(e){
     pushDebug(`snapshot_failed ${e.message||e}`);
     tradeCfg.lastHealth='SNAPSHOT_ERR';
@@ -3721,6 +3909,9 @@ async function scanPairByIntervals(pair){
         }
         if(!Array.isArray(j.candles)||j.candles.length<30)continue;
         const candles=j.candles,trend=detectTrend(candles),sig=crtScan(candles,trend,pair.id),price=candles[candles.length-1]?.c,pa=detectPASignals(candles),elliott=detectElliott(candles);
+        // Higher TF cache: H4 trend'i sembol icin sakla (multi-TF confirmation icin)
+        if(itv==='H4'){higherTFTrendCache.set(pair.id,{trend,ts:Date.now(),tf:'H4'});}
+        else if(itv==='H1'&&!higherTFTrendCache.has(pair.id)){higherTFTrendCache.set(pair.id,{trend,ts:Date.now(),tf:'H1'});}
         const row={pair,candles,trend,sig,pa,elliott,turtle:null,price,source:'live',sourceName:j.provider||'mt5',sourceSymbol:j.instrument||pair.id,timeframe:itv,timezone:SCAN_TZ,strategyTag:'core'};
         if(sig&&['LONG','SHORT'].includes(sig.action)){dbg.coreSig++;if(!bestCore||weightedSignalQuality(row)>weightedSignalQuality(bestCore))bestCore=row}else if(!bestCore&&itv==='H1')bestCore=row;
       }catch(e){dbg.coreErrors++;pushDebug(`broker_err pair=${pair.id} tf=${itv} ${e.message}`)}
@@ -3806,7 +3997,43 @@ async function scanPairByIntervals(pair){
   if(bestCore&&bestTurtle)return weightedSignalQuality(bestTurtle)>=weightedSignalQuality(bestCore)?bestTurtle:bestCore;
   return bestTurtle||bestCore;
 }
+// News calendar fetch — backend cache 1 saat, frontend cache 30 dk.
+async function refreshNewsCalendar(){
+  try{
+    const r=await fetch(NEWS_CALENDAR_URL,{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json();
+    if(!j||!j.ok||!Array.isArray(j.events))return;
+    newsEventsCache=j.events;newsLastFetchTs=Date.now();
+    pushDebug(`news_calendar_loaded count=${j.events.length} cached=${j.cached?'yes':'no'}`);
+  }catch(e){pushDebug(`news_calendar_err ${e.message}`);}
+}
+let _newsTimer=null;
+function startNewsLoop(){
+  if(_newsTimer)clearInterval(_newsTimer);
+  // Aktif degilse skip et — gereksiz network
+  if(!planCfg.newsApiAutoBlock)return;
+  refreshNewsCalendar();
+  _newsTimer=setInterval(()=>{if(planCfg.newsApiAutoBlock)refreshNewsCalendar();},NEWS_REFRESH_MS);
+}
+// Aktif news event: gecerli zamanda yuksek etkili haber +/- buffer dakika icinde mi?
+function activeNewsEvent(){
+  if(!planCfg.newsApiAutoBlock||!Array.isArray(newsEventsCache)||!newsEventsCache.length)return null;
+  const now=Date.now();
+  const buffer=Math.max(5,Number(planCfg.newsBlackoutBufferMin||15))*60000;
+  for(const e of newsEventsCache){
+    const t=Number(e.ts||0);if(!t)continue;
+    if(Math.abs(now-t)<=buffer&&String(e.impact||'').toLowerCase()==='high'){
+      return {title:e.title,country:e.country,date:e.date,diffMin:Math.round((t-now)/60000)};
+    }
+  }
+  return null;
+}
 function isNewsBlackoutNow(){
+  // 1) Auto News API (oncelikli)
+  const an=activeNewsEvent();
+  if(an){return {label:`${an.country} · ${an.title} (${an.diffMin>0?'+':''}${an.diffMin}dk)`,bufferMin:Number(planCfg.newsBlackoutBufferMin||15),diffMin:Math.abs(an.diffMin),source:'api'};}
+  // 2) Manuel saat blokesi (eski mod)
   const txt=String(planCfg.newsBlackoutTimes||'').trim();
   if(!txt)return null;
   const buffer=Math.max(0,Number(planCfg.newsBlackoutBufferMin||0));
@@ -3822,7 +4049,7 @@ function isNewsBlackoutNow(){
     const tgt=h*60+mn;
     let diff=Math.abs(nowMin-tgt);
     if(diff>720)diff=1440-diff; // gunun donumu
-    if(diff<=buffer)return {label:p,bufferMin:buffer,diffMin:diff};
+    if(diff<=buffer)return {label:p,bufferMin:buffer,diffMin:diff,source:'manual'};
   }
   return null;
 }
@@ -4092,7 +4319,7 @@ function updatePlanConfig(){
       }
     }
   }catch(_){ }
-  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||10)));planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));planCfg.aPlusMode=!!aPlusMode.checked;planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);planCfg.scanStocks=newVal;}
+  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||10)));planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));planCfg.aPlusMode=!!aPlusMode.checked;{const _rh=document.getElementById('requireHigherTFAlign');if(_rh)planCfg.requireHigherTFAlign=!!_rh.checked;const _na=document.getElementById('newsApiAutoBlock');if(_na){const old=planCfg.newsApiAutoBlock;planCfg.newsApiAutoBlock=!!_na.checked;if(old!==planCfg.newsApiAutoBlock){try{startNewsLoop();}catch(_){ }}}}planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);planCfg.scanStocks=newVal;}
 // Kategori grid'inden okuma
 {
   const grid=document.getElementById('scanCategoriesGrid');
@@ -4167,7 +4394,7 @@ loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDe
 tradeCfg.autoEnabled=false;autoScanOn=false;
 const _autoChk=document.getElementById('autoTradeChk');if(_autoChk)_autoChk.checked=false;
 const _autoBtn=document.getElementById('autoBtn');if(_autoBtn){_autoBtn.textContent='Oto Tarama: Kapalı';_autoBtn.classList.remove('on');}
-updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }try{applyTelegramCfgToUI();}catch(_){ }try{loadBlacklist();renderBlacklistChips();}catch(_){ }
+updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }try{applyTelegramCfgToUI();}catch(_){ }try{loadBlacklist();renderBlacklistChips();}catch(_){ }try{loadCbCfg();applyCbCfgToUI();}catch(_){ }try{startAccountInfoLoop();}catch(_){ }try{const _rh=document.getElementById('requireHigherTFAlign');if(_rh)_rh.checked=!!planCfg.requireHigherTFAlign;const _na=document.getElementById('newsApiAutoBlock');if(_na)_na.checked=!!planCfg.newsApiAutoBlock;}catch(_){ }try{startNewsLoop();}catch(_){ }
 // Sembol cache'i + 1 kez manuel tarama yap (kullanici sinyalleri gorur), ama auto-scan ve auto-trade KAPALI.
 // User "STRATEJIYI BASLAT"a basinca otomatik scan + auto-trade aktif olur.
 loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>{

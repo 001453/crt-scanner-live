@@ -609,6 +609,113 @@ async function handleAvailablePairs(req, res) {
   }
 }
 
+// Hesap durumu: balance, equity, free margin, margin level, leverage, currency.
+// Frontend her snapshot'ta cagrir → riskCfg.balance UI yerine MT5'ten taze gelir.
+// ForexFactory haftalik ekonomik takvim cekme (JSON formati).
+// Cache: 1 saat (CF Workers tarafindan da cache'lenmis olabilir, biz de tekrar cache'liyoruz).
+let _ffCache = { ts: 0, data: null };
+const FF_TTL_MS = 60 * 60 * 1000;
+async function handleNewsCalendar(_req, res) {
+  const startedAt = Date.now();
+  try {
+    if (_ffCache.data && (Date.now() - _ffCache.ts) < FF_TTL_MS) {
+      writeJson(res, 200, { ok: true, cached: true, events: _ffCache.data });
+      return;
+    }
+    // ForexFactory haftalık JSON: nffx weekly endpoint
+    const url = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+    const resp = await new Promise((resolve, reject) => {
+      const req2 = https.get(url, { timeout: 10000 }, r => {
+        let chunks = '';
+        r.on('data', c => chunks += c.toString());
+        r.on('end', () => resolve({ status: r.statusCode || 0, body: chunks }));
+      });
+      req2.on('error', reject);
+      req2.on('timeout', () => { req2.destroy(new Error('ff_timeout')); });
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      writeJson(res, 502, { ok: false, error: 'ff_http_error', status: resp.status });
+      return;
+    }
+    let arr = [];
+    try { arr = JSON.parse(resp.body); } catch (e) {
+      writeJson(res, 502, { ok: false, error: 'ff_parse_failed', detail: e.message });
+      return;
+    }
+    if (!Array.isArray(arr)) {
+      writeJson(res, 502, { ok: false, error: 'ff_invalid_format' });
+      return;
+    }
+    // Yuksek/orta etkili haberleri filtrele, gelecek 7 gun
+    const now = Date.now();
+    const future = now + 7 * 24 * 3600 * 1000;
+    const filtered = arr.filter(e => {
+      const t = Date.parse(e.date || '');
+      if (!Number.isFinite(t)) return false;
+      if (t < now - 3600000) return false; // 1 saat geçmişi de tut
+      if (t > future) return false;
+      const imp = String(e.impact || '').toLowerCase();
+      return imp === 'high' || imp === 'medium';
+    }).map(e => ({
+      title: String(e.title || '').slice(0, 200),
+      country: String(e.country || ''),
+      impact: String(e.impact || '').toLowerCase(),
+      date: e.date || '',
+      ts: Date.parse(e.date || ''),
+      forecast: e.forecast || '',
+      previous: e.previous || ''
+    }));
+    _ffCache = { ts: Date.now(), data: filtered };
+    writeJson(res, 200, { ok: true, cached: false, count: filtered.length, events: filtered });
+    logEvent('info', 'news_calendar.ok', { count: filtered.length, elapsed_ms: Date.now() - startedAt });
+  } catch (err) {
+    logEvent('error', 'news_calendar.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'news_calendar_failed', detail: err.message });
+  }
+}
+
+async function handleAccountInfo(_req, res) {
+  const startedAt = Date.now();
+  try {
+    const pyCode = [
+      'import json',
+      'import MetaTrader5 as mt5',
+      'if not mt5.initialize():',
+      '  print(json.dumps({"ok":False,"error":"mt5_init_failed","detail":str(mt5.last_error())}), flush=True)',
+      '  raise SystemExit(0)',
+      'ai = mt5.account_info()',
+      'if ai is None:',
+      '  mt5.shutdown()',
+      '  print(json.dumps({"ok":False,"error":"no_account_info"}), flush=True)',
+      '  raise SystemExit(0)',
+      'out = {',
+      '  "ok": True,',
+      '  "login": int(getattr(ai,"login",0) or 0),',
+      '  "name": str(getattr(ai,"name","") or ""),',
+      '  "server": str(getattr(ai,"server","") or ""),',
+      '  "currency": str(getattr(ai,"currency","USD") or "USD"),',
+      '  "leverage": int(getattr(ai,"leverage",100) or 100),',
+      '  "balance": float(getattr(ai,"balance",0) or 0),',
+      '  "equity": float(getattr(ai,"equity",0) or 0),',
+      '  "profit": float(getattr(ai,"profit",0) or 0),',
+      '  "margin": float(getattr(ai,"margin",0) or 0),',
+      '  "margin_free": float(getattr(ai,"margin_free",0) or 0),',
+      '  "margin_level": float(getattr(ai,"margin_level",0) or 0),',
+      '  "trade_mode": ("demo" if int(getattr(ai,"trade_mode",-1))==0 else ("real" if int(getattr(ai,"trade_mode",-1))==2 else "unknown"))',
+      '}',
+      'mt5.shutdown()',
+      'print(json.dumps(out), flush=True)'
+    ].join('\n');
+    const { stdout } = await pyExec(pyCode);
+    const j = JSON.parse((stdout || '').trim() || '{}');
+    writeJson(res, 200, j);
+    logEvent('info', 'account_info.ok', { balance: j.balance, equity: j.equity, margin_level: j.margin_level, elapsed_ms: Date.now() - startedAt });
+  } catch (err) {
+    logEvent('error', 'account_info.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'account_info_failed', detail: err.message });
+  }
+}
+
 async function handleHealth(_req, res) {
   const startedAt = Date.now();
   try {
@@ -1531,6 +1638,14 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/telegram-notify' && req.method === 'POST') {
     handleTelegramNotify(req, res);
+    return;
+  }
+  if (routePath === '/api/account-info' && req.method === 'GET') {
+    handleAccountInfo(req, res);
+    return;
+  }
+  if (routePath === '/api/news-calendar' && req.method === 'GET') {
+    handleNewsCalendar(req, res);
     return;
   }
   if (routePath === '/api/debug-log' && req.method === 'GET') {
