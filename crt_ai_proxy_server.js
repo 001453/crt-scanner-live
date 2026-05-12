@@ -1708,6 +1708,61 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // === STATIC FILE SERVING (dashboard + assets) ===
+  // GET / -> dashboard
+  // GET /<file> -> proje root'undan dosya (sadece beyaz listedeki uzantilar)
+  if (req.method === 'GET' && !routePath.startsWith('/api/')) {
+    try {
+      let filePath = routePath === '/' ? '/crt_signals_v3.html' : routePath;
+      // path traversal koruma
+      const cleanPath = path.normalize(filePath).replace(/^(\.\.[\\\/])+/, '');
+      const absPath = path.join(__dirname, cleanPath);
+      if (!absPath.startsWith(__dirname)) {
+        writeJson(res, 403, { error: 'forbidden' });
+        return;
+      }
+      if (!fs.existsSync(absPath) || !fs.statSync(absPath).isFile()) {
+        writeJson(res, 404, { error: 'file_not_found', path: cleanPath });
+        return;
+      }
+      const ext = path.extname(absPath).toLowerCase();
+      const allowed = {
+        '.html': 'text/html; charset=utf-8',
+        '.htm':  'text/html; charset=utf-8',
+        '.js':   'application/javascript; charset=utf-8',
+        '.mjs':  'application/javascript; charset=utf-8',
+        '.css':  'text/css; charset=utf-8',
+        '.json': 'application/json; charset=utf-8',
+        '.svg':  'image/svg+xml',
+        '.png':  'image/png',
+        '.jpg':  'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif':  'image/gif',
+        '.ico':  'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2':'font/woff2',
+        '.txt':  'text/plain; charset=utf-8',
+        '.map':  'application/json; charset=utf-8'
+      };
+      const ctype = allowed[ext];
+      if (!ctype) {
+        writeJson(res, 415, { error: 'unsupported_file_type', ext });
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': ctype,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Access-Control-Allow-Origin': '*'
+      });
+      fs.createReadStream(absPath).pipe(res);
+      return;
+    } catch (err) {
+      logEvent('error', 'static_serve_failed', { path: routePath, detail: err.message });
+      writeJson(res, 500, { error: 'static_serve_error', detail: err.message });
+      return;
+    }
+  }
+
   logEvent('warn', 'route.not_found', { method: req.method, url: req.url });
   writeJson(res, 404, { error: 'Not found' });
 });
