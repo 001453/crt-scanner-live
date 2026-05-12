@@ -424,6 +424,16 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
           <div class="reason" style="font-size:11px">Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji açık, kripto/emtia/tahvil/hisse kapalı.</div>
         </label>
         <input id="scanStocks" type="checkbox" style="display:none">
+        <div style="margin-top:14px;padding:10px;background:rgba(220,38,38,0.05);border:1px dashed #fca5a5;border-radius:8px">
+          <div style="font-size:12px;font-weight:600;color:#7f1d1d;margin-bottom:6px">🚫 İşlem Yapılmayacak Pariteler (Blacklist)</div>
+          <div class="reason" style="font-size:11px;margin-bottom:8px">Bu listedeki sembollerden sinyal gelse bile emir gönderilmez. Tarama sonucu görünür ama auto-execute reddeder.</div>
+          <div id="blacklistChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:24px"></div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="blacklistAddInput" type="text" placeholder="Sembol ekle (örn: EURGBP)" style="flex:1;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;text-transform:uppercase">
+            <button class="cb" onclick="addBlacklistFromUI()" style="font-size:12px;padding:6px 12px">+ Ekle</button>
+            <button class="cb" onclick="resetBlacklist()" title="Default'a dön (sadece EURGBP)" style="font-size:11px;padding:6px 10px">↺ Default</button>
+          </div>
+        </div>
       </div>
     </details>
 
@@ -640,11 +650,77 @@ let debugEnabled=true;
 const HISTORY_KEY='crt_signal_history_v1';
 const PASS_BACKTEST_KEY='crt_pass_backtest_v1';
 const CLOSED_CACHE_KEY='crt_closed_deals_cache_v1';
-const BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);
+// Kullanici yonetebilir blacklist (UI'dan). Default EURGBP (yatay range tutkunusu, kotu RR).
+const BLACKLIST_LS='crt_blacklist_v1';
+let BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);
+function loadBlacklist(){
+  try{
+    const raw=localStorage.getItem(BLACKLIST_LS);
+    if(!raw)return;
+    const arr=JSON.parse(raw);
+    if(Array.isArray(arr))BLOCKED_TRADE_PAIRS=new Set(arr.map(x=>String(x).toUpperCase().trim()).filter(Boolean));
+  }catch(_){ }
+}
+function saveBlacklist(){
+  try{localStorage.setItem(BLACKLIST_LS,JSON.stringify(Array.from(BLOCKED_TRADE_PAIRS)));}catch(_){ }
+}
+function addToBlacklist(sym){
+  const s=String(sym||'').toUpperCase().trim();if(!s)return;
+  BLOCKED_TRADE_PAIRS.add(s);saveBlacklist();renderBlacklistChips();
+}
+function removeFromBlacklist(sym){
+  const s=String(sym||'').toUpperCase().trim();
+  BLOCKED_TRADE_PAIRS.delete(s);saveBlacklist();renderBlacklistChips();
+}
+function renderBlacklistChips(){
+  const el=document.getElementById('blacklistChips');if(!el)return;
+  if(!BLOCKED_TRADE_PAIRS.size){el.innerHTML='<span class="reason" style="font-size:11px;font-style:italic">Liste bos · her parite emir alabilir</span>';return;}
+  const chips=Array.from(BLOCKED_TRADE_PAIRS).sort().map(s=>{
+    const safe=String(s).replace(/[<>"&'\\]/g,'');
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;border-radius:12px;font-size:11px;font-weight:600">${safe}<button onclick="removeFromBlacklist('${safe}')" style="background:none;border:none;cursor:pointer;color:#991b1b;font-weight:700;padding:0;line-height:1" title="Listeden cikar">×</button></span>`;
+  }).join('');
+  el.innerHTML=chips;
+}
+function addBlacklistFromUI(){
+  const inp=document.getElementById('blacklistAddInput');if(!inp)return;
+  const raw=String(inp.value||'').toUpperCase().trim();
+  if(!raw){alert('Bos olamaz. Ornek: EURGBP, USDCHF');return;}
+  // Virgulle coklu ekleme destegi
+  raw.split(/[,;\s]+/).filter(Boolean).forEach(s=>addToBlacklist(s));
+  inp.value='';
+  pushFeed(`${new Date().toLocaleTimeString()} · 🚫 Blacklist guncellendi · toplam ${BLOCKED_TRADE_PAIRS.size} parite`,'tf-info');
+}
+function resetBlacklist(){
+  if(!confirm('Blacklist default\'a donsun? Sadece EURGBP kalir, diger eklediklerin silinir.'))return;
+  BLOCKED_TRADE_PAIRS=new Set(['EURGBP']);saveBlacklist();renderBlacklistChips();
+  pushFeed(`${new Date().toLocaleTimeString()} · ↺ Blacklist default'a alindi`,'tf-info');
+}
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
 let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo',placement:'pending',pendingExpireMin:5,allowMarketFallback:false,autoAdjustPending:true,clientAutoCancelExpired:true,pendingPullbackPts:10};
 const SENT_KEYS_LS='crt_sent_keys_v1';
+// MT5 SIFRE OBFUSCATION (XSS'i 100% engellemez ama localStorage'a duz yazmaktan iyi).
+// IDEAL: Proxy .env (MT5_LOGIN/MT5_PASSWORD/MT5_SERVER) → bu durumda burada bos kalir.
+// Not: XOR + base64 — sembolik, ev/kisisel kullanim icin yeterli; production icin proxy .env zorunlu.
+const _OBF_KEY='crt-mt5-2026-obf';
+function obfEnc(s){
+  if(!s)return '';
+  try{
+    const arr=[];const k=_OBF_KEY;
+    for(let i=0;i<s.length;i++)arr.push(String.fromCharCode(s.charCodeAt(i)^k.charCodeAt(i%k.length)));
+    return 'OBF:'+btoa(unescape(encodeURIComponent(arr.join(''))));
+  }catch(_){return s;}
+}
+function obfDec(s){
+  if(!s)return '';
+  if(typeof s!=='string'||!s.startsWith('OBF:'))return s;
+  try{
+    const raw=decodeURIComponent(escape(atob(s.slice(4))));
+    const arr=[];const k=_OBF_KEY;
+    for(let i=0;i<raw.length;i++)arr.push(String.fromCharCode(raw.charCodeAt(i)^k.charCodeAt(i%k.length)));
+    return arr.join('');
+  }catch(_){return '';}
+}
 function loadSentKeys(){
   try{
     const raw=JSON.parse(localStorage.getItem(SENT_KEYS_LS)||'{}');
@@ -845,29 +921,16 @@ function roundStep(v,step){if(step<=0)return v;return Math.floor(v/step)*step}
 // Bir lot icin SL hedefi vurulursa hesabin (account currency) kac USD kaybedecegini hesaplar.
 // Once broker'in MT5 tick_value/tick_size'ini kullanir (en dogru); yoksa kategori bazli fallback yapar.
 function lossPerLot(pair,stopDist,price){
+  // PRIMARY: MT5 broker'in trade_tick_value (hesap para biriminde) — cross/JPY/CHF/indices/metals dahil kesin dogru
   const tv=Number(pair?.tickValue||0);
   const ts=Number(pair?.tickSize||0);
   if(tv>0&&ts>0&&stopDist>0){
     // MT5 standardi: stopDist kadar fiyat hareketinde 1 lot icin kayip = (stopDist / tickSize) * tickValue
     return (stopDist/ts)*tv;
   }
-  // Fallback: kategori bazli yaklasik (broker metadata gelmediyse)
-  const cat=pair?.cat||'forex';
-  let contractSize=Number(pair?.contractSize||0);
-  if(!contractSize){
-    if(cat==='metals')contractSize=100;
-    else if(cat==='crypto')contractSize=1;
-    else if(cat==='indices')contractSize=10;
-    else contractSize=100000;
-  }
-  let r=stopDist*contractSize;
-  // Forex'te kar para birimi USD degilse, fiyatla bol (kaba JPY duzeltmesi; cross paritelerde sapma olabilir)
-  const id=String(pair?.id||'').toUpperCase();
-  const profitCcy=String(pair?.currencyProfit||'').toUpperCase();
-  if(cat==='forex'&&!id.endsWith('USD')&&profitCcy!=='USD'){
-    r=r/Math.max(price||1,0.00001);
-  }
-  return r;
+  // Broker metadata yoksa hesap GUVENSIZ — broken fallback yerine 0 dondur (lotSuggestion red edecek).
+  // Bu, cross-currency/JPY/CHF paritelerde yanlis lot atmaktan iyidir.
+  return 0;
 }
 function lotSuggestion(d){
   if(!d?.sig||!['LONG','SHORT'].includes(d.sig.action))return null;
@@ -883,10 +946,17 @@ function lotSuggestion(d){
   else if(pctUsd>0){riskAmount=pctUsd;}
   else{riskAmount=Math.max(1,(riskCfg.balance||0)*0.01);}
   const lossPer1Lot=lossPerLot(d.pair,stopDist,price);
-  if(!(lossPer1Lot>0))return null;
+  if(!(lossPer1Lot>0)){
+    pushDebug(`lot_reject ${d.pair?.id||'-'} loss_per_lot_unavailable (broker metadata eksik — tickValue veya tickSize=0)`);
+    return null;
+  }
   const lotByRisk=riskAmount/lossPer1Lot;
-  // Margin sinir: brokerin order_calc_margin sonucunu kullan (en dogru)
+  // Margin sinir: brokerin order_calc_margin sonucunu kullan (cross-currency icin tek dogru yol)
   const marginPerLot=marginPerLotUsd(d);
+  if(!(marginPerLot>0)){
+    pushDebug(`lot_reject ${d.pair?.id||'-'} margin_per_lot_unavailable (broker order_calc_margin gelmedi — duzeltme: sembol cache yenile)`);
+    return null;
+  }
   const contractSize=Number(d.pair?.contractSize||0)||(d.pair.cat==='metals'?100:(d.pair.cat==='crypto'?1:(d.pair.cat==='indices'?10:100000)));
   const maxByMargin=(riskCfg.balance*0.9)/Math.max(marginPerLot,0.00001);
   // Lot adimi/min/max: brokerin volume_min/volume_step'i varsa onu kullan (daha dogru)
@@ -926,22 +996,12 @@ function buildExitPlan(d){
 }
 function contractSizeFor(d){const c=Number(d?.pair?.contractSize||0);if(c>0)return c;if(d.pair.cat==='metals')return 100;if(d.pair.cat==='crypto')return 1;if(d.pair.cat==='indices')return 10;return 100000}
 function marginPerLotUsd(d){
-  // 1) Broker'in kendi hesabi (en dogru, cross/JPY/index/metal hepsi icin)
+  // SADECE broker'in order_calc_margin hesabi (hesap para biriminde, kesin dogru).
+  // Cross-currency pariteler (EURJPY, GBPCHF vb) icin manuel hesap broker leverage hierarchy'sini bilmez.
   const bm=Number(d?.pair?.marginPerLot||0);
   if(bm>0)return bm;
-  // 2) Fallback: USD-quoted icin price*contractSize/leverage
-  const entry=d?.price||d?.sig?.entry||0;
-  if(!entry)return 0;
-  const cs=contractSizeFor(d);
-  const lev=Math.max(riskCfg.leverage,1);
-  const id=String(d?.pair?.id||'').toUpperCase();
-  const profitCcy=String(d?.pair?.currencyProfit||'').toUpperCase();
-  // Forex base'i USD ise notional zaten USD: contractSize/leverage
-  if(d?.pair?.cat==='forex'&&id.startsWith('USD'))return cs/lev;
-  // Forex quote'u USD ise: entry * contractSize / leverage
-  if(d?.pair?.cat==='forex'&&(id.endsWith('USD')||profitCcy==='USD'))return (entry*cs)/lev;
-  // Metals/indices/crypto: genellikle USD notional
-  return (entry*cs)/lev;
+  // Margin hesabi yoksa 0 dondur — lotSuggestion bu durumda emri reddeder.
+  return 0;
 }
 function marginUsagePct(d,lot){if(!lot)return 0;const mpl=marginPerLotUsd(d);return ((mpl*lot)/Math.max(riskCfg.balance,1))*100;}
 function marginCapLot(d,maxPctRaw){
@@ -1627,7 +1687,7 @@ function loadConfigs(){
       tradeCfg.dryRun=('dryRun' in tc)?!!tc.dryRun:tradeCfg.dryRun;
       tradeCfg.targetAccountType=(String(tc.targetAccountType||tradeCfg.targetAccountType).toLowerCase()==='live'?'live':'demo');
       tradeCfg.metaLogin=String(tc.metaLogin||'').trim();
-      tradeCfg.metaPass=String(tc.metaPass||'');
+      tradeCfg.metaPass=obfDec(String(tc.metaPass||''));
       tradeCfg.metaServer=String(tc.metaServer||'').trim();
       tradeCfg.placement=(String(tc.placement||'pending').toLowerCase()==='market'?'market':'pending');
       tradeCfg.pendingExpireMin=Math.max(0,Math.min(1440,Number(tc.pendingExpireMin??tradeCfg.pendingExpireMin)));
@@ -1695,7 +1755,7 @@ function saveConfigs(){
     dryRun:tradeCfg.dryRun,
     targetAccountType:tradeCfg.targetAccountType,
     metaLogin:tradeCfg.metaLogin,
-    metaPass:tradeCfg.metaPass,
+    metaPass:obfEnc(tradeCfg.metaPass||''),
     metaServer:tradeCfg.metaServer,
     placement:tradeCfg.placement,
     pendingExpireMin:tradeCfg.pendingExpireMin,
@@ -3056,9 +3116,19 @@ function updateMasterStrategyBar(){
 const ACCOUNT_PROFILES_KEY='crt_account_profiles_v1';
 const ACTIVE_PROFILE_KEY='crt_active_profile_v1';
 function loadAccountProfiles(){
-  try{const raw=localStorage.getItem(ACCOUNT_PROFILES_KEY);if(!raw)return [];const arr=JSON.parse(raw);return Array.isArray(arr)?arr:[];}catch(_){return [];}
+  try{
+    const raw=localStorage.getItem(ACCOUNT_PROFILES_KEY);if(!raw)return [];
+    const arr=JSON.parse(raw);if(!Array.isArray(arr))return [];
+    // Sifre obfuscation: decode et (eski plaintext profiller icin de calisir)
+    return arr.map(p=>({...p,metaPass:obfDec(String(p.metaPass||''))}));
+  }catch(_){return [];}
 }
-function saveAccountProfiles(list){try{localStorage.setItem(ACCOUNT_PROFILES_KEY,JSON.stringify(list));}catch(_){ }}
+function saveAccountProfiles(list){
+  try{
+    const enc=list.map(p=>({...p,metaPass:obfEnc(String(p.metaPass||''))}));
+    localStorage.setItem(ACCOUNT_PROFILES_KEY,JSON.stringify(enc));
+  }catch(_){ }
+}
 function getActiveProfileName(){try{return localStorage.getItem(ACTIVE_PROFILE_KEY)||'';}catch(_){return '';}}
 function setActiveProfileName(n){try{if(n)localStorage.setItem(ACTIVE_PROFILE_KEY,n);else localStorage.removeItem(ACTIVE_PROFILE_KEY);}catch(_){ }}
 function refreshAccountProfileSelect(){
@@ -4097,7 +4167,7 @@ loadHistory();loadPassBacktest();loadClosedDealsCache();realClosedDeals=closedDe
 tradeCfg.autoEnabled=false;autoScanOn=false;
 const _autoChk=document.getElementById('autoTradeChk');if(_autoChk)_autoChk.checked=false;
 const _autoBtn=document.getElementById('autoBtn');if(_autoBtn){_autoBtn.textContent='Oto Tarama: Kapalı';_autoBtn.classList.remove('on');}
-updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }try{applyTelegramCfgToUI();}catch(_){ }
+updatePlanConfig();updateRiskConfig();refreshRiskSummary();loadDailyState();checkHealth();loadKnowledgeIndex();refreshDebugLog();applyCollapsedFromStorage();scheduleSnapshotLoop();try{refreshAccountProfileSelect();}catch(_){ }try{updateMasterStrategyBar();}catch(_){ }try{renderCategoryBasketGrid();}catch(_){ }try{applyTelegramCfgToUI();}catch(_){ }try{loadBlacklist();renderBlacklistChips();}catch(_){ }
 // Sembol cache'i + 1 kez manuel tarama yap (kullanici sinyalleri gorur), ama auto-scan ve auto-trade KAPALI.
 // User "STRATEJIYI BASLAT"a basinca otomatik scan + auto-trade aktif olur.
 loadAllBrokerSymbols().then(()=>refreshAll()).then(()=>{

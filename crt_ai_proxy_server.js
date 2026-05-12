@@ -19,6 +19,14 @@ const OANDA_BASE_URL = OANDA_ENV === 'live'
   : 'https://api-fxpractice.oanda.com/v3';
 const DEBUG_ENABLED = String(process.env.CRT_DEBUG_LOG || 'true').toLowerCase() === 'true';
 const DEBUG_LOG_PATH = process.env.CRT_DEBUG_LOG_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/debug.log';
+// MT5 hesap bilgileri .env'den (browser localStorage'da plaintext sifre tutmaktan guvenli).
+// Eger bunlar setli ise frontend'den gelen meta_login/meta_password/meta_server'i override eder.
+const MT5_LOGIN_ENV = String(process.env.MT5_LOGIN || '').trim();
+const MT5_PASSWORD_ENV = String(process.env.MT5_PASSWORD || '');
+const MT5_SERVER_ENV = String(process.env.MT5_SERVER || '').trim();
+// Telegram .env destegi (token browser'da olmasin)
+const TELEGRAM_BOT_TOKEN_ENV = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
+const TELEGRAM_CHAT_ID_ENV = String(process.env.TELEGRAM_CHAT_ID || '').trim();
 
 function ensureDebugDir() {
   const dir = path.dirname(DEBUG_LOG_PATH);
@@ -1117,8 +1125,9 @@ async function handleTelegramNotify(req, res) {
   try {
     const body = await readBody(req);
     const payload = JSON.parse(body || '{}');
-    const botToken = String(payload.bot_token || process.env.TELEGRAM_BOT_TOKEN || '').trim();
-    const chatId = String(payload.chat_id || process.env.TELEGRAM_CHAT_ID || '').trim();
+    // GUVENLIK: .env'deki TOKEN/CHAT_ID, frontend gondersе bile onceliklidir (token browser'da olmasa daha guvenli).
+    const botToken = String(TELEGRAM_BOT_TOKEN_ENV || payload.bot_token || '').trim();
+    const chatId = String(TELEGRAM_CHAT_ID_ENV || payload.chat_id || '').trim();
     const text = String(payload.text || '').trim();
     if (!botToken || !chatId) {
       writeJson(res, 400, { ok: false, error: 'missing_credentials', detail: 'bot_token ve chat_id gerekli' });
@@ -1459,7 +1468,13 @@ async function handleExecuteOrder(req, res) {
       'cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,final_price,sl,tp,0,("sent" if ok else "rejected"),json.dumps(out),target_account_type,strategy_tag))',
       'conn.commit(); conn.close(); mt5.shutdown(); print(json.dumps(out), flush=True)'
     ].join('\n');
-    const { stdout } = await pyExec(pyCode, [JSON.stringify(payload), DB_PATH]);
+    // GUVENLIK: .env'de MT5 credentials varsa frontend'den gelen plaintext sifre/login'i override et.
+    // Bu sayede browser localStorage'da sifre tutulmasa bile MT5 login calisir.
+    const securedPayload = { ...payload };
+    if (MT5_LOGIN_ENV) securedPayload.meta_login = Number(MT5_LOGIN_ENV) || 0;
+    if (MT5_PASSWORD_ENV) securedPayload.meta_password = MT5_PASSWORD_ENV;
+    if (MT5_SERVER_ENV) securedPayload.meta_server = MT5_SERVER_ENV;
+    const { stdout } = await pyExec(pyCode, [JSON.stringify(securedPayload), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
     logEvent(j.ok ? 'info' : 'warn', 'execute_order.result', {
       ok: !!j.ok,
