@@ -535,8 +535,8 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
         </div>
         <div class="reason" style="margin-top:14px;margin-bottom:6px"><b>Hangi olaylarda bildirim gelsin?</b></div>
         <div class="risk-grid">
-          <label title="Yeni bekleyen (pending limit/stop) emir açıldığında bildirim gönder.">Pending Açıldı<input id="tgNotifyPendingOpen" type="checkbox" checked></label>
-          <label title="Pending emir iptal olduğunda bildirim gönder (TTL doldu, manuel iptal, fırsat kaçtı vb).">Pending İptal<input id="tgNotifyPendingCancel" type="checkbox" checked></label>
+          <label title="Yeni bekleyen (pending limit/stop) emir açıldığında bildirim gönder. KAPALI önerilir (sadece dolan emirler önemli).">Pending Açıldı<input id="tgNotifyPendingOpen" type="checkbox"></label>
+          <label title="Pending emir iptal olduğunda bildirim gönder (TTL doldu, manuel iptal, fırsat kaçtı vb). KAPALI önerilir.">Pending İptal<input id="tgNotifyPendingCancel" type="checkbox"></label>
           <label title="Pending emir dolduğunda veya market emir tetiklendiğinde (pozisyon açıldığında) bildirim gönder.">Emir Doldu (Fill)<input id="tgNotifyOrderFill" type="checkbox" checked></label>
           <label title="Pozisyon kapandığında (TP, SL, manuel kapanış vb) bildirim gönder. PnL ve kasa durumu dahil edilir.">Poz. Kapandı<input id="tgNotifyPositionClose" type="checkbox" checked></label>
           <label title="TP veya SL'ye dokunan kapanışlarda özel TP/SL bildirim ikonu kullan.">TP/SL Vurguları<input id="tgNotifyTpSlHit" type="checkbox" checked></label>
@@ -762,7 +762,9 @@ function saveSentKeys(){
   try{localStorage.setItem(SENT_KEYS_LS,JSON.stringify(tradeCfg.sentKeys||{}));}catch(_){ }
 }
 // Telegram bildirim konfigurasyonu
-let telegramCfg={enabled:false,botToken:'',chatId:'',notifyPendingOpen:true,notifyPendingCancel:true,notifyOrderFill:true,notifyPositionClose:true,notifyTpSlHit:true,notifyDailySummary:true,quietMode:false};
+// Pending bildirimleri varsayilan KAPALI (kullanici istegi: sadece acilan/kapanan poz).
+// notifyOrderFill aktif: pending dolup pozisyona donusurse bildirim gelir.
+let telegramCfg={enabled:false,botToken:'',chatId:'',notifyPendingOpen:false,notifyPendingCancel:false,notifyOrderFill:true,notifyPositionClose:true,notifyTpSlHit:true,notifyDailySummary:true,quietMode:false};
 const TELEGRAM_CFG_KEY='crt_telegram_cfg_v1';
 const catLabel=c=>({forex:'Forex',metals:'Metaller',crypto:'Kripto',indices:'Endeks'}[c]||c);
 const dp=id=>['BTCUSD'].includes(id)?0:['ETHUSD','BNBUSD'].includes(id)?2:['SOLUSD','XRPUSD','XAGUSD'].includes(id)?3:['XAUUSD','XPTUSD','XPDUSD','US30','US500','NAS100','UK100','DE40'].includes(id)?2:5;
@@ -1818,7 +1820,18 @@ function saveConfigs(){
   try{localStorage.setItem(TELEGRAM_CFG_KEY,JSON.stringify(telegramCfg));}catch(_){ }
 }
 function loadTelegramCfg(){
-  try{const raw=localStorage.getItem(TELEGRAM_CFG_KEY);if(!raw)return;const tc=JSON.parse(raw);if(!tc||typeof tc!=='object')return;Object.keys(telegramCfg).forEach(k=>{if(k in tc)telegramCfg[k]=tc[k];});}catch(_){ }
+  try{
+    const raw=localStorage.getItem(TELEGRAM_CFG_KEY);if(!raw)return;
+    const tc=JSON.parse(raw);if(!tc||typeof tc!=='object')return;
+    Object.keys(telegramCfg).forEach(k=>{if(k in tc)telegramCfg[k]=tc[k];});
+    // MIGRATION v2: Eski kullanicilarda pending bildirimler aciksa, kapat (kullanici istegi).
+    if(!tc._migrated_pending_off){
+      telegramCfg.notifyPendingOpen=false;
+      telegramCfg.notifyPendingCancel=false;
+      telegramCfg._migrated_pending_off=true;
+      try{localStorage.setItem(TELEGRAM_CFG_KEY,JSON.stringify(telegramCfg));}catch(_){ }
+    }
+  }catch(_){ }
 }
 // ============================================================
 // ACCOUNT INFO AUTO-SYNC — MT5'ten taze balance/equity/free_margin
@@ -2083,7 +2096,7 @@ async function sendTelegramAccountStatus(){
   let dPnl=0,dW=0,dL=0;dayDeals.forEach(d=>{const p=Number(d.profit||0);dPnl+=p;if(p>0)dW++;else if(p<0)dL++;});
   let openPnl=0;(realOpenPositions||[]).forEach(p=>{openPnl+=Number(p.profit||0);});
   const text=`<b>📊 HESAP DURUMU</b>\n` +
-    `Hesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()} #${tradeCfg.metaLogin||'-'}\n` +
+    `Hesap: <b>Normal</b> #${tradeCfg.metaLogin||'-'}\n` +
     `Bakiye: <b>${balance.toFixed(2)} USD</b>\n` +
     `Equity: <b>${eq.toFixed(2)} USD</b>\n` +
     `\n<b>🎯 Bugün</b>\n` +
@@ -2105,7 +2118,7 @@ async function sendTelegramTest(){
     return;
   }
   const text=`<b>🧪 CRT Scanner Test Bildirimi</b>\n\n` +
-    `Hesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()}\n` +
+    `Hesap: <b>Normal</b>\n` +
     `Bakiye: <b>${Number(riskCfg.balance||0).toFixed(0)} USD</b>\n` +
     `Strateji: ${tradeCfg.autoEnabled?'AKTIF ✅':'DURDU 🛑'}\n` +
     `Zaman: ${new Date().toLocaleString('tr-TR')}\n\n` +
@@ -3221,9 +3234,8 @@ async function toggleStrategyMaster(){
     saveConfigs();updateStatusBanner();updateMasterStrategyBar();
     pushFeed(`${new Date().toLocaleTimeString()} · 🛑 STRATEJİ DURDURULDU (auto-trade KAPALI, scan devam · acik pozlar etkilenmedi)`,'tf-error');
     if(telegramCfg.enabled){
-      const acctTxt=tradeCfg.targetAccountType==='live'?'LIVE':'DEMO';
       const balance=Number(riskCfg.balance||0).toFixed(2);
-      sendTelegram(`<b>🛑 STRATEJİ DURDURULDU</b>\nHesap: ${acctTxt} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nAçık pozisyon: ${(realOpenPositions||[]).length}\nBekleyen: ${(realPendingOrders||[]).length}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+      sendTelegram(`<b>🛑 STRATEJİ DURDURULDU</b>\nHesap: <b>Normal</b> #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nAçık pozisyon: ${(realOpenPositions||[]).length}\nBekleyen: ${(realPendingOrders||[]).length}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
     }
     return;
   }
@@ -3253,7 +3265,7 @@ async function toggleStrategyMaster(){
   pushFeed(`${new Date().toLocaleTimeString()} · ✅ STRATEJİ BAŞLADI (${acctTxt} · dry=${tradeCfg.dryRun?'on':'off'} · scan+auto acik)`,'tf-success');
   if(telegramCfg.enabled){
     const balance=Number(riskCfg.balance||0).toFixed(2);
-    sendTelegram(`<b>✅ STRATEJİ BAŞLADI</b>\nHesap: ${acctTxt} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nDry-run: ${tradeCfg.dryRun?'AÇIK (simülasyon)':'KAPALI (gerçek emir)'}\nGünlük risk: %${planCfg.dailyRiskPct||'-'}\nMax açık: ${planCfg.maxOpenPos||'-'}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+    sendTelegram(`<b>✅ STRATEJİ BAŞLADI</b>\nHesap: <b>Normal</b> #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nGünlük risk: %${planCfg.dailyRiskPct||'-'}\nMax açık: ${planCfg.maxOpenPos||'-'}\n${new Date().toLocaleString('tr-TR')}`,{force:true});
   }
 }
 function preStartValidation(){
@@ -3694,7 +3706,7 @@ async function emergencyStop(){
     if(telegramCfg.enabled){
       const lvlTxt=lvl===1?'Sadece auto durdur':lvl===2?'Auto + pending iptal':'Auto + pending iptal + tüm pozisyonları kapat';
       const balance=Number(riskCfg.balance||0).toFixed(2);
-      sendTelegram(`<b>🚨 ACİL DUR TETİKLENDİ — Seviye ${lvl}</b>\n${lvlTxt}\n\nHesap: ${(tradeCfg.targetAccountType||'demo').toUpperCase()} #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nKalan açık: ${(realOpenPositions||[]).length}\nKalan bekleyen: ${(realPendingOrders||[]).length}\n\n⚠️ Strateji DURDU. Manuel kontrol gerekli.\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+      sendTelegram(`<b>🚨 ACİL DUR TETİKLENDİ — Seviye ${lvl}</b>\n${lvlTxt}\n\nHesap: <b>Normal</b> #${tradeCfg.metaLogin||'-'}\nBakiye: <b>${balance} USD</b>\nKalan açık: ${(realOpenPositions||[]).length}\nKalan bekleyen: ${(realPendingOrders||[]).length}\n\n⚠️ Strateji DURDU. Manuel kontrol gerekli.\n${new Date().toLocaleString('tr-TR')}`,{force:true});
     }
   }catch(e){pushTradeFeed('error',`🛑 ACİL DUR HATA · ${e.message}`);}
   finally{
