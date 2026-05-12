@@ -1984,6 +1984,79 @@ async function refreshAccountInfo(opts){
     if(!r.ok)return null;
     const j=await r.json();
     if(!j||j.ok===false)return null;
+    // KRITIK: Hesap degisimi tespit et (demo<->real veya farkli hesap numarasi).
+    // Eski hesabin equity peak'i, daily state'i ve circuit breaker durumu yeni hesaba TASIN-MA-MA-LI.
+    try{
+      // localStorage'dan son bilinen hesabi al (sayfa yenilense de calisir)
+      let lsLogin=0,lsMode='';
+      try{const _raw=localStorage.getItem('crt_last_account_v1');if(_raw){const _o=JSON.parse(_raw);lsLogin=Number(_o.login||0);lsMode=String(_o.mode||'');}}catch(_){ }
+      const prevLogin=Number(window._lastAccountLogin||lsLogin||0);
+      const curLogin=Number(j.login||0);
+      const prevMode=String(window._lastAccountMode||lsMode||'');
+      const curMode=String(j.trade_mode||'');
+      if(prevLogin>0&&curLogin>0&&(prevLogin!==curLogin||prevMode!==curMode)){
+        // Account switched. Reset transient state.
+        window._equityPeak=Number(j.equity||j.balance||0);
+        window._dailyEquityPeak=null;
+        window._dailyStartEquity=Number(j.equity||j.balance||0);
+        // Closed deals cache'i temizle (demo + real karismasin, stats karismasin)
+        try{
+          closedDealsCache=[];
+          realClosedDeals=[];
+          if(typeof saveClosedDealsCache==='function')saveClosedDealsCache();
+          // Strategy performance state'i sifirla (yeni hesap icin tepeden basla)
+          strategyPerf={core:{trades:0,wins:0,pnl:0,score:1},turtle_sopa:{trades:0,wins:0,pnl:0,score:1},vwap_reclaim:{trades:0,wins:0,pnl:0,score:1},sr_breakout:{trades:0,wins:0,pnl:0,score:1}};
+        }catch(_){ }
+        // Circuit breaker: yeni hesaba sifirla
+        try{
+          circuitBreaker.tripped=false;
+          circuitBreaker.trippedAt=0;
+          circuitBreaker.reason='';
+          if(typeof saveCircuitState==='function')saveCircuitState();
+          if(typeof updateCbStatus==='function')updateCbStatus();
+        }catch(_){ }
+        // Sentkeys cooldown'larini temizle (eski hesapta gonderdiklerimiz yeni hesapta tekrar denesin)
+        try{tradeCfg.sentKeys={};if(typeof saveSentKeys==='function')saveSentKeys();}catch(_){ }
+        // Daily state'i sifirla (yeni hesabin gunluk PnL takibi tepeden baslasin)
+        try{
+          if(typeof dailyState!=='undefined'){
+            dailyState.tradeCount=0;
+            dailyState.pnlSeed=0;
+            dailyState.startingBalance=Number(j.balance||0);
+            dailyState.pnlResetTs=Date.now();
+            if(typeof saveDailyState==='function')saveDailyState();
+          }
+        }catch(_){ }
+        pushDebug(`account_switched prev=${prevLogin}(${prevMode}) cur=${curLogin}(${curMode}) state_reset`);
+        pushTradeFeed('info',`🔄 HESAP DEGISTI · ${prevLogin}(${prevMode||'?'}) → ${curLogin}(${curMode||'?'}) · circuit breaker + equity peak + daily state RESET`);
+        if(telegramCfg.enabled){
+          const eq=Number(j.equity||0).toFixed(2);
+          const bal=Number(j.balance||0).toFixed(2);
+          sendTelegram(`<b>🔄 HESAP DEĞIŞIMI</b>\nÖnceki: <code>${prevLogin}</code> (${prevMode||'?'})\nYeni: <code>${curLogin}</code> (<b>${curMode==='real'?'CANLI':curMode==='demo'?'Demo':'Normal'}</b>)\nBakiye: <b>${bal} ${j.currency||'USD'}</b>\nEquity: <b>${eq}</b>\nServer: ${j.server||'-'}\n\n♻️ Circuit Breaker + Equity Peak + Daily State sıfırlandı.\n${new Date().toLocaleString('tr-TR')}`,{force:true});
+        }
+      }
+      // ILK CALISMA OZEL DURUMU: Bu fixin ilk yuklenmesi. CB tripped + _equityPeak yok
+      // (yeni session) + tripped reason "Equity peak" iceriyor → muhtemelen onceki session/hesaptan
+      // kalan stale state. Auto-clear yapip kullanicinin manuel resetle ugrasmasini engelle.
+      if(prevLogin===0&&curLogin>0&&circuitBreaker&&circuitBreaker.tripped){
+        const reason=String(circuitBreaker.reason||'');
+        const stale=!window._equityPeak||reason.toLowerCase().includes('equity peak');
+        if(stale){
+          circuitBreaker.tripped=false;
+          circuitBreaker.trippedAt=0;
+          circuitBreaker.reason='';
+          if(typeof saveCircuitState==='function')saveCircuitState();
+          if(typeof updateCbStatus==='function')updateCbStatus();
+          window._equityPeak=Number(j.equity||j.balance||0);
+          pushDebug(`cb_self_heal stale_tripped_state_cleared login=${curLogin} reason="${reason}"`);
+          pushTradeFeed('info',`♻️ Circuit Breaker otomatik temizlendi · onceki session'dan stale state (${reason})`);
+        }
+      }
+      window._lastAccountLogin=curLogin;
+      window._lastAccountMode=curMode;
+      // Sonraki sayfa yenilemesinde tespit edebilmek icin localStorage'a yaz
+      try{localStorage.setItem('crt_last_account_v1',JSON.stringify({login:curLogin,mode:curMode,ts:Date.now()}));}catch(_){ }
+    }catch(_){ }
     accountInfoMT5=j;
     // riskCfg.balance MT5'ten auto-update (kullanici manuel girmiyor)
     if(j.balance>0){
