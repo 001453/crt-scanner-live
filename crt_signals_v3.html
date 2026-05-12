@@ -2046,17 +2046,17 @@ async function refreshAccountInfo(opts){
       // kalan stale state. Auto-clear yapip kullanicinin manuel resetle ugrasmasini engelle.
       if(prevLogin===0&&curLogin>0&&circuitBreaker&&circuitBreaker.tripped){
         const reason=String(circuitBreaker.reason||'');
-        const stale=!window._equityPeak||reason.toLowerCase().includes('equity peak');
-        if(stale){
-          circuitBreaker.tripped=false;
-          circuitBreaker.trippedAt=0;
-          circuitBreaker.reason='';
-          if(typeof saveCircuitState==='function')saveCircuitState();
-          if(typeof updateCbStatus==='function')updateCbStatus();
-          window._equityPeak=Number(j.equity||j.balance||0);
-          pushDebug(`cb_self_heal stale_tripped_state_cleared login=${curLogin} reason="${reason}"`);
-          pushTradeFeed('info',`♻️ Circuit Breaker otomatik temizlendi · onceki session'dan stale state (${reason})`);
-        }
+        // Yeni session basladi (ilk yukleme). Onceki session'dan kalan TUM tripped state'ler stale kabul edilir,
+        // cunku gercek runtime durumu (equity peak, recent trades, session start) henuz baselined edilmedi.
+        // Kullanici gercek runtime'da yine kayiplar yaparsa CB tekrar tetiklenecek - bu zararsiz reset.
+        circuitBreaker.tripped=false;
+        circuitBreaker.trippedAt=0;
+        circuitBreaker.reason='';
+        if(typeof saveCircuitState==='function')saveCircuitState();
+        if(typeof updateCbStatus==='function')updateCbStatus();
+        window._equityPeak=Number(j.equity||j.balance||0);
+        pushDebug(`cb_self_heal stale_tripped_state_cleared login=${curLogin} reason="${reason}"`);
+        pushTradeFeed('info',`♻️ Circuit Breaker otomatik temizlendi · onceki session'dan stale state (${reason})`);
       }
       // Sayfa yenilemede `_equityPeak` undefined ise (yeni session) baselining yap.
       // Bu baselining ANINDA snapshot diff guvenligi gerektirir cunku eski cache hala demo trade'lerini iceriyor olabilir.
@@ -2175,10 +2175,15 @@ function updateCbStatus(){
 function checkCircuitBreaker(){
   if(!cbCfg.enabled||circuitBreaker.tripped)return;
   // 1) Ardisik kayip sayisi
-  const recent=(realClosedDeals||[]).slice().sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,Math.max(2,cbCfg.consecutiveLossMax));
+  // KRITIK: Sadece MEVCUT SESSION'da kapanan trade'leri say. Sayfa yenilemesi/hesap degisimi sonrasi
+  // MT5'in 7 gunluk gecmisinden gelen kayiplar CB'yi yanlislikla tetiklemesin.
+  const sessionStart=Number(window._sessionStartTs||0);
+  // 30 saniye grace period: snapshot'ta time alani UTC second, session start'tan biraz once kapanmis trade de sayilsin
+  const cutoff=sessionStart>0?(sessionStart-30):0;
+  const recent=(realClosedDeals||[]).filter(x=>Number(x.time||0)>=cutoff).slice().sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,Math.max(2,cbCfg.consecutiveLossMax));
   if(recent.length>=cbCfg.consecutiveLossMax){
     const allLoss=recent.slice(0,cbCfg.consecutiveLossMax).every(x=>Number(x.profit||0)<0);
-    if(allLoss){tripCircuitBreaker(`${cbCfg.consecutiveLossMax} ardisik kayip`);return;}
+    if(allLoss){tripCircuitBreaker(`${cbCfg.consecutiveLossMax} ardisik kayip (session)`);return;}
   }
   // 2) Gunluk drawdown %
   const balance=Number(riskCfg.balance||0);
@@ -4319,6 +4324,16 @@ function computeSnapshotIntervalMs(){
 }
 function scheduleSnapshotLoop(){
   if(snapshotTimer){clearTimeout(snapshotTimer);snapshotTimer=null;}
+  // ILK CALISMA: window._sessionStartTs ve _skipNextSnapshotDiff henuz set edilmediyse, set et.
+  // Bu sayede sayfa yenilemesi sonrasi ilk snapshot "baseline" modunda calisir:
+  // - MT5'in son 7 gun trade gecmisi bildirimsizce yuklenir
+  // - CB consecutive loss check tetiklenmez (gecmis kayiplar yanlislikla CB tripletmez)
+  // - Telegram'a duplicate bildirim gitmez
+  if(typeof window._sessionStartTs==='undefined'){
+    window._sessionStartTs=Math.floor(Date.now()/1000);
+    window._skipNextSnapshotDiff=true;
+    pushDebug(`session_start ts=${window._sessionStartTs} first_snapshot_will_be_baseline`);
+  }
   const delay=computeSnapshotIntervalMs();
   snapshotTimer=setTimeout(async()=>{
     try{await refreshTradeSnapshot();}catch(_){ }
