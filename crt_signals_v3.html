@@ -1828,12 +1828,14 @@ function purgeClosedCacheIfMismatch(curLogin,curMode){
   }
   return false;
 }
-function mergeClosedDeals(incoming=[]){
+function mergeClosedDeals(incoming=[],opts){
+  opts=opts||{};
+  const accLogin=Number(opts.accountLogin||0);
   const map=new Map();
   const add=(x)=>{
     if(!x)return;
     const key=[
-      String(x.ticket||x.position_id||''),
+      String(x.ticket||x.deal||x.position_id||''),
       String(x.symbol||''),
       String(x.side||''),
       String(x.time||''),
@@ -1842,8 +1844,22 @@ function mergeClosedDeals(incoming=[]){
     map.set(key,x);
   };
   closedDealsCache.forEach(add);
-  incoming.forEach(add);
-  closedDealsCache=Array.from(map.values()).sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,500);
+  // Her gelen deal'i mevcut hesabin login'iyle etiketle (sonradan filtre icin)
+  incoming.forEach(x=>{
+    if(accLogin>0&&x&&typeof x==='object'&&!x._acct)x._acct=accLogin;
+    add(x);
+  });
+  let merged=Array.from(map.values()).sort((a,b)=>Number(b.time||0)-Number(a.time||0)).slice(0,500);
+  // CRITICAL: Eger biz su an snapshot'tan accLogin biliyorsak, farkli/eksik etiketli deal'leri SIL.
+  // Bu adim demo+real karismasinin onune kesin set ceker.
+  if(accLogin>0){
+    merged=merged.filter(d=>{
+      const tag=Number(d&&d._acct||0);
+      // Etiketsiz veya farkli hesabin deal'ini disla
+      return tag===accLogin;
+    });
+  }
+  closedDealsCache=merged;
 }
 function loadConfigs(){
   try{
@@ -2693,7 +2709,12 @@ async function refreshTradeSnapshot(){
       });
     }catch(e){pushDebug(`pending_auto_cancel_error ${e.message||e}`);}
     const incomingClosed=Array.isArray(j.closed_deals)?j.closed_deals:[];
-    mergeClosedDeals(incomingClosed);
+    const _beforeCount=closedDealsCache.length;
+    mergeClosedDeals(incomingClosed,{accountLogin:snapAccountLogin});
+    const _afterCount=closedDealsCache.length;
+    if(snapAccountLogin>0&&_beforeCount>_afterCount){
+      pushDebug(`closed_cache_filtered acc=${snapAccountLogin} removed=${_beforeCount-_afterCount} (different/untagged account deals)`);
+    }
     // Cache meta'yi snapshot'taki hesap bilgisi ile guncelle (accountInfoMT5'in stale olma riskini bypass eder)
     saveClosedDealsCache(snapAccountLogin>0?{login:snapAccountLogin,mode:snapAccountMode}:null);
     realClosedDeals=closedDealsCache.slice();
