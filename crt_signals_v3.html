@@ -364,13 +364,13 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
     </details>
 
     <details class="plan-section" id="planSec_session">
-      <summary><span class="plan-section-icon">🕐</span> Seans & Haber Filtresi <span class="plan-section-sub">Çalışma saatleri ve haber blackout pencereleri</span></summary>
+      <summary><span class="plan-section-icon">🕐</span> Seans & Haber Filtresi <span class="plan-section-sub">Türkiye saati (UTC+3 · Europe/Istanbul) — açık seans dışında yeni emir gönderilmez</span></summary>
       <div class="plan-body">
         <div class="risk-grid">
-          <label title="UTC seans saat filtresi açık mı? Sadece belirli saatlerde işlem yapmak için. Örn: Asya seansı kapalı kalsın istiyorsan.">Seans Filtresi<input id="sessionEnabled" type="checkbox" checked></label>
-          <label title="Trading başlangıç saati (UTC). Örn: 7 = sabah 7:00 UTC = TR saatiyle 10:00. Bu saatten önce hiç emir gönderilmez.">Seans Başlangıç (UTC)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
-          <label title="Trading bitiş saati (UTC). Örn: 21 = akşam 21:00 UTC = TR saatiyle 00:00. Bu saatten sonra yeni emir gönderilmez ama açık pozisyonlar yönetilmeye devam eder.">Seans Bitiş (UTC)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
-          <label title="UTC saatleri, virgülle ayır (örn: 08:30, 12:30, 14:00). Bu saatlerden ±buffer dakika içinde auto-execute durur" style="grid-column:span 2">Haber Blackout (UTC HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
+          <label title="Açıkken sadece belirlenen Türkiye saatleri arasında yeni emir gönderilir (Europe/Istanbul). Kapalıysa 7/24 deneme yapılır.">Seans Filtresi (TR)<input id="sessionEnabled" type="checkbox" checked></label>
+          <label title="Türkiye yerel saati (bilgisayar saati değil — Europe/Istanbul). Örn: 7 = sabah 07:00 TR. Bu saatten önce (aynı gün içinde) otomatik emir gönderilmez. Gece penceresi için başlangıç &gt; bitiş kullanın (örn 22–6).">Seans Başlangıç (TR saat)<input id="sessionStartHour" type="number" step="1" min="0" max="23" value="7"></label>
+          <label title="Türkiye yerel saati. Örn: 21 = akşam 21:00 TR; bu saat ve sonrasında yeni emir gönderilmez (saat 21 tam olarak kapalı — aralık [başlangıç, bitiş) ). Açık pozisyonlar snapshot ile yönetilmeye devam eder.">Seans Bitiş (TR saat)<input id="sessionEndHour" type="number" step="1" min="0" max="23" value="21"></label>
+          <label title="Türkiye saati (HH:MM), virgülle ayırın (örn: 08:30, 12:30, 14:00 İstanbul). Bu saatlere ±buffer dakika yakınında otomatik emir gönderilmez." style="grid-column:span 2">Haber Blackout (TR HH:MM)<input id="newsBlackoutTimes" type="text" placeholder="08:30, 12:30, 14:00"></label>
           <label title="Haber blackout penceresi ±X dakika. Örn: 15 = haber saatinden 15dk önce ve 15dk sonra hiç emir gönderilmez. Volatilite riskinden korur.">Haber Buffer (dk)<input id="newsBlackoutBufferMin" type="number" step="1" min="0" max="120" value="15"></label>
         </div>
       </div>
@@ -638,7 +638,7 @@ const HIGHER_TF_TTL_MS=20*60000; // 20dk cache (H4 trend her 20dk yenilenir)
 let newsEventsCache=[];
 let newsLastFetchTs=0;
 const NEWS_REFRESH_MS=30*60*1000; // 30dk'da bir yenile
-let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,requireHigherTFAlign:false,newsApiAutoBlock:false,
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,/* Seans saatleri Turkiye TR (Europe/Istanbul), UTC degil */ aPlusMode:true,maxDailyLossPct:1.5,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:true,scanVWAP:true,scanSRBreak:true,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,earlyManageUsd:13,maxTradesPerDay:10,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:50,portfolioBeUsd:20,portfolioTrailActivateUsd:15,portfolioTrailDrawdownUsd:8,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,requireHigherTFAlign:false,newsApiAutoBlock:false,
   // Kategori bazli basket TP/SL: her kategori icin ayri esik. Enabled=false ise global basket kullanilir.
   // Defaults: kategoriye ozel mantikli baslangic degerleri. User UI'dan ayarlar.
   categoryBaskets:{
@@ -1456,11 +1456,37 @@ function isFreshSignal(d){
   if(!isPriceStillValid(d))return false;
   return true;
 }
+/** Türkiye yerel saati saat bileşeni (0–23). Europe/Istanbul (UTC+3, yaz saati yok). */
+function sessionHourTurkeyTR(nowTs=Date.now()){
+  try{
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Istanbul',hour:'numeric',hour12:false}).formatToParts(new Date(nowTs));
+    const hp=parts.find(p=>p.type==='hour');
+    if(hp&&hp.value!==''){
+      const v=Number(hp.value);
+      if(Number.isFinite(v))return Math.max(0,Math.min(23,v));
+    }
+  }catch(_){ }
+  const d=new Date(nowTs);
+  return(d.getUTCHours()+3)%24;
+}
+/** Türkiye yerel saatte gece yarısından bu yana dakika (0–1439). Haber blackout için. */
+function istanbulMinutesSinceMidnight(nowTs=Date.now()){
+  try{
+    const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Istanbul',hour:'numeric',minute:'numeric',hour12:false});
+    const parts=fmt.formatToParts(new Date(nowTs));
+    const hv=parts.find(p=>p.type==='hour'), mv=parts.find(p=>p.type==='minute');
+    const h=hv?Number(hv.value):0, m=mv?Number(mv.value):0;
+    if(Number.isFinite(h)&&Number.isFinite(m))return Math.max(0,Math.min(1439,h*60+m));
+  }catch(_){ }
+  const d=new Date(nowTs);
+  const utcMin=d.getUTCHours()*60+d.getUTCMinutes();
+  return(utcMin+180+1440)%1440;
+}
 function isSessionOpen(nowTs=Date.now()){
   if(!planCfg.sessionEnabled)return true;
   const sh=Math.max(0,Math.min(23,Number(planCfg.sessionStartHour||0)));
   const eh=Math.max(0,Math.min(23,Number(planCfg.sessionEndHour||23)));
-  const h=new Date(nowTs).getUTCHours();
+  const h=sessionHourTurkeyTR(nowTs);
   if(sh===eh)return true; // 24h
   if(sh<eh)return h>=sh&&h<eh;
   return h>=sh||h<eh; // overnight window
@@ -4420,8 +4446,7 @@ function isNewsBlackoutNow(){
   if(!txt)return null;
   const buffer=Math.max(0,Number(planCfg.newsBlackoutBufferMin||0));
   if(buffer<=0)return null;
-  const now=new Date();
-  const nowMin=now.getUTCHours()*60+now.getUTCMinutes();
+  const nowMin=istanbulMinutesSinceMidnight();
   const parts=txt.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
   for(const p of parts){
     const m=p.match(/^(\d{1,2}):(\d{2})$/);
@@ -4530,7 +4555,7 @@ async function refreshAll(){
   pushDebug(`scan_done pairs=${Object.keys(MKT).length} signals=${sigs.length} verisiz=${src.unsupported} universe=${scanPairs.length}`);
   if(pinnedPairId&&MKT[pinnedPairId])selectedPairId=pinnedPairId;else if(!selectedPairId&&sigs[0])selectedPairId=sigs[0].pair.id;
   if(selectedPairId&&MKT[selectedPairId])showOnChart(selectedPairId);
-  pushDebug(`auto_state enabled=${tradeCfg.autoEnabled?'on':'off'} dry=${tradeCfg.dryRun?'on':'off'} health=${tradeCfg.lastHealth} session=${isSessionOpen()?'open':'closed'} aplus=${planCfg.aPlusMode?'on':'off'} dayLoss=${currentDayLossUsd().toFixed(2)}`);
+  pushDebug(`auto_state enabled=${tradeCfg.autoEnabled?'on':'off'} dry=${tradeCfg.dryRun?'on':'off'} health=${tradeCfg.lastHealth} session=${isSessionOpen()?'open':'closed'} tr_h=${sessionHourTurkeyTR()} tr_win=${planCfg.sessionStartHour}-${planCfg.sessionEndHour} aplus=${planCfg.aPlusMode?'on':'off'} dayLoss=${currentDayLossUsd().toFixed(2)}`);
   if(tradeCfg.autoEnabled){
     const blackout=isNewsBlackoutNow();
     if(blackout){
