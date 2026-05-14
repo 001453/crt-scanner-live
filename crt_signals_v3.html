@@ -614,7 +614,31 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 let PAIRS=[{id:'EURUSD',label:'EUR/USD',cat:'forex'},{id:'GBPUSD',label:'GBP/USD',cat:'forex'},{id:'USDJPY',label:'USD/JPY',cat:'forex'},{id:'AUDUSD',label:'AUD/USD',cat:'forex'},{id:'USDCAD',label:'USD/CAD',cat:'forex'},{id:'USDCHF',label:'USD/CHF',cat:'forex'},{id:'NZDUSD',label:'NZD/USD',cat:'forex'},{id:'EURGBP',label:'EUR/GBP',cat:'forex'},{id:'EURJPY',label:'EUR/JPY',cat:'forex'},{id:'GBPJPY',label:'GBP/JPY',cat:'forex'},{id:'EURAUD',label:'EUR/AUD',cat:'forex'},{id:'EURNZD',label:'EUR/NZD',cat:'forex'},{id:'AUDJPY',label:'AUD/JPY',cat:'forex'},{id:'CADJPY',label:'CAD/JPY',cat:'forex'},{id:'CHFJPY',label:'CHF/JPY',cat:'forex'},{id:'AUDCAD',label:'AUD/CAD',cat:'forex'},{id:'AUDCHF',label:'AUD/CHF',cat:'forex'},{id:'GBPCHF',label:'GBP/CHF',cat:'forex'},{id:'GBPCAD',label:'GBP/CAD',cat:'forex'},{id:'NZDJPY',label:'NZD/JPY',cat:'forex'},{id:'XAUUSD',label:'GOLD',cat:'metals'},{id:'XAGUSD',label:'SILVER',cat:'metals'},{id:'XPTUSD',label:'PLATIN',cat:'metals'},{id:'XPDUSD',label:'PALLADIUM',cat:'metals'},{id:'BTCUSD',label:'BTC/USD',cat:'crypto'},{id:'ETHUSD',label:'ETH/USD',cat:'crypto'},{id:'SOLUSD',label:'SOL/USD',cat:'crypto'},{id:'XRPUSD',label:'XRP/USD',cat:'crypto'},{id:'BNBUSD',label:'BNB/USD',cat:'crypto'},{id:'ADAUSD',label:'ADA/USD',cat:'crypto'},{id:'DOGEUSD',label:'DOGE/USD',cat:'crypto'},{id:'AVAXUSD',label:'AVAX/USD',cat:'crypto'},{id:'DOTUSD',label:'DOT/USD',cat:'crypto'},{id:'LTCUSD',label:'LTC/USD',cat:'crypto'},{id:'US30',label:'US30',cat:'indices'},{id:'US500',label:'US500',cat:'indices'},{id:'NAS100',label:'NASDAQ',cat:'indices'},{id:'UK100',label:'FTSE100',cat:'indices'},{id:'DE40',label:'DE40',cat:'indices'}];
-const PROXY='http://127.0.0.1:8787',AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,ACCOUNT_INFO_URL=`${PROXY}/api/account-info`,NEWS_CALENDAR_URL=`${PROXY}/api/news-calendar`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const PROXY=(function(){
+  try{
+    const u=new URL(location.href);
+    const q=(u.searchParams.get('proxy')||'').trim().replace(/\/$/,'');
+    if(q){ try{localStorage.setItem('crt_proxy_base',q);}catch(_){} return q; }
+  }catch(_){}
+  try{
+    const s=(localStorage.getItem('crt_proxy_base')||'').trim().replace(/\/$/,'');
+    if(s) return s;
+  }catch(_){}
+  return 'http://127.0.0.1:8787';
+})();
+const origFetch=window.fetch.bind(window);
+window.fetch=function(input,init){
+  init=Object.assign({},init||{});
+  let u='';
+  try{ u=typeof input==='string'?input:(input&&input.url)||''; }catch(_){}
+  if(u.startsWith(PROXY)){
+    const h=Object.assign({},init.headers&&typeof init.headers==='object'&&!init.headers.get?init.headers:{});
+    try{ const t=localStorage.getItem('crt_proxy_token'); if(t) h['X-CRT-Token']=t; }catch(_){}
+    init.headers=h;
+  }
+  return origFetch(input,init);
+};
+const AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,ACCOUNT_INFO_URL=`${PROXY}/api/account-info`,NEWS_CALENDAR_URL=`${PROXY}/api/news-calendar`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
 const ALL_SYMBOLS_CACHE_KEY='crtAllSymbolsCache_v5';
 const ALL_SYMBOLS_TTL_MS=24*60*60*1000;
 // Sentetik (broker icinde uretilen XAUEUR/GAUUSD vb. — gercek likidite olmadan) ve stocks bu sete dahil degil.

@@ -32,6 +32,8 @@ const execFileAsync = promisify(execFile);
 })();
 
 const PORT = Number(process.env.PORT || 8787);
+const LISTEN_HOST = String(process.env.CRT_LISTEN_HOST || '127.0.0.1').trim() || '127.0.0.1';
+const PROXY_TOKEN = String(process.env.CRT_PROXY_TOKEN || '').trim();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/responses';
 const DB_PATH = process.env.CRT_DB_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/trade_log.db';
@@ -136,8 +138,8 @@ function writeJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-CRT-Token'
   });
   res.end(JSON.stringify(data));
 }
@@ -1640,6 +1642,21 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (PROXY_TOKEN && routePath.startsWith('/api/')) {
+    const auth = String(req.headers.authorization || '');
+    const xTok = String(req.headers['x-crt-token'] || '');
+    const bearer = auth.length > 7 && auth.slice(0, 7).toLowerCase() === 'bearer ' ? auth.slice(7).trim() : '';
+    const ok = (bearer && bearer === PROXY_TOKEN) || (xTok && xTok === PROXY_TOKEN);
+    if (!ok) {
+      writeJson(res, 401, {
+        ok: false,
+        error: 'unauthorized',
+        detail: 'CRT_PROXY_TOKEN tanimli: isteklere Authorization: Bearer <token> veya X-CRT-Token ekleyin.'
+      });
+      return;
+    }
+  }
+
   if (routePath === '/api/crt-analyze' && req.method === 'POST') {
     handleAnalyze(req, res);
     return;
@@ -1767,8 +1784,8 @@ const server = http.createServer((req, res) => {
   writeJson(res, 404, { error: 'Not found' });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, LISTEN_HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`CRT AI proxy calisiyor: http://127.0.0.1:${PORT}`);
-  logEvent('info', 'server.started', { port: PORT, debug_log_path: DEBUG_LOG_PATH });
+  console.log(`CRT AI proxy dinleniyor: ${LISTEN_HOST}:${PORT}`);
+  logEvent('info', 'server.started', { port: PORT, listen_host: LISTEN_HOST, token_required: !!PROXY_TOKEN, debug_log_path: DEBUG_LOG_PATH });
 });
