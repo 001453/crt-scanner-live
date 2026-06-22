@@ -59,11 +59,22 @@ const QUICK_TP_USD = Math.max(0, Number(process.env.CRT_QUICK_TP_USD || 2));
 const MAX_SL_USD = Math.max(0, Number(process.env.CRT_MAX_SL_USD || 8));
 
 const DEFAULT_TRENDGRID334_GUARD = {
-  active: false,
+  active: true,
   symbol: TRENDGRID334_DEFAULT_SYMBOL,
   magic: TRENDGRID334_MAGIC,
   comment_prefix: TRENDGRID334_COMMENT_PREFIX
 };
+
+const PLAN_CFG_PRODUCTION_PATH = resolveProjectPath(process.env.CRT_PLAN_CFG_PRODUCTION_PATH, 'data/plan_cfg_production.json');
+
+function loadPlanCfgProduction() {
+  try {
+    if (fs.existsSync(PLAN_CFG_PRODUCTION_PATH)) {
+      return JSON.parse(fs.readFileSync(PLAN_CFG_PRODUCTION_PATH, 'utf8'));
+    }
+  } catch (_) { /* ignore */ }
+  return { version: 20260622 };
+}
 
 function loadTrendGrid334Guard() {
   try {
@@ -2266,6 +2277,18 @@ async function handleTrendGrid334Guard(req, res) {
   }
 }
 
+function handlePlanCfgProduction(req, res) {
+  try {
+    if (req.method !== 'GET') {
+      writeJson(res, 405, { ok: false, error: 'method_not_allowed' });
+      return;
+    }
+    writeJson(res, 200, { ok: true, ...loadPlanCfgProduction() });
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'plan_cfg_production_failed', detail: err.message });
+  }
+}
+
 async function handleExecuteOrder(req, res) {
   const startedAt = Date.now();
   try {
@@ -2699,6 +2722,10 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/trendgrid334-guard' && (req.method === 'GET' || req.method === 'POST')) {
     handleTrendGrid334Guard(req, res);
+    return;
+  }
+  if (routePath === '/api/plan-config-production' && req.method === 'GET') {
+    handlePlanCfgProduction(req, res);
     return;
   }
   if (routePath === '/api/reset-portfolio-state' && req.method === 'POST') {

@@ -406,12 +406,12 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
         <div class="risk-grid">
           <label title="Genel strateji modu seçimi. Hybrid: tüm stratejileri kullan (önerilen). Core: sadece CRT + Price Action + Elliott. Turtle: hızlı scalp odaklı (M1/M3/M5).">Strateji Modu
             <select id="strategyMode" onchange="syncChecksFromStrategyMode()">
-              <option value="hybrid" selected>Hybrid (CRT + Turtle)</option>
+              <option value="hybrid">Hybrid (CRT + Turtle)</option>
               <option value="core">CRT + PA + Elliott</option>
               <option value="turtle_sopa">Turtle Sopa (M1/M3/M5)</option>
               <option value="lat_flash">LAT Flash (Forex)</option>
               <option value="ict_liquidity">ICT Likidite (H4 + LTF)</option>
-              <option value="lat_ict_equal">LAT + ICT (Eşit ağırlık)</option>
+              <option value="lat_ict_equal" selected>LAT + ICT (Eşit ağırlık)</option>
             </select>
           </label>
           <label title="Strateji eşik profili. Conservative: sıkı filtreler, az ama kaliteli sinyal. Balanced: dengeli (önerilen). Aggressive: gevşek filtreler, çok sinyal ama daha düşük kalite.">Strateji Profili
@@ -437,11 +437,11 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
         </div>
         <label style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:11px;color:#6B7280" title="Hangi tarama stratejilerinin aktif olacağını seç. En az 1 tane açık olmalı. Core=CRT+PA temel. Turtle=hızlı scalp. VWAP=hacim ortalaması toparlanması. S/R Breakout=destek/direnç kırılımı.">Aktif Tarama Stratejileri
           <div class="strat-pick">
-            <label title="Core: CRT (Candle Range Theory) + Price Action + Elliott Wave temel sistemi. En kapsamlı strateji."><input id="scanCore" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Core (CRT+PA)</label>
-            <label title="Turtle Sopa: M1/M3/M5 timeframe'lerde hızlı momentum scalp. Yüksek frekanslı, küçük kâr/zararlar."><input id="scanTurtle" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
-            <label title="VWAP Reclaim: Hacim ağırlıklı ortalama kırılımı sonrası geri-toparlanma yakalar. Trend devamı stratejisi."><input id="scanVWAP" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
-            <label title="S/R Breakout: Destek/direnç kırılımı sonrası takip. Yatay konsolidasyon sonrası patlamaları yakalar."><input id="scanSRBreak" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
-            <label title="LAT Flash (Forex): Futures-Killer LAT mantığı — flash hareket + tick hacim + RSI ters. Major/XAU/endeks için kalibre."><input id="scanLat" type="checkbox" onchange="syncStrategyModeFromChecks()"> LAT Flash (Forex)</label>
+            <label title="Core: CRT (Candle Range Theory) + Price Action + Elliott Wave temel sistemi. En kapsamlı strateji."><input id="scanCore" type="checkbox" onchange="syncStrategyModeFromChecks()"> Core (CRT+PA)</label>
+            <label title="Turtle Sopa: M1/M3/M5 timeframe'lerde hızlı momentum scalp. Yüksek frekanslı, küçük kâr/zararlar."><input id="scanTurtle" type="checkbox" onchange="syncStrategyModeFromChecks()"> Turtle Sopa</label>
+            <label title="VWAP Reclaim: Hacim ağırlıklı ortalama kırılımı sonrası geri-toparlanma yakalar. Trend devamı stratejisi."><input id="scanVWAP" type="checkbox" onchange="syncStrategyModeFromChecks()"> VWAP Reclaim</label>
+            <label title="S/R Breakout: Destek/direnç kırılımı sonrası takip. Yatay konsolidasyon sonrası patlamaları yakalar."><input id="scanSRBreak" type="checkbox" onchange="syncStrategyModeFromChecks()"> S/R Breakout</label>
+            <label title="LAT Flash (Forex): Futures-Killer LAT mantığı — flash hareket + tick hacim + RSI ters. Major/XAU/endeks için kalibre."><input id="scanLat" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> LAT Flash (Forex)</label>
             <label title="ICT Likidite: H4 BSL/SSL sweep + Turtle Soup + MSS + LTF FVG/OB POI girişi → Draw on Liquidity hedefi. Telegram ICT Chartist mantığı."><input id="scanIct" type="checkbox" checked onchange="syncStrategyModeFromChecks()"> ICT Likidite (H4+LTF)</label>
           </div>
         </label>
@@ -450,7 +450,7 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
         </div>
         <div class="risk-grid" style="margin-top:8px">
           <label title="LAT sinyali minimum güven skoru (0–99). Kripto FK ~73; forex için 65 önerilir.">LAT Min Güven<input id="latMinConfidence" type="number" step="1" min="50" max="95" value="65"></label>
-          <label title="Açıkken LAT yalnızca forex+metal+endeks tarar (kripto LAT atlanır)."><input type="checkbox" id="latForexPreferred" checked onchange="updatePlanConfig()"> LAT Forex/Metal/Endeks</label>
+          <label title="Açıkken LAT yalnızca forex+metal+endeks tarar (kripto LAT atlanır)."><input type="checkbox" id="latForexPreferred" onchange="updatePlanConfig()"> LAT Forex/Metal/Endeks</label>
           <label title="Açıkken LAT yalnızca whitelist sembollerinde çalışır. Kapalıyken yasaklı liste dışındaki tüm pariteler taranır."><input type="checkbox" id="latForexWhitelistOnly" onchange="updatePlanConfig()"> LAT FX Whitelist (kısıtlı mod)</label>
           <label title="Açıkken LAT kripto yalnızca whitelist sembollerinde çalışır. Kapalıyken yasaklı liste dışındaki tüm kripto pariteler taranır."><input type="checkbox" id="latCryptoWhitelistOnly" onchange="updatePlanConfig()"> LAT Kripto Whitelist (kısıtlı mod)</label>
           <label style="grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -464,16 +464,16 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
         </div>
         <label style="display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:11px;color:#6B7280" title="Hangi ürün kategorileri taransın? Sadece seçili olanlar scan listesine girer. Çoklu seç. Boş bırakma!">Tarama Kategorileri (Ürün Tipi)
           <div class="strat-pick" id="scanCategoriesGrid">
-            <label title="Forex çiftleri: EURUSD, GBPJPY, AUDCAD vb. En likit, en düşük spread'li enstrümanlar."><input type="checkbox" data-cat="forex" onchange="updatePlanConfig()"> Forex</label>
-            <label title="Değerli metaller: XAUUSD (Altın), XAGUSD (Gümüş), XPTUSD (Platin). Volatil ama trend güçlü."><input type="checkbox" data-cat="metals" onchange="updatePlanConfig()"> Metal</label>
-            <label title="Endeksler: NAS100, US30 (DJ), SPX500, GER40 (DAX), UK100. ABD seansında çok aktif."><input type="checkbox" data-cat="indices" onchange="updatePlanConfig()"> Endeks</label>
-            <label title="Enerji: WTI Petrol, Brent Petrol, Natural Gas. Haber duyarlı, volatil."><input type="checkbox" data-cat="energies" onchange="updatePlanConfig()"> Enerji</label>
-            <label title="Kripto CFD: BTCUSD, ETHUSD, vb. 7/24 işlem, çok volatil, hafta sonu da aktif. Spread genelde yüksek."><input type="checkbox" data-cat="crypto" onchange="updatePlanConfig()"> Kripto</label>
-            <label title="Emtia: Wheat (Buğday), Cocoa (Kakao), Coffee (Kahve), Sugar (Şeker). Mevsimsel, az likit."><input type="checkbox" data-cat="commodities" onchange="updatePlanConfig()"> Emtia</label>
+            <label title="Forex çiftleri: EURUSD, GBPJPY, AUDCAD vb. En likit, en düşük spread'li enstrümanlar."><input type="checkbox" data-cat="forex" checked onchange="updatePlanConfig()"> Forex</label>
+            <label title="Değerli metaller: XAUUSD (Altın), XAGUSD (Gümüş), XPTUSD (Platin). Volatil ama trend güçlü."><input type="checkbox" data-cat="metals" checked onchange="updatePlanConfig()"> Metal</label>
+            <label title="Endeksler: NAS100, US30 (DJ), SPX500, GER40 (DAX), UK100. ABD seansında çok aktif."><input type="checkbox" data-cat="indices" checked onchange="updatePlanConfig()"> Endeks</label>
+            <label title="Enerji: WTI Petrol, Brent Petrol, Natural Gas. Haber duyarlı, volatil."><input type="checkbox" data-cat="energies" checked onchange="updatePlanConfig()"> Enerji</label>
+            <label title="Kripto CFD: BTCUSD, ETHUSD, vb. 7/24 işlem, çok volatil, hafta sonu da aktif. Spread genelde yüksek."><input type="checkbox" data-cat="crypto" checked onchange="updatePlanConfig()"> Kripto</label>
+            <label title="Emtia: Wheat (Buğday), Cocoa (Kakao), Coffee (Kahve), Sugar (Şeker). Mevsimsel, az likit."><input type="checkbox" data-cat="commodities" checked onchange="updatePlanConfig()"> Emtia</label>
             <label title="Tahvil/Bonds: US10Y, BUND vb. Faiz hareketleriyle ilgili. Düşük volatil, makro odaklı."><input type="checkbox" data-cat="bonds" onchange="updatePlanConfig()"> Tahvil</label>
             <label title="Tek hisse CFD: AAPL, TSLA, NVDA gibi. Çok fazla sembol ve spread yüksek olabilir. Önerilen: KAPALI."><input type="checkbox" data-cat="stocks" onchange="updatePlanConfig()"> Hisse</label>
           </div>
-          <div class="reason" style="font-size:11px">Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji açık, kripto/emtia/tahvil/hisse kapalı.</div>
+          <div class="reason" style="font-size:11px">Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji+kripto+emtia açık.</div>
         </label>
         <input id="scanStocks" type="checkbox" style="display:none">
         <div style="margin-top:14px;padding:10px;background:rgba(245,158,11,0.06);border:1px dashed #fcd34d;border-radius:8px">
@@ -506,7 +506,7 @@ body.night-paper .tf-info .tf-msg{color:#bfdbfe}
       <div class="plan-body">
         <div class="reason" style="margin-bottom:10px;font-size:11px"><b>📍 Ayrı strateji:</b> TrendGrid334 yalnızca MT5 Expert Advisor ile çalışır. LAT/ICT/Contrarian giriş-çıkış mantığı <b>karıştırılmaz</b>. EA magic <b>334001</b> / yorum <b>TG334</b> olan pozisyonlara CRT yönetimi dokunmaz. <b>Diğer pariteler</b> (GBPUSD, XAUUSD vb.) dashboard’dan normal emir gönderir — kendi SL/TP’leri vardır.</div>
         <div class="risk-grid">
-          <label title="Açıkken dashboard (LAT/ICT vb.) EURUSD'de otomatik emir göndermez. Diğer pariteler normal çalışır. MT5'te TrendGrid334.mq5 EA'sını EURUSD grafiğine eklemen gerekir."><input id="trendGrid334Active" type="checkbox" onchange="onTrendGrid334Toggle()"> TrendGrid334 EA modu (EURUSD özel)</label>
+          <label title="Açıkken dashboard (LAT/ICT vb.) EURUSD'de otomatik emir göndermez. Diğer pariteler normal çalışır. MT5'te TrendGrid334.mq5 EA'sını EURUSD grafiğine eklemen gerekir."><input id="trendGrid334Active" type="checkbox" checked onchange="onTrendGrid334Toggle()"> TrendGrid334 EA modu (EURUSD özel)</label>
           <label title="EA'nın rezerve ettiği sembol. Varsayılan EURUSD.">EA Sembol<input id="trendGrid334Symbol" type="text" value="EURUSD" readonly style="background:#f3f4f6"></label>
         </div>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -728,7 +728,7 @@ window.fetch=function(input,init){
   }
   return origFetch(input,init);
 };
-const PING_URL=`${PROXY}/api/ping`,AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,ACCOUNT_INFO_URL=`${PROXY}/api/account-info`,NEWS_CALENDAR_URL=`${PROXY}/api/news-calendar`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,TRENDGRID334_GUARD_URL=`${PROXY}/api/trendgrid334-guard`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,EDGES_URL=`${PROXY}/api/edges`,EDGE_BIAS_URL=`${PROXY}/api/edge-bias`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
+const PING_URL=`${PROXY}/api/ping`,AI_URL=`${PROXY}/api/crt-analyze`,BROKER_URL=`${PROXY}/api/broker-candles`,EXEC_URL=`${PROXY}/api/execute-order`,HEALTH_URL=`${PROXY}/api/health`,ACCOUNT_INFO_URL=`${PROXY}/api/account-info`,NEWS_CALENDAR_URL=`${PROXY}/api/news-calendar`,SNAPSHOT_URL=`${PROXY}/api/trade-snapshot`,MANAGE_URL=`${PROXY}/api/manage-positions`,TRENDGRID334_GUARD_URL=`${PROXY}/api/trendgrid334-guard`,PLAN_CFG_PRODUCTION_URL=`${PROXY}/api/plan-config-production`,RESET_TRAIL_URL=`${PROXY}/api/reset-portfolio-state`,DEBUG_URL=`${PROXY}/api/debug-log`,KNOW_URL=`${PROXY}/api/knowledge-index`,AVAILABLE_URL=`${PROXY}/api/available-pairs`,LIST_ALL_URL=`${PROXY}/api/list-all-symbols`,EDGES_URL=`${PROXY}/api/edges`,EDGE_BIAS_URL=`${PROXY}/api/edge-bias`,SCAN_INTERVALS=['M15','H1','H4'],SCAN_TZ='UTC',AUTO_SCAN_MS=120000;
 const TREND_GRID334_SYMBOL='EURUSD';
 const TREND_GRID334_MAGIC=334001;
 if(location.protocol==='file:'){try{location.replace('http://127.0.0.1:8790/');}catch(_){}}
@@ -815,7 +815,7 @@ function sanitizeQuickTpPlan(syncUi){
   if(el('portfolioTrailActivateUsd'))el('portfolioTrailActivateUsd').value=0;
   if(el('portfolioTrailDrawdownUsd'))el('portfolioTrailDrawdownUsd').value=0;
 }
-let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,/* Seans saatleri Turkiye TR (Europe/Istanbul), UTC degil */ aPlusMode:true,maxDailyLossPct:1.5,enforceDailyLossLimit:false,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'hybrid',scanCore:true,scanTurtle:false,scanVWAP:true,scanSRBreak:false,scanLat:false,scanIct:true,ictMinRR:1.8,ictEntryTfs:['M15','M30','M5'],latMinConfidence:65,latForexPreferred:false,latForexWhitelistOnly:false,latForexWhitelist:['USDJPY','EURUSD','GBPUSD','AUDUSD','USDCAD','USDCHF','NZDUSD','EURJPY','GBPJPY','XAUUSD','XAGUSD','US30','US500','NAS100'],latCryptoWhitelistOnly:false,latCryptoWhitelist:['XEMUSD'],latCryptoBacktestDays:365,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,trailActivateUsd:0,trailTargetUsd:2,trailPullbackUsd:0,earlyManageUsd:0,lockSlUntilUsdTp:true,fixedLotEnabled:false,fixedLotSize:0.01,maxSlUsd:8,maxTradesPerDay:12,enforceMaxTradesPerDay:false,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:0,portfolioBeUsd:0,portfolioTrailActivateUsd:0,portfolioTrailDrawdownUsd:0,scanCategories:{forex:true,metals:true,indices:true,crypto:false,energies:true,commodities:false,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,requireHigherTFAlign:false,newsApiAutoBlock:false,contrarianEnabled:true,contrarianAfterLosses:2,contrarianOnlyStop:true,symbolPerfFilterEnabled:true,symbolPerfLookback:5,symbolPerfMinWr:40,
+let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:60,pairCooldownMin:40,sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,/* Seans saatleri Turkiye TR (Europe/Istanbul), UTC degil */ aPlusMode:true,maxDailyLossPct:1.5,enforceDailyLossLimit:false,disableWeakStrategies:true,institutionalMode:true,institutionalMinRR:1.8,allowTurtleScalp:false,turtleScalpMinRR:1.6,liveOrderUrl:'',signalTtlMin:45,strategyMode:'lat_ict_equal',scanCore:false,scanTurtle:false,scanVWAP:false,scanSRBreak:false,scanLat:true,scanIct:true,ictMinRR:1.8,ictEntryTfs:['M15','M30','M5'],latMinConfidence:65,latForexPreferred:false,latForexWhitelistOnly:false,latForexWhitelist:['USDJPY','EURUSD','GBPUSD','AUDUSD','USDCAD','USDCHF','NZDUSD','EURJPY','GBPJPY','XAUUSD','XAGUSD','US30','US500','NAS100'],latCryptoWhitelistOnly:false,latCryptoWhitelist:['XEMUSD'],latCryptoBacktestDays:365,scanStocks:false,strategyProfile:'balanced',standardRR:3.0,tp1RR:1.0,tp2RR:2.0,breakEvenAtR:1.0,trailAtR:1.5,trailActivateUsd:0,trailTargetUsd:2,trailPullbackUsd:0,earlyManageUsd:0,lockSlUntilUsdTp:true,fixedLotEnabled:false,fixedLotSize:0.01,maxSlUsd:8,maxTradesPerDay:12,enforceMaxTradesPerDay:false,maxSameDirection:3,maxNetExposureCount:0,maxCorrelatedExposure:2,portfolioTpUsd:0,portfolioSlUsd:0,portfolioBeUsd:0,portfolioTrailActivateUsd:0,portfolioTrailDrawdownUsd:0,scanCategories:{forex:true,metals:true,indices:true,crypto:true,energies:true,commodities:true,bonds:false,stocks:false},newsBlackoutTimes:'',newsBlackoutBufferMin:15,requireHigherTFAlign:false,newsApiAutoBlock:false,contrarianEnabled:true,contrarianAfterLosses:2,contrarianOnlyStop:true,symbolPerfFilterEnabled:true,symbolPerfLookback:5,symbolPerfMinWr:40,
   // Kategori bazli basket TP/SL: her kategori icin ayri esik. Enabled=false ise global basket kullanilir.
   // Defaults: kategoriye ozel mantikli baslangic degerleri. User UI'dan ayarlar.
   categoryBaskets:{
@@ -829,7 +829,7 @@ let planCfg={dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,maxSpreadPts:30,pairCoo
     stocks:{enabled:false,tpUsd:0,slUsd:50,beUsd:25,trailActivateUsd:20,trailDrawdownUsd:10}
   },
   edgeFilterEnabled:false,edgeConfluenceBoost:true,edgeBlockConflictMinConf:22,edgeMinBullAlign:52,edgeBlockWeakMonth:true,edgeWeakMonthBelow:42,edgeRequireGradeB:false,
-  trendGrid334Active:false,trendGrid334Symbol:'EURUSD',
+  trendGrid334Active:true,trendGrid334Symbol:'EURUSD',
   minStopRangeMult:0.55,slBufferRangeMult:0.15,minStopPoints:30,stopProfilesByCategory:true};
 const MAJOR_FX=new Set(['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD']);
 const INDEX_ID_RE=/^(NAS100|US100|US500|US30|GER40|GER30|DE40|UK100|CAC40|DJ30|SPX500|AUS200|JP225)/i;
@@ -945,6 +945,61 @@ function resetBlacklist(){
 }
 const TRADE_CFG_KEY='crt_trade_cfg_v1';
 const PLAN_CFG_KEY='crt_plan_cfg_v1';
+const PRODUCTION_PROFILE_VER=20260622;
+const PRODUCTION_PROFILE_LS='crt_production_profile_v20260622';
+function getProductionProfileDefaults(){
+  return{
+    version:PRODUCTION_PROFILE_VER,
+    strategyMode:'lat_ict_equal',
+    scanCore:false,scanTurtle:false,scanVWAP:false,scanSRBreak:false,scanLat:true,scanIct:true,
+    contrarianEnabled:true,
+    latForexWhitelistOnly:false,latCryptoWhitelistOnly:false,latForexPreferred:false,
+    disableWeakStrategies:true,allowTurtleScalp:false,
+    trendGrid334Active:true,trendGrid334Symbol:TREND_GRID334_SYMBOL,
+    maxSpreadPts:60,
+    dailyRiskPct:2,maxOpenPos:1,maxMarginUse:30,pairCooldownMin:40,
+    sessionEnabled:true,sessionStartHour:7,sessionEndHour:21,
+    aPlusMode:true,institutionalMode:true,institutionalMinRR:1.8,
+    ictMinRR:1.8,ictEntryTfs:['M15','M30','M5'],latMinConfidence:65,
+    fixedLotEnabled:false,fixedLotSize:0.01,maxSlUsd:8,
+    trailActivateUsd:0,trailTargetUsd:2,trailPullbackUsd:0,lockSlUntilUsdTp:true,earlyManageUsd:0,
+    portfolioTpUsd:0,portfolioSlUsd:0,portfolioBeUsd:0,portfolioTrailActivateUsd:0,portfolioTrailDrawdownUsd:0,
+    strategyProfile:'balanced',symbolPerfFilterEnabled:true,symbolPerfLookback:5,symbolPerfMinWr:40,edgeConfluenceBoost:true,
+    scanCategories:{forex:true,metals:true,indices:true,crypto:true,energies:true,commodities:true,bonds:false,stocks:false}
+  };
+}
+function applyProductionProfileToPlanCfg(src){
+  const p=src&&typeof src==='object'?src:getProductionProfileDefaults();
+  Object.assign(planCfg,p);
+  if(p.scanCategories&&typeof p.scanCategories==='object'){
+    planCfg.scanCategories={...planCfg.scanCategories,...p.scanCategories};
+  }
+  if(planCfg.scanLat&&planCfg.scanIct)planCfg.strategyMode='lat_ict_equal';
+}
+function applyProductionProfileToForm(){
+  const el=id=>document.getElementById(id);
+  applyProductionProfileToPlanCfg();
+  if(el('strategyMode'))el('strategyMode').value='lat_ict_equal';
+  if(el('scanCore'))el('scanCore').checked=false;
+  if(el('scanTurtle'))el('scanTurtle').checked=false;
+  if(el('scanVWAP'))el('scanVWAP').checked=false;
+  if(el('scanSRBreak'))el('scanSRBreak').checked=false;
+  if(el('scanLat'))el('scanLat').checked=true;
+  if(el('scanIct'))el('scanIct').checked=true;
+  if(el('contrarianEnabled'))el('contrarianEnabled').checked=true;
+  if(el('latForexPreferred'))el('latForexPreferred').checked=false;
+  if(el('latForexWhitelistOnly'))el('latForexWhitelistOnly').checked=false;
+  if(el('latCryptoWhitelistOnly'))el('latCryptoWhitelistOnly').checked=false;
+  if(el('disableWeakStrategies'))el('disableWeakStrategies').checked=true;
+  if(el('allowTurtleScalp'))el('allowTurtleScalp').checked=false;
+  if(el('trendGrid334Active'))el('trendGrid334Active').checked=true;
+  if(el('maxSpreadPts'))el('maxSpreadPts').value=planCfg.maxSpreadPts;
+  document.querySelectorAll('#scanCategoriesGrid input[data-cat]').forEach(cb=>{
+    const c=cb.getAttribute('data-cat');
+    cb.checked=!!(planCfg.scanCategories&&planCfg.scanCategories[c]);
+  });
+  try{syncStrategyModeFromChecks();updateTrendGrid334StatusUi();}catch(_){}
+}
 let tradeCfg={autoEnabled:false,dryRun:true,lastHealth:'—',sentKeys:{},metaLogin:'',metaPass:'',metaServer:'',targetAccountType:'demo',placement:'pending',pendingExpireMin:30,allowMarketFallback:false,autoAdjustPending:true,clientAutoCancelExpired:true,pendingPullbackPts:10,mirrorEnabled:false,mirrorLabel:'Vantage LIVE',mirrorExecUrl:'http://127.0.0.1:8791/api/execute-order',mirrorManageUrl:'http://127.0.0.1:8791/api/manage-positions',mirrorBalance:500,mirrorTargetAccountType:'live',mirrorDryRun:false,mirrorMetaLogin:'',mirrorMetaPass:'',mirrorMetaServer:''};
 const SENT_KEYS_LS='crt_sent_keys_v1';
 // MT5 SIFRE OBFUSCATION (XSS'i 100% engellemez ama localStorage'a duz yazmaktan iyi).
@@ -2931,6 +2986,14 @@ function loadConfigs(){
       pushDebug('scan_all_except_blacklist enabled (whitelist off)');
     }
   }catch(_){}
+  try{
+    if(!localStorage.getItem(PRODUCTION_PROFILE_LS)){
+      applyProductionProfileToPlanCfg();
+      localStorage.setItem(PRODUCTION_PROFILE_LS,String(PRODUCTION_PROFILE_VER));
+      try{saveConfigs();}catch(_){}
+      pushDebug('production_profile_v20260622 applied (LAT+ICT esit, contrarian, TG334 guard)');
+    }
+  }catch(_){}
   loadTelegramCfg();
   loadSentKeys();
   try{syncMirrorUiToForm();}catch(_){}
@@ -4766,66 +4829,15 @@ async function loadLatWhitelists(){
 }
 async function applyGoodStrategies(){
   await loadLatWhitelists();
-  planCfg.scanCore=false;
-  planCfg.scanTurtle=false;
-  planCfg.scanVWAP=false;
-  planCfg.scanSRBreak=false;
-  planCfg.scanLat=true;
-  planCfg.scanIct=true;
-  planCfg.strategyMode='lat_ict_equal';
-  planCfg.latForexPreferred=false;
-  planCfg.latForexWhitelistOnly=false;
-  planCfg.latCryptoWhitelistOnly=false;
-  planCfg.disableWeakStrategies=true;
-  planCfg.allowTurtleScalp=false;
-  planCfg.contrarianEnabled=true;
-  planCfg.trailActivateUsd=0;
-  planCfg.trailTargetUsd=2;
-  planCfg.trailPullbackUsd=0;
-  planCfg.lockSlUntilUsdTp=true;
-  planCfg.earlyManageUsd=0;
-  planCfg.portfolioTpUsd=0;
-  planCfg.portfolioSlUsd=0;
-  planCfg.portfolioBeUsd=0;
-  planCfg.portfolioTrailActivateUsd=0;
-  planCfg.portfolioTrailDrawdownUsd=0;
-  planCfg.scanCategories={...planCfg.scanCategories,forex:true,metals:true,indices:true,crypto:true,energies:true,commodities:true,bonds:false,stocks:false};
-  if(!planCfg.latForexWhitelist||!planCfg.latForexWhitelist.length){
-    planCfg.latForexWhitelist=['USDJPY','EURUSD','GBPUSD','AUDUSD','USDCAD','USDCHF','NZDUSD','EURJPY','GBPJPY','XAUUSD','XAGUSD','US30','US500','NAS100'];
-  }
-  const el=id=>document.getElementById(id);
-  if(el('scanCore'))el('scanCore').checked=false;
-  if(el('scanTurtle'))el('scanTurtle').checked=false;
-  if(el('scanVWAP'))el('scanVWAP').checked=false;
-  if(el('scanSRBreak'))el('scanSRBreak').checked=false;
-  if(el('scanLat'))el('scanLat').checked=true;
-  if(el('scanIct'))el('scanIct').checked=true;
-  if(el('strategyMode'))el('strategyMode').value='lat_ict_equal';
-  if(el('latForexPreferred'))el('latForexPreferred').checked=true;
-  if(el('latForexWhitelistOnly'))el('latForexWhitelistOnly').checked=false;
-  if(el('latCryptoWhitelistOnly')){const _lc=document.getElementById('latCryptoWhitelistOnly');if(_lc)_lc.checked=false;}
-  if(el('disableWeakStrategies'))el('disableWeakStrategies').checked=true;
-  if(el('contrarianEnabled'))el('contrarianEnabled').checked=true;
-  if(el('trailActivateUsd'))el('trailActivateUsd').value=0;
-  if(el('trailTargetUsd'))el('trailTargetUsd').value=2;
-  if(el('trailPullbackUsd'))el('trailPullbackUsd').value=0;
-  if(el('lockSlUntilUsdTp'))el('lockSlUntilUsdTp').checked=true;
-  if(el('earlyManageUsd'))el('earlyManageUsd').value=0;
-  if(el('portfolioSlUsd'))el('portfolioSlUsd').value=0;
-  if(el('portfolioBeUsd'))el('portfolioBeUsd').value=0;
-  if(el('portfolioTrailActivateUsd'))el('portfolioTrailActivateUsd').value=0;
-  if(el('portfolioTrailDrawdownUsd'))el('portfolioTrailDrawdownUsd').value=0;
-  if(el('allowTurtleScalp'))el('allowTurtleScalp').checked=false;
-  document.querySelectorAll('#scanCategoriesGrid input[data-cat]').forEach(cb=>{
-    const c=cb.getAttribute('data-cat');
-    cb.checked=!!planCfg.scanCategories[c];
-  });
-  try{syncStrategyModeFromChecks();updatePlanConfig();}catch(_){}
+  applyProductionProfileToPlanCfg();
+  applyProductionProfileToForm();
+  try{syncTrendGrid334Guard();}catch(_){}
+  try{updatePlanConfig();}catch(_){}
   const fx=(planCfg.latForexWhitelist||[]).join(', ')||'USDJPY, EURUSD, GBPUSD, AUDUSD, USDCAD, XAUUSD…';
   const cr=(planCfg.latCryptoWhitelist||[]).length?planCfg.latCryptoWhitelist.join(', '):'henüz yok';
-  pushFeed(`${new Date().toLocaleTimeString()} · ▶ İyi stratejiler: Core+VWAP+LAT · FX: ${fx}`,'tf-info');
+  pushFeed(`${new Date().toLocaleTimeString()} · ▶ Üretim profili: LAT+ICT eşit · contrarian (ICT hariç) · blacklist dışı tarama`,'tf-info');
   const res=document.getElementById('latBacktestResult');
-  if(res)res.innerHTML=`<b>Aktif:</b> Core · VWAP · LAT Flash · FX whitelist: ${fx}${planCfg.latCryptoWhitelist.length?' · Kripto: '+cr:''}`;
+  if(res)res.innerHTML=`<b>Aktif:</b> LAT + ICT (eşit) · FX ref: ${fx}${planCfg.latCryptoWhitelist.length?' · Kripto: '+cr:''}`;
 }
 async function runLatForexBacktest(){
   const el=document.getElementById('latBacktestResult');
@@ -6198,7 +6210,7 @@ function updatePlanConfig(){
       }
     }
   }catch(_){ }
-  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||12)));{const _emt=document.getElementById('enforceMaxTradesPerDay');planCfg.enforceMaxTradesPerDay=!!(_emt&&_emt.checked);}planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||30)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));{const _ef=document.getElementById('edgeFilterEnabled');if(_ef)planCfg.edgeFilterEnabled=!!_ef.checked;const _ecb=document.getElementById('edgeConfluenceBoost');if(_ecb)planCfg.edgeConfluenceBoost=!!_ecb.checked;const _ebc=document.getElementById('edgeBlockConflictMinConf');if(_ebc)planCfg.edgeBlockConflictMinConf=Math.max(10,Math.min(50,Number(_ebc.value||22)));const _emb=document.getElementById('edgeMinBullAlign');if(_emb)planCfg.edgeMinBullAlign=Math.max(50,Math.min(60,Number(_emb.value||52)));const _ebm=document.getElementById('edgeBlockWeakMonth');if(_ebm)planCfg.edgeBlockWeakMonth=!!_ebm.checked;const _ewb=document.getElementById('edgeWeakMonthBelow');if(_ewb)planCfg.edgeWeakMonthBelow=Math.max(30,Math.min(50,Number(_ewb.value||42)));}planCfg.aPlusMode=!!aPlusMode.checked;{const _rh=document.getElementById('requireHigherTFAlign');if(_rh)planCfg.requireHigherTFAlign=!!_rh.checked;const _na=document.getElementById('newsApiAutoBlock');if(_na){const old=planCfg.newsApiAutoBlock;planCfg.newsApiAutoBlock=!!_na.checked;if(old!==planCfg.newsApiAutoBlock){try{startNewsLoop();}catch(_){ }}}}planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));{const _edl=document.getElementById('enforceDailyLossLimit');planCfg.enforceDailyLossLimit=!!(_edl&&_edl.checked);}planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;{const _ce=document.getElementById('contrarianEnabled');if(_ce)planCfg.contrarianEnabled=!!_ce.checked;const _spf=document.getElementById('symbolPerfFilterEnabled');if(_spf)planCfg.symbolPerfFilterEnabled=!!_spf.checked;const _spl=document.getElementById('symbolPerfLookback');if(_spl)planCfg.symbolPerfLookback=Math.max(3,Math.min(15,Number(_spl.value||5)));const _spw=document.getElementById('symbolPerfMinWr');if(_spw)planCfg.symbolPerfMinWr=Math.max(20,Math.min(60,Number(_spw.value||40)));}planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid','lat_flash','ict_liquidity','lat_ict_equal'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _sl=document.getElementById('scanLat');planCfg.scanLat=!!(_sl&&_sl.checked);const _si=document.getElementById('scanIct');planCfg.scanIct=!!(_si&&_si.checked);{const _imr=document.getElementById('ictMinRR');if(_imr)planCfg.ictMinRR=Math.max(1.2,Math.min(6,Number(_imr.value||planCfg.ictMinRR||1.8)));}const _lmc=document.getElementById('latMinConfidence');if(_lmc)planCfg.latMinConfidence=Math.max(50,Math.min(95,Number(_lmc.value||65)));const _lfp=document.getElementById('latForexPreferred');if(_lfp)planCfg.latForexPreferred=!!_lfp.checked;const _lfw=document.getElementById('latForexWhitelistOnly');if(_lfw)planCfg.latForexWhitelistOnly=!!_lfw.checked;const _lcw=document.getElementById('latCryptoWhitelistOnly');if(_lcw)planCfg.latCryptoWhitelistOnly=!!_lcw.checked;}{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);planCfg.scanStocks=newVal;}
+  planCfg.dailyRiskPct=Math.max(0.1,Number(dailyRiskPct.value||2));planCfg.maxOpenPos=Math.max(1,Math.min(10,Number(maxOpenPos.value||1)));planCfg.maxTradesPerDay=Math.max(1,Math.min(50,Number((document.getElementById('maxTradesPerDay')||{}).value||12)));{const _emt=document.getElementById('enforceMaxTradesPerDay');planCfg.enforceMaxTradesPerDay=!!(_emt&&_emt.checked);}planCfg.newsBlackoutTimes=String((document.getElementById('newsBlackoutTimes')||{}).value||'');planCfg.newsBlackoutBufferMin=Math.max(0,Math.min(120,Number((document.getElementById('newsBlackoutBufferMin')||{}).value||15)));planCfg.maxMarginUse=Math.max(5,Math.min(95,Number(maxMarginUse.value||30)));planCfg.maxSpreadPts=Math.max(5,Math.min(300,Number(maxSpreadPts.value||60)));planCfg.pairCooldownMin=Math.max(0,Number(pairCooldownMin.value||40));planCfg.sessionEnabled=!!sessionEnabled.checked;planCfg.sessionStartHour=Math.max(0,Math.min(23,Number(sessionStartHour.value||7)));planCfg.sessionEndHour=Math.max(0,Math.min(23,Number(sessionEndHour.value||21)));{const _ef=document.getElementById('edgeFilterEnabled');if(_ef)planCfg.edgeFilterEnabled=!!_ef.checked;const _ecb=document.getElementById('edgeConfluenceBoost');if(_ecb)planCfg.edgeConfluenceBoost=!!_ecb.checked;const _ebc=document.getElementById('edgeBlockConflictMinConf');if(_ebc)planCfg.edgeBlockConflictMinConf=Math.max(10,Math.min(50,Number(_ebc.value||22)));const _emb=document.getElementById('edgeMinBullAlign');if(_emb)planCfg.edgeMinBullAlign=Math.max(50,Math.min(60,Number(_emb.value||52)));const _ebm=document.getElementById('edgeBlockWeakMonth');if(_ebm)planCfg.edgeBlockWeakMonth=!!_ebm.checked;const _ewb=document.getElementById('edgeWeakMonthBelow');if(_ewb)planCfg.edgeWeakMonthBelow=Math.max(30,Math.min(50,Number(_ewb.value||42)));}planCfg.aPlusMode=!!aPlusMode.checked;{const _rh=document.getElementById('requireHigherTFAlign');if(_rh)planCfg.requireHigherTFAlign=!!_rh.checked;const _na=document.getElementById('newsApiAutoBlock');if(_na){const old=planCfg.newsApiAutoBlock;planCfg.newsApiAutoBlock=!!_na.checked;if(old!==planCfg.newsApiAutoBlock){try{startNewsLoop();}catch(_){ }}}}planCfg.maxDailyLossPct=Math.max(0.1,Number(maxDailyLossPct.value||1.5));{const _edl=document.getElementById('enforceDailyLossLimit');planCfg.enforceDailyLossLimit=!!(_edl&&_edl.checked);}planCfg.disableWeakStrategies=!!disableWeakStrategies.checked;{const _ce=document.getElementById('contrarianEnabled');if(_ce)planCfg.contrarianEnabled=!!_ce.checked;const _spf=document.getElementById('symbolPerfFilterEnabled');if(_spf)planCfg.symbolPerfFilterEnabled=!!_spf.checked;const _spl=document.getElementById('symbolPerfLookback');if(_spl)planCfg.symbolPerfLookback=Math.max(3,Math.min(15,Number(_spl.value||5)));const _spw=document.getElementById('symbolPerfMinWr');if(_spw)planCfg.symbolPerfMinWr=Math.max(20,Math.min(60,Number(_spw.value||40)));}planCfg.institutionalMode=!!institutionalMode.checked;planCfg.institutionalMinRR=Math.max(1,Number(institutionalMinRR.value||1.8));planCfg.allowTurtleScalp=!!allowTurtleScalp.checked;planCfg.turtleScalpMinRR=Math.max(1,Number(turtleScalpMinRR.value||1.6));planCfg.liveOrderUrl=String(liveOrderUrl.value||'').trim();planCfg.signalTtlMin=Math.max(5,Number(signalTtlMin.value||45));syncStrategyModeFromChecks();planCfg.strategyMode=['core','turtle_sopa','hybrid','lat_flash','ict_liquidity','lat_ict_equal'].includes(String(strategyMode.value||''))?String(strategyMode.value):'hybrid';planCfg.scanCore=!!scanCore.checked;planCfg.scanTurtle=!!scanTurtle.checked;planCfg.scanVWAP=!!scanVWAP.checked;planCfg.scanSRBreak=!!scanSRBreak.checked;{const _sl=document.getElementById('scanLat');planCfg.scanLat=!!(_sl&&_sl.checked);const _si=document.getElementById('scanIct');planCfg.scanIct=!!(_si&&_si.checked);{const _imr=document.getElementById('ictMinRR');if(_imr)planCfg.ictMinRR=Math.max(1.2,Math.min(6,Number(_imr.value||planCfg.ictMinRR||1.8)));}const _lmc=document.getElementById('latMinConfidence');if(_lmc)planCfg.latMinConfidence=Math.max(50,Math.min(95,Number(_lmc.value||65)));const _lfp=document.getElementById('latForexPreferred');if(_lfp)planCfg.latForexPreferred=!!_lfp.checked;const _lfw=document.getElementById('latForexWhitelistOnly');if(_lfw)planCfg.latForexWhitelistOnly=!!_lfw.checked;const _lcw=document.getElementById('latCryptoWhitelistOnly');if(_lcw)planCfg.latCryptoWhitelistOnly=!!_lcw.checked;}{const _ss=document.getElementById('scanStocks');const newVal=!!(_ss&&_ss.checked);planCfg.scanStocks=newVal;}
 // Kategori grid'inden okuma
 {
   const grid=document.getElementById('scanCategoriesGrid');

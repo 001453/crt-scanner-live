@@ -55,6 +55,14 @@ if (-not $ok) {
 Write-Host "[2/3] Proxy OK -> http://127.0.0.1:8790/" -ForegroundColor Green
 
 try {
+  $guardBody = '{"active":true,"symbol":"EURUSD","magic":334001,"comment_prefix":"TG334"}'
+  Invoke-RestMethod -Uri 'http://127.0.0.1:8790/api/trendgrid334-guard' -Method POST -Body $guardBody -ContentType 'application/json' -TimeoutSec 5 | Out-Null
+  Write-Host "TrendGrid334 guard: EURUSD dashboard korumasi ACIK" -ForegroundColor Green
+} catch {
+  Write-Host "TrendGrid334 guard uyari: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
+try {
   $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8790/api/health' -TimeoutSec 35
   if ($health.mt5_ok -and $health.terminal_connected) {
     Write-Host "[3/3] MT5 OK - account $($health.account) ($($health.trade_mode))" -ForegroundColor Green

@@ -356,7 +356,8 @@ bool IsHighImpactNewsBlackout()
          continue;
       for(int i = 0; i < ArraySize(values); ++i)
         {
-         if(values[i].impact_type != CALENDAR_IMPACT_HIGH)
+         // Lotas MT5 build: yuksek etki = 3 (CALENDAR_IMPACT_HIGH sabiti yok)
+         if(values[i].impact_type < 3)
             continue;
          datetime eventTime = values[i].time;
          if(eventTime <= 0)

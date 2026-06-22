@@ -12,5 +12,7 @@ __pycache__/
 data/*
 !data/lat_forex_whitelist.json
 !data/lat_crypto_whitelist.json
+!data/plan_cfg_production.json
+!data/mt5_attach_trendgrid334.ini
 # GitHub 100MB tek dosya limitini asan referans materyalleri
 knowledge/idoc.pub_*.pdf
