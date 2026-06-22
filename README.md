@@ -1,44 +1,78 @@
-# CRT Scanner Live
+# Forex Scanner Live
 
-MT5-based CRT (Candle Range Theory) scanner with:
-- Multi-interval sequential scanning
-- AI-assisted signal review
-- Risk/lot sizing and one-click order planning
-- Local proxy backend for AI + broker candle bridge
+MT5 tabanli CRT + ICT Likidite tarayicisi (Lotas).
 
-## Files
-- `crt_signals_v3.html` - dashboard UI and scanner logic
-- `crt_ai_proxy_server.js` - local proxy for OpenAI + MT5 candle endpoint
+**Tek proje konumu:** `D:\Projects\forex`  
+Downloads'taki eski kopyalar kullanilmaz — bkz. `archive/downloads_legacy/`
 
-## Run (local)
-1. Start proxy:
-   - `node crt_ai_proxy_server.js`
-2. Serve UI from project folder:
-   - `py -m http.server 9090`
-3. Open:
-   - `http://127.0.0.1:9090/crt_signals_v3.html`
+## Hizli baslat
+
+**PowerShell** (onerilen — proje klasorundayken):
+
+```powershell
+cd D:\Projects\forex
+.\enable_lotas_algo.ps1
+.\start_forex.ps1
+```
+
+**CMD** veya cift tik:
+
+```bat
+enable_lotas_algo.bat
+start_forex.bat
+```
+
+> PowerShell'de `.bat` dosyalari icin `.\` sart: `.\start_forex.bat`
+
+1. **Lotas MT5** acik + algoritmik ticaret → yukaridaki komutlar
+2. Tarayici → **http://127.0.0.1:8790/**
+
+> Dashboard'u `file://` ile acmayin.
+
+## Durdur
+
+PowerShell: `.\stop_forex.ps1`  
+CMD: `stop_forex.bat` veya `scripts\stop_forex_stack.ps1`
+
+## Dosyalar
+
+| Dosya | Rol |
+|-------|-----|
+| `crt_signals_v3.html` | Dashboard + stratejiler |
+| `crt_ai_proxy_server.js` | MT5 koprusu (:8790) |
+| `AGENTS.md` | AI asistan rehberi |
+| `docs/STRUCTURE.md` | Tam dizin haritasi |
+
+## Sorun giderme
+
+| Sorun | Cozum |
+|-------|--------|
+| PROXY ULASILAMIYOR | `start_forex.bat` calistir |
+| MT5 OFF | Lotas terminal ac + login |
+| Eski HTML kullaniliyor | Sadece bu klasordeki v3 dosyasini ac |
+
+Log: `data/proxy_stderr.log`
+
+## Eski bat dosyalari
+
+- `start_proxy.bat` → `start_forex.bat` yonlendirir
+- `start_crt.bat` / `stop_crt.bat` → eski isim, yonlendirme
+- Vantage mirror → `scripts/legacy/vantage/` (kapali)
 
 ## Run (remote UI + VPS proxy, CORS-free pattern)
 
-MT5 ve `MetaTrader5` Python kutuphanesi **yalnizca Windows** uzerinde, **MT5 terminalinin acik oldugu makinede** calisir. Bu yuzden “canli” kurulum tipik olarak: **Windows VPS veya ev PC** (Node proxy + MT5) + istege bagli **statik arayuz** (GitHub Pages, S3, kendi domaininiz).
+MT5 ve `MetaTrader5` Python kutuphanesi **yalnizca Windows** uzerinde, **MT5 terminalinin acik oldugu makinede** calisir.
 
-1. **Proxy sunucusu** (MT5’nin oldugu Windows’ta): `.env` icinde ornegin `CRT_LISTEN_HOST=0.0.0.0`, `PORT=8787`, gizli bir `CRT_PROXY_TOKEN=...`, yol ve anahtarlar. Onune **HTTPS** icin Caddy veya nginx reverse proxy koymaniz tavsiye edilir.
-2. **Dashboard**: `crt_signals_v3.html` dosyasini herhangi bir HTTPS uzerinden yayinlayin ve ilk acilista adres cubuguna proksi taban URL’yi ekleyin, ornek:  
+1. **Proxy sunucusu** (MT5'nin oldugu Windows'ta): `.env` icinde ornegin `CRT_LISTEN_HOST=0.0.0.0`, `PORT=8790`, gizli bir `CRT_PROXY_TOKEN=...`
+2. **Dashboard**: `crt_signals_v3.html` dosyasini HTTPS uzerinden yayinlayin ve URL'ye proxy ekleyin:  
    `https://example.com/crt_signals_v3.html?proxy=https://api.example.com`  
-   Bu deger `localStorage`’a `crt_proxy_base` olarak yazilir. Token kullaniyorsaniz tarayici konsolunda:  
-   `localStorage.setItem('crt_proxy_token','CRT_PROXY_TOKEN ile ayni deger')`
-3. API zaten `Access-Control-Allow-Origin: *` ile yanit verir; tarayici farkli origin’den **CORS engeli olmadan** cagirabilir (token varsa `X-CRT-Token` otomatik eklenir).
-
-**Guvenlik:** Internete `CRT_LISTEN_HOST=0.0.0.0` ile actiginiz proxy, MT5 emir ve hesap uclarini tasir. Mutlaka `CRT_PROXY_TOKEN` + TLS ve mumkunse IP kisitlamasi kullanin.
+   Token: `localStorage.setItem('crt_proxy_token','...')`
 
 Kaynak repo: [001453/crt-scanner-live](https://github.com/001453/crt-scanner-live).
 
-## Ucretsiz panel (GitHub Pages) + Apple (iPhone / iPad / Mac)
+## Ucretsiz panel (GitHub Pages)
 
-- Bu repoda **GitHub Actions** ile sadece `crt_signals_v3.html` **ucretsiz** olarak Pages’e kopyalanir (`index.html`). `main` veya `master` dalina push yeterli; repoda **Settings > Pages > Build: GitHub Actions** secili olmali.
-- **iPhone / Safari:** Sayfa **HTTPS** oldugu icin API adresi de **https://...** olmali; duz `http://IP:8787` genelde **engellenir** (mixed content). Cozum: proxy onunde **TLS** (Caddy / Cloudflare Tunnel / nginx + sertifika).
-- **Bot / MT5 / Python koprusu** bu projede **Windows** uzerinde calisir; **tamamen Apple cihazda veya tamamen ucretsiz bulutta** kosacak sekilde tasima **mumkun degil**. Apple tarafi **yalnizca tarayicidan panel** icin uygundur; kopru icin en az bir **Windows ortami** (ucuz VPS veya baska bir Windows PC) gerekir; kendi PC’nizi kullanmak istemezseniz secenek **Windows VPS + HTTPS** (genelde ucretsiz degil, dusuk ucret).
+- GitHub Actions ile `crt_signals_v3.html` Pages'e kopyalanir (`index.html`).
+- **iPhone / Safari:** API adresi **https://** olmali (mixed content engeli).
 
-Ornek (Pages URL’si + HTTPS proxy):
-
-`https://<kullanici>.github.io/<repo>/?proxy=https://api.sizin-domain.com`
+Ornek: `https://<kullanici>.github.io/<repo>/?proxy=https://api.sizin-domain.com`

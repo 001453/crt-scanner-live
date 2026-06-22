@@ -1,4 +1,4 @@
-"""Robust static HTTP server for crt-scanner dashboard.
+"""Robust static HTTP server for forex scanner dashboard.
 
 Why: bare `py -m http.server 9090` keeps crashing with exit_code=1 every
 10-30 minutes on this machine (likely Windows process eviction or a hung

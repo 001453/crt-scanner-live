@@ -1,11 +1,8 @@
 @echo off
-REM CRT Proxy Watchdog Starter
-REM Bu dosyayi cift tikla calistir. Proxy crash olursa watchdog yeniden baslatir.
-REM Durdurmak icin pencerede Ctrl+C bas.
-
+REM ESKI: Dogrudan watchdog baslatiyordu. Artik tam stack kullanin.
+title Forex Scanner - Baslat (yönlendirme)
 cd /d "%~dp0"
-echo CRT Proxy Watchdog basliyor...
-echo Calisma dizini: %CD%
+echo [bilgi] start_proxy.bat artik kullanilmiyor.
+echo [bilgi] start_forex.bat kullaniliyor (proxy + health check + tarayici).
 echo.
-node proxy_watchdog.js
-pause
+call "%~dp0start_forex.bat"

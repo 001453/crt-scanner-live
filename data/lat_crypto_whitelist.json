@@ -1,0 +1,419 @@
+{
+  "ok": true,
+  "profile": "crypto",
+  "days": 365,
+  "tf": "M15",
+  "min_conf": 68,
+  "filters": {
+    "min_trades": 12,
+    "min_wr": 48.0,
+    "min_pf": 1.05
+  },
+  "symbols_tested": 20,
+  "symbols": [
+    {
+      "symbol": "#ADAUSD",
+      "category": "crypto",
+      "trades": 223,
+      "wins": 104,
+      "losses": 119,
+      "wr": 46.6,
+      "pf": 1.23,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#AVEUSD",
+      "category": "other",
+      "trades": 235,
+      "wins": 107,
+      "losses": 128,
+      "wr": 45.5,
+      "pf": 0.99,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#BCHUSD",
+      "category": "crypto",
+      "trades": 246,
+      "wins": 116,
+      "losses": 130,
+      "wr": 47.2,
+      "pf": 1.22,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#BNBUSD",
+      "category": "crypto",
+      "trades": 239,
+      "wins": 108,
+      "losses": 131,
+      "wr": 45.2,
+      "pf": 0.94,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#BSVUSD",
+      "category": "other",
+      "trades": 89,
+      "wins": 42,
+      "losses": 47,
+      "wr": 47.2,
+      "pf": 1.2,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#BTCUSD",
+      "category": "crypto",
+      "trades": 237,
+      "wins": 102,
+      "losses": 135,
+      "wr": 43.0,
+      "pf": 0.9,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#DOGEUSD",
+      "category": "crypto",
+      "trades": 247,
+      "wins": 103,
+      "losses": 144,
+      "wr": 41.7,
+      "pf": 0.86,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#DOTUSD",
+      "category": "crypto",
+      "trades": 218,
+      "wins": 103,
+      "losses": 115,
+      "wr": 47.2,
+      "pf": 1.31,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#DSHUSD",
+      "category": "other",
+      "trades": 222,
+      "wins": 95,
+      "losses": 127,
+      "wr": 42.8,
+      "pf": 0.93,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#EOSUSD",
+      "error": "insufficient_data",
+      "trades": 0,
+      "bars": 0
+    },
+    {
+      "symbol": "#ETHUSD",
+      "category": "crypto",
+      "trades": 246,
+      "wins": 106,
+      "losses": 140,
+      "wr": 43.1,
+      "pf": 0.97,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#LNKUSD",
+      "category": "other",
+      "trades": 226,
+      "wins": 101,
+      "losses": 125,
+      "wr": 44.7,
+      "pf": 0.98,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#LTCUSD",
+      "category": "crypto",
+      "trades": 214,
+      "wins": 89,
+      "losses": 125,
+      "wr": 41.6,
+      "pf": 0.91,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#THTUSD",
+      "category": "other",
+      "trades": 186,
+      "wins": 85,
+      "losses": 101,
+      "wr": 45.7,
+      "pf": 1.14,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#TRXUSD",
+      "category": "crypto",
+      "trades": 308,
+      "wins": 130,
+      "losses": 178,
+      "wr": 42.2,
+      "pf": 1.0,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#UNIUSD",
+      "category": "crypto",
+      "trades": 229,
+      "wins": 98,
+      "losses": 131,
+      "wr": 42.8,
+      "pf": 1.07,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#XEMUSD",
+      "category": "other",
+      "trades": 122,
+      "wins": 91,
+      "losses": 31,
+      "wr": 74.6,
+      "pf": 1.7,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#XLMUSD",
+      "category": "crypto",
+      "trades": 242,
+      "wins": 108,
+      "losses": 134,
+      "wr": 44.6,
+      "pf": 1.16,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#XMRUSD",
+      "category": "other",
+      "trades": 181,
+      "wins": 86,
+      "losses": 95,
+      "wr": 47.5,
+      "pf": 1.12,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    },
+    {
+      "symbol": "#XRPUSD",
+      "category": "crypto",
+      "trades": 234,
+      "wins": 95,
+      "losses": 139,
+      "wr": 40.6,
+      "pf": 0.98,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 70,
+        "price_threshold": 0.55,
+        "vol_mult": 3.2,
+        "rsi_long": 25,
+        "rsi_short": 75,
+        "window": 35
+      }
+    }
+  ],
+  "whitelist": [
+    {
+      "symbol": "#XEMUSD",
+      "trades": 122,
+      "wr": 74.6,
+      "pf": 1.7,
+      "avg_rr": 1.24
+    }
+  ],
+  "rejected_count": 18,
+  "error_count": 1,
+  "summary": {
+    "trades": 4144,
+    "wins": 1869,
+    "wr": 45.1,
+    "whitelist_count": 1
+  },
+  "generated": "2026-06-05T14:18:54.671350+00:00"
+}

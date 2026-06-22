@@ -9,7 +9,13 @@ const execFileAsync = promisify(execFile);
 // .env loader (built-in, dotenv'siz). Proje root'taki .env'yi okur, mevcut env vars'i override etmez.
 (function loadDotEnv() {
   try {
-    const envPath = path.join(__dirname, '.env');
+    const envFile = String(process.env.ENV_FILE || '.env').trim();
+    const envPath = path.isAbsolute(envFile) ? envFile : path.join(__dirname, envFile);
+    const forceFromFile = envFile !== '.env';
+    const forceKeys = new Set([
+      'PORT', 'MT5_LOGIN', 'MT5_PASSWORD', 'MT5_SERVER', 'MT5_PATH',
+      'CRT_DB_PATH', 'CRT_MANAGE_CFG_PATH', 'CRT_DEBUG_LOG_PATH'
+    ]);
     if (!fs.existsSync(envPath)) return;
     const raw = fs.readFileSync(envPath, 'utf8');
     raw.split(/\r?\n/).forEach(line => {
@@ -23,7 +29,7 @@ const execFileAsync = promisify(execFile);
       if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
         val = val.slice(1, -1);
       }
-      if (process.env[key] === undefined) process.env[key] = val;
+      if (process.env[key] === undefined || (forceFromFile && forceKeys.has(key))) process.env[key] = val;
     });
     console.log(`[env] .env yuklendi (${envPath})`);
   } catch (e) {
@@ -31,13 +37,81 @@ const execFileAsync = promisify(execFile);
   }
 })();
 
-const PORT = Number(process.env.PORT || 8787);
+
+function resolveProjectPath(p, fallbackRelative) {
+  const raw = String(p || '').trim();
+  const target = raw || fallbackRelative;
+  return path.isAbsolute(target) ? target : path.join(__dirname, target.replace(/^\.\//, ''));
+}
+
+const PORT = Number(process.env.PORT || 8790);
 const LISTEN_HOST = String(process.env.CRT_LISTEN_HOST || '127.0.0.1').trim() || '127.0.0.1';
 const PROXY_TOKEN = String(process.env.CRT_PROXY_TOKEN || '').trim();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/responses';
-const DB_PATH = process.env.CRT_DB_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/trade_log.db';
-const KNOWLEDGE_DIR = process.env.CRT_KNOWLEDGE_DIR || 'C:/Users/nihat/Projects/crt-scanner/knowledge';
+const DB_PATH = resolveProjectPath(process.env.CRT_DB_PATH, 'data/trade_log.db');
+const MANAGE_CFG_PATH = resolveProjectPath(process.env.CRT_MANAGE_CFG_PATH, 'data/manage_cfg.json');
+const QUICK_TP_USD = Math.max(0, Number(process.env.CRT_QUICK_TP_USD || 2));
+const MAX_SL_USD = Math.max(0, Number(process.env.CRT_MAX_SL_USD || 8));
+
+const DEFAULT_MANAGE_CFG = {
+  tp1_rr: 999,
+  be_at_r: 999,
+  trail_at_r: 999,
+  partial_close_pct: 0,
+  early_manage_usd: 0,
+  trail_activate_usd: 0,
+  trail_target_usd: QUICK_TP_USD,
+  trail_pullback_usd: 0,
+  lock_sl_until_usd_tp: true,
+  sl_usd_max: MAX_SL_USD,
+  portfolio_tp_usd: 0,
+  portfolio_sl_usd: 0,
+  portfolio_be_usd: 0,
+  portfolio_trail_activate_usd: 0,
+  portfolio_trail_drawdown_usd: 0,
+  category_baskets: {},
+  pair_categories: {}
+};
+
+function normalizeManagePayload(payload) {
+  const p = { ...(payload && typeof payload === 'object' ? payload : {}) };
+  if (!p.lock_sl_until_usd_tp) return p;
+  p.trail_target_usd = QUICK_TP_USD;
+  p.trail_activate_usd = 0;
+  p.trail_pullback_usd = 0;
+  p.tp1_rr = 999;
+  p.be_at_r = 999;
+  p.trail_at_r = 999;
+  p.partial_close_pct = 0;
+  p.early_manage_usd = 0;
+  p.portfolio_tp_usd = 0;
+  p.portfolio_sl_usd = 0;
+  p.portfolio_be_usd = 0;
+  p.portfolio_trail_activate_usd = 0;
+  p.portfolio_trail_drawdown_usd = 0;
+  p.sl_usd_max = MAX_SL_USD;
+  return p;
+}
+
+function loadManageCfg() {
+  try {
+    if (fs.existsSync(MANAGE_CFG_PATH)) {
+      const saved = JSON.parse(fs.readFileSync(MANAGE_CFG_PATH, 'utf8'));
+      return normalizeManagePayload({ ...DEFAULT_MANAGE_CFG, ...saved });
+    }
+  } catch (_) { /* ignore */ }
+  return { ...DEFAULT_MANAGE_CFG };
+}
+
+function saveManageCfg(payload) {
+  try {
+    ensureDebugDir();
+    const merged = normalizeManagePayload({ ...loadManageCfg(), ...(payload && typeof payload === 'object' ? payload : {}) });
+    fs.writeFileSync(MANAGE_CFG_PATH, JSON.stringify(merged));
+  } catch (_) { /* ignore */ }
+}
+const KNOWLEDGE_DIR = resolveProjectPath(process.env.CRT_KNOWLEDGE_DIR, 'knowledge');
 const ALLOW_REAL_TRADING = String(process.env.ALLOW_REAL_TRADING || 'false').toLowerCase() === 'true';
 const OANDA_API_KEY = process.env.OANDA_API_KEY;
 const OANDA_ENV = (process.env.OANDA_ENV || 'practice').toLowerCase();
@@ -45,12 +119,58 @@ const OANDA_BASE_URL = OANDA_ENV === 'live'
   ? 'https://api-fxtrade.oanda.com/v3'
   : 'https://api-fxpractice.oanda.com/v3';
 const DEBUG_ENABLED = String(process.env.CRT_DEBUG_LOG || 'true').toLowerCase() === 'true';
-const DEBUG_LOG_PATH = process.env.CRT_DEBUG_LOG_PATH || 'C:/Users/nihat/Projects/crt-scanner/data/debug.log';
+const DEBUG_LOG_PATH = resolveProjectPath(process.env.CRT_DEBUG_LOG_PATH, 'data/debug.log');
+const EDGES_PATH = resolveProjectPath(process.env.CRT_EDGES_PATH, 'data/edges.json');
+const edgeEngine = require('./edge_engine');
+let edgesDbCache = null;
+function loadEdgesDb() {
+  if (edgesDbCache) return edgesDbCache;
+  if (!fs.existsSync(EDGES_PATH)) {
+    edgesDbCache = { version: 0, pairs: {}, categoryProfiles: { default: 'EURUSD' } };
+    return edgesDbCache;
+  }
+  edgesDbCache = JSON.parse(fs.readFileSync(EDGES_PATH, 'utf8'));
+  return edgesDbCache;
+}
 // MT5 hesap bilgileri .env'den (browser localStorage'da plaintext sifre tutmaktan guvenli).
 // Eger bunlar setli ise frontend'den gelen meta_login/meta_password/meta_server'i override eder.
 const MT5_LOGIN_ENV = String(process.env.MT5_LOGIN || '').trim();
 const MT5_PASSWORD_ENV = String(process.env.MT5_PASSWORD || '');
 const MT5_SERVER_ENV = String(process.env.MT5_SERVER || '').trim();
+const MT5_PATH_ENV = String(process.env.MT5_PATH || '').trim();
+const CRT_MIRROR_ENABLED = String(process.env.CRT_MIRROR_ENABLED || 'false').toLowerCase() === 'true';
+const CRT_MIRROR_URL = String(process.env.CRT_MIRROR_URL || 'http://127.0.0.1:8791/api/execute-order').trim();
+const CRT_MIRROR_SNAPSHOT_URL = String(process.env.CRT_MIRROR_SNAPSHOT_URL || 'http://127.0.0.1:8791/api/trade-snapshot').trim();
+const CRT_MIRROR_CANCEL_URL = String(
+  process.env.CRT_MIRROR_CANCEL_URL || CRT_MIRROR_URL.replace(/\/execute-order\/?$/i, '/cancel-pending')
+).trim();
+const CRT_MIRROR_BALANCE = Math.max(50, Number(process.env.CRT_MIRROR_BALANCE || 500));
+const CRT_PRIMARY_BALANCE = Math.max(50, Number(process.env.CRT_PRIMARY_BALANCE || 365));
+const CRT_MIRROR_VOLUME_MIN = Math.max(0.01, Number(process.env.CRT_MIRROR_VOLUME_MIN || 0.01));
+const CRT_MIRROR_VOLUME_STEP = Math.max(0.01, Number(process.env.CRT_MIRROR_VOLUME_STEP || 0.01));
+const CRT_MIRROR_SYMBOL_SUFFIX = String(process.env.CRT_MIRROR_SYMBOL_SUFFIX || '.r').trim();
+const CRT_MIRROR_SKIP_INDICES = String(process.env.CRT_MIRROR_SKIP_INDICES || 'true').toLowerCase() !== 'false';
+const CRT_MIRROR_CLOSE_URL = String(
+  process.env.CRT_MIRROR_CLOSE_URL || CRT_MIRROR_URL.replace(/\/execute-order\/?$/i, '/close-position')
+).trim();
+// Manuel kapatma (dashboard Kapat) ikinci hesaba yansimasin — sadece broker TP/SL ile kapansin.
+const CRT_MIRROR_CLOSE_ON_MANUAL = String(process.env.CRT_MIRROR_CLOSE_ON_MANUAL || 'false').toLowerCase() === 'true';
+const CRT_MIRROR_SCALE_LOT = String(process.env.CRT_MIRROR_SCALE_LOT || 'false').toLowerCase() === 'true';
+const MIRROR_DISMISS_TICKS = Math.max(2, Number(process.env.CRT_MIRROR_DISMISS_TICKS || 3));
+const MIRROR_INDEX_KEYS = new Set([
+  'UK100', 'NAS100', 'US30', 'US500', 'US100', 'USTEC', 'GER40', 'GER30', 'DAX40', 'EU50',
+  'FRA40', 'FR40', 'SPA35', 'JPN225', 'JP225', 'AUS200', 'HK50', 'CHINA50', 'US2000', 'VIX', 'SPX500'
+]);
+const PY_MT5_BOOT_LINES = [
+  'import os',
+  'mt5_path=str(os.environ.get("MT5_PATH","") or "").strip()',
+  'def _crt_mt5_init(login=0,password="",server=""):',
+  '  if login and password and server:',
+  '    if mt5_path: return mt5.initialize(path=mt5_path,login=int(login),password=str(password),server=str(server))',
+  '    return mt5.initialize(login=int(login),password=str(password),server=str(server))',
+  '  if mt5_path: return mt5.initialize(path=mt5_path)',
+  '  return mt5.initialize()'
+];
 // Telegram .env destegi (token browser'da olmasin)
 const TELEGRAM_BOT_TOKEN_ENV = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
 const TELEGRAM_CHAT_ID_ENV = String(process.env.TELEGRAM_CHAT_ID || '').trim();
@@ -144,18 +264,417 @@ function writeJson(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
-function pyExec(code, args = []) {
-  return execFileAsync('py', ['-c', code, ...args], {
-    timeout: 30000,
-    maxBuffer: 1024 * 1024
+function scaleMirrorLot(lotNum) {
+  const lot = Number(lotNum || 0);
+  const step = CRT_MIRROR_VOLUME_STEP;
+  const min = CRT_MIRROR_VOLUME_MIN;
+  if (!CRT_MIRROR_SCALE_LOT) {
+    return Math.max(min, Math.round(lot / step) * step);
+  }
+  const scaled = lot * CRT_MIRROR_BALANCE / CRT_PRIMARY_BALANCE;
+  return Math.max(min, Math.round(scaled / step) * step);
+}
+
+function mirrorSymbolKey(symbol) {
+  return String(symbol || '').toUpperCase().replace(/^#/, '').replace(/\.(X|R|M|FT|CASH|CFD)$/i, '').replace(/\..+$/, '');
+}
+
+function mapMirrorSymbol(symbol) {
+  const raw = String(symbol || '').trim();
+  if (!raw) return raw;
+  const up = raw.toUpperCase();
+  const base = mirrorSymbolKey(raw);
+  if (/\.(X|R|M|FT)$/i.test(raw)) {
+    return `${base}${CRT_MIRROR_SYMBOL_SUFFIX || '.r'}`;
+  }
+  if (up.includes('.') && CRT_MIRROR_SYMBOL_SUFFIX) {
+    return `${base}${CRT_MIRROR_SYMBOL_SUFFIX}`;
+  }
+  return raw;
+}
+
+function isIndexSymbol(symbol) {
+  const k = mirrorSymbolKey(symbol);
+  if (!k) return false;
+  if (MIRROR_INDEX_KEYS.has(k)) return true;
+  if (/^(UK|NAS|US|GER|EU|FR|AUS|HK|JPN|SPA|CHINA)\d+/i.test(k)) return true;
+  if (/^(UK100|NAS100|US30|US500|GER40|JP225)/i.test(k)) return true;
+  return false;
+}
+
+function mirrorSkipReason(symbol) {
+  if (CRT_MIRROR_SKIP_INDICES && isIndexSymbol(symbol)) return 'index_skip_high_min_lot';
+  return '';
+}
+
+function prepareMirrorPayload(sourcePayload) {
+  const mp = { ...(sourcePayload && typeof sourcePayload === 'object' ? sourcePayload : {}) };
+  delete mp.meta_login;
+  delete mp.meta_password;
+  delete mp.meta_server;
+  mp.symbol = mapMirrorSymbol(mp.symbol || '');
+  mp.lot = scaleMirrorLot(mp.lot || 0);
+  mp.dry_run = false;
+  mp.target_account_type = 'live';
+  if (!mp.tp_usd_target && mp.lock_sl_until_usd_tp) mp.tp_usd_target = QUICK_TP_USD;
+  if (!mp.sl_usd_max && mp.lock_sl_until_usd_tp) mp.sl_usd_max = MAX_SL_USD;
+  return mp;
+}
+
+function isCrtOpenPosition(pos) {
+  const c = String((pos && pos.comment) || '');
+  return c.toLowerCase().startsWith('crt-');
+}
+
+function httpGetJson(url, timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const lib = u.protocol === 'https:' ? https : http;
+    const req = lib.get(url, { timeout: timeoutMs }, (res) => {
+      let chunks = '';
+      res.on('data', (c) => { chunks += c; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(chunks || '{}')); } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('http_get_timeout')); });
+  });
+}
+
+function httpPostJson(url, body, timeoutMs = 45000) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const lib = u.protocol === 'https:' ? https : http;
+    const data = JSON.stringify(body || {});
+    const req = lib.request({
+      hostname: u.hostname,
+      port: u.port,
+      path: u.pathname,
+      method: 'POST',
+      timeout: timeoutMs,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+    }, (res) => {
+      let chunks = '';
+      res.on('data', (c) => { chunks += c; });
+      res.on('end', () => {
+        try { resolve(JSON.parse(chunks || '{}')); } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => { req.destroy(); reject(new Error('http_post_timeout')); });
+    req.write(data);
+    req.end();
+  });
+}
+
+function mirrorPendingKey(symbol, side) {
+  return `${mirrorSymbolKey(symbol)}|${String(side || '').toUpperCase()}`;
+}
+
+function isCrtPendingOrder(order) {
+  const c = String((order && order.comment) || '');
+  return c.toLowerCase().startsWith('crt-');
+}
+
+async function mirrorCancelPendingForPair(symbol, side) {
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790) return [];
+  const sym = String(symbol || '').trim();
+  const sd = String(side || '').toUpperCase();
+  if (!sym || !['LONG', 'SHORT'].includes(sd)) return [];
+  const key = mirrorPendingKey(sym, sd);
+  const results = [];
+  try {
+    const mirror = await httpGetJson(CRT_MIRROR_SNAPSHOT_URL);
+    const matches = (mirror.pending_orders || []).filter((m) => {
+      if (!isCrtPendingOrder(m)) return false;
+      return mirrorPendingKey(m.symbol, m.side) === key;
+    });
+    for (const m of matches) {
+      const ticket = Number(m.ticket || 0);
+      if (!ticket) continue;
+      try {
+        const cj = await httpPostJson(CRT_MIRROR_CANCEL_URL, { ticket });
+        results.push({
+          symbol: sym,
+          side: sd,
+          ticket,
+          ok: !!cj.ok,
+          error: cj.error || '',
+          detail: cj.detail || '',
+          retcode: cj.retcode || 0
+        });
+        logEvent(cj.ok ? 'info' : 'warn', 'mirror_cancel.pending', {
+          symbol: sym,
+          side: sd,
+          ticket,
+          ok: !!cj.ok,
+          error: cj.error || '',
+          detail: cj.detail || ''
+        });
+      } catch (err) {
+        results.push({ symbol: sym, side: sd, ticket, ok: false, error: 'mirror_cancel_failed', detail: err.message });
+        logEvent('warn', 'mirror_cancel.failed', { symbol: sym, side: sd, ticket, detail: err.message });
+      }
+    }
+  } catch (err) {
+    logEvent('warn', 'mirror_cancel.snapshot_failed', { symbol: sym, side: sd, detail: err.message });
+  }
+  return results;
+}
+
+async function mirrorPurgeIndicesOnSecondary(mirror) {
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790 || !CRT_MIRROR_SKIP_INDICES) return [];
+  const actions = [];
+  for (const m of (mirror.pending_orders || [])) {
+    if (!isCrtPendingOrder(m) || !isIndexSymbol(m.symbol)) continue;
+    const ticket = Number(m.ticket || 0);
+    if (!ticket) continue;
+    try {
+      const cj = await httpPostJson(CRT_MIRROR_CANCEL_URL, { ticket });
+      actions.push({ symbol: m.symbol, side: m.side, action: 'cancel_index', ok: !!cj.ok, ticket, detail: cj.detail || '' });
+    } catch (err) {
+      actions.push({ symbol: m.symbol, action: 'cancel_index', ok: false, ticket, error: err.message });
+    }
+  }
+  for (const p of (mirror.open_positions || [])) {
+    if (!isCrtOpenPosition(p) || !isIndexSymbol(p.symbol)) continue;
+    const ticket = Number(p.ticket || 0);
+    if (!ticket) continue;
+    try {
+      const cj = await httpPostJson(CRT_MIRROR_CLOSE_URL, { ticket });
+      actions.push({ symbol: p.symbol, side: p.side, action: 'close_index', ok: !!cj.ok, ticket, detail: cj.detail || '' });
+      logEvent(cj.ok ? 'info' : 'warn', 'mirror_purge.index_close', { symbol: p.symbol, ticket, ok: !!cj.ok });
+    } catch (err) {
+      actions.push({ symbol: p.symbol, action: 'close_index', ok: false, ticket, error: err.message });
+    }
+  }
+  return actions;
+}
+
+async function mirrorOrderToSecondary(sourcePayload, result) {
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790) return null;
+  if (!result || !result.ok || result.dry_run) return null;
+  const skip = mirrorSkipReason(sourcePayload?.symbol || result.symbol || '');
+  if (skip) {
+    logEvent('info', 'mirror_order.skipped', { symbol: sourcePayload?.symbol || result.symbol || '', reason: skip });
+    return { ok: true, skipped: true, reason: skip };
+  }
+  const sym = sourcePayload?.symbol || result.symbol || '';
+  const sd = String(sourcePayload?.side || result.side || '').toUpperCase();
+  if (isMirrorDismissed(sym, sd)) {
+    logEvent('info', 'mirror_order.skipped', { symbol: sym, side: sd, reason: 'mirror_dismissed_until_primary_close' });
+    return { ok: true, skipped: true, reason: 'mirror_dismissed_until_primary_close' };
+  }
+  const mp = prepareMirrorPayload({ ...sourcePayload, lot: sourcePayload?.lot || result.lot || 0 });
+  try {
+    const mj = await httpPostJson(CRT_MIRROR_URL, mp);
+    logEvent(mj.ok ? 'info' : 'warn', 'mirror_order.result', {
+      symbol: mp.symbol || '',
+      side: mp.side || '',
+      lot: mp.lot,
+      ok: !!mj.ok,
+      error: mj.error || '',
+      detail: mj.detail || '',
+      ticket: mj.ticket || 0
+    });
+    return mj;
+  } catch (err) {
+    logEvent('warn', 'mirror_order.failed', { detail: err.message, symbol: mp.symbol || '' });
+    return null;
+  }
+}
+
+async function fetchLocalTradeSnapshot() {
+  const pyCode = [
+    'import json',
+    'import MetaTrader5 as mt5',
+    ...PY_MT5_BOOT_LINES,
+    pyMt5IfNotInitLine(),
+    '  print(json.dumps({"ok":False,"error":"mt5_init_failed"}), flush=True)',
+    '  raise SystemExit(0)',
+    'pending=[]',
+    'open_rows=[]',
+    'for o in (mt5.orders_get() or []):',
+    '  c=str(getattr(o,"comment","") or "")',
+    '  if not c.startswith("crt-"): continue',
+    '  ot=int(getattr(o,"type",0))',
+    '  side="LONG" if ot in (mt5.ORDER_TYPE_BUY_LIMIT,mt5.ORDER_TYPE_BUY_STOP) else "SHORT"',
+    '  pending.append({"symbol":str(getattr(o,"symbol","")),"side":side,"volume":float(getattr(o,"volume_current",0) or 0),"price_open":float(getattr(o,"price_open",0) or 0),"sl":float(getattr(o,"sl",0) or 0),"tp":float(getattr(o,"tp",0) or 0),"time_setup":int(getattr(o,"time_setup",0) or 0),"time_expiration":int(getattr(o,"time_expiration",0) or 0),"comment":c,"strategy_tag":c.replace("crt-","")})',
+    'for p in (mt5.positions_get() or []):',
+    '  c=str(getattr(p,"comment","") or "")',
+    '  if not c.startswith("crt-"): continue',
+    '  side="LONG" if int(getattr(p,"type",0))==mt5.POSITION_TYPE_BUY else "SHORT"',
+    '  open_rows.append({"ticket":int(getattr(p,"ticket",0) or 0),"symbol":str(getattr(p,"symbol","")),"side":side,"volume":float(getattr(p,"volume",0) or 0),"price_open":float(getattr(p,"price_open",0) or 0),"sl":float(getattr(p,"sl",0) or 0),"tp":float(getattr(p,"tp",0) or 0),"comment":c,"strategy_tag":c.replace("crt-","")})',
+    'mt5.shutdown()',
+    'print(json.dumps({"ok":True,"pending_orders":pending,"open_positions":open_rows}, ensure_ascii=False), flush=True)'
+  ].join('\n');
+  const { stdout } = await pyExec(pyCode, [], { timeout: 25000 });
+  return JSON.parse((stdout || '').trim() || '{}');
+}
+
+async function runMirrorSync() {
+  const startedAt = Date.now();
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790) {
+    return { ok: false, error: 'mirror_not_configured', actions: [], elapsed_ms: 0 };
+  }
+  const primary = await fetchLocalTradeSnapshot();
+  const mirror = await httpGetJson(CRT_MIRROR_SNAPSHOT_URL);
+  updateMirrorDismissState(primary, mirror);
+  const actions = [...await mirrorPurgeIndicesOnSecondary(mirror)];
+  for (const o of (primary.pending_orders || [])) {
+    const sym = String(o.symbol || '').toUpperCase();
+    const side = String(o.side || '').toUpperCase();
+    if (!sym || !['LONG', 'SHORT'].includes(side)) continue;
+    const skip = mirrorSkipReason(o.symbol);
+    if (skip) {
+      actions.push({ symbol: sym, side, ok: true, skipped: true, reason: skip });
+      continue;
+    }
+    if (isMirrorDismissed(o.symbol, side)) {
+      actions.push({ symbol: sym, side, ok: true, skipped: true, reason: 'mirror_dismissed_until_primary_close' });
+      continue;
+    }
+    const dup = (mirror.pending_orders || []).some((m) => {
+      return mirrorPendingKey(m.symbol, m.side) === mirrorPendingKey(sym, side);
+    });
+    if (dup) {
+      actions.push({ symbol: sym, side, ok: true, skipped: true, reason: 'already_on_mirror' });
+      continue;
+    }
+    let expireMin = 0;
+    const ts = Number(o.time_setup || 0);
+    const te = Number(o.time_expiration || 0);
+    if (te > ts && ts > 0) expireMin = Math.max(1, Math.round((te - ts) / 60));
+    const tag = String(o.strategy_tag || 'core').replace(/^crt-/, '');
+    const payload = prepareMirrorPayload({
+      symbol: o.symbol,
+      side,
+      lot: o.volume,
+      sl: Number(o.sl || 0),
+      tp: Number(o.tp || 0),
+      placement: 'pending',
+      desired_entry: Number(o.price_open || 0),
+      expire_min: expireMin,
+      lock_sl_until_usd_tp: true,
+      strategy_tag: tag,
+      max_spread_points: 0
+    });
+    const mj = await httpPostJson(CRT_MIRROR_URL, payload);
+    actions.push({
+      symbol: sym,
+      side,
+      ok: !!mj.ok,
+      ticket: mj.ticket || 0,
+      error: mj.error || '',
+      detail: mj.detail || '',
+      lot: payload.lot
+    });
+    logEvent(mj.ok ? 'info' : 'warn', 'mirror_sync.pending', {
+      symbol: sym,
+      side,
+      ok: !!mj.ok,
+      ticket: mj.ticket || 0,
+      error: mj.error || ''
+    });
+  }
+  const primaryKeys = new Set(
+    (primary.pending_orders || []).map((o) => mirrorPendingKey(o.symbol, o.side))
+  );
+  for (const m of (mirror.pending_orders || [])) {
+    if (!isCrtPendingOrder(m)) continue;
+    const sym = String(m.symbol || '').toUpperCase();
+    const side = String(m.side || '').toUpperCase();
+    const key = mirrorPendingKey(sym, side);
+    if (primaryKeys.has(key)) continue;
+    if (isMirrorDismissed(m.symbol, side)) {
+      const cancels = await mirrorCancelPendingForPair(m.symbol, side);
+      for (const cj of cancels) {
+        actions.push({ symbol: sym, side, action: 'cancel', ok: !!cj.ok, ticket: cj.ticket || 0, reason: 'dismissed_orphan' });
+      }
+      continue;
+    }
+    const cancels = await mirrorCancelPendingForPair(sym, side);
+    for (const cj of cancels) {
+      actions.push({
+        symbol: sym,
+        side,
+        action: 'cancel',
+        ok: !!cj.ok,
+        ticket: cj.ticket || 0,
+        error: cj.error || '',
+        detail: cj.detail || '',
+        reason: 'orphan_on_mirror'
+      });
+      logEvent(cj.ok ? 'info' : 'warn', 'mirror_sync.cancel', {
+        symbol: sym,
+        side,
+        ticket: cj.ticket || 0,
+        ok: !!cj.ok,
+        error: cj.error || '',
+        detail: cj.detail || ''
+      });
+    }
+    if (!cancels.length) {
+      actions.push({
+        symbol: sym,
+        side,
+        action: 'cancel',
+        ok: false,
+        ticket: Number(m.ticket || 0),
+        reason: 'orphan_on_mirror',
+        error: 'mirror_cancel_no_match'
+      });
+    }
+  }
+  return { ok: true, actions, elapsed_ms: Date.now() - startedAt };
+}
+
+async function handleSyncMirrorPending(_req, res) {
+  const startedAt = Date.now();
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790) {
+    writeJson(res, 400, { ok: false, error: 'mirror_not_configured' });
+    return;
+  }
+  try {
+    const result = await runMirrorSync();
+    writeJson(res, 200, result);
+  } catch (err) {
+    logEvent('error', 'mirror_sync.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'mirror_sync_failed', detail: err.message });
+  }
+}
+
+// py launcher bozuk PYTHONHOME ile encodings hatasi verebilir; dogrudan python.exe + temiz env kullan.
+const PYTHON_BIN = (() => {
+  const fromEnv = String(process.env.CRT_PYTHON || '').trim();
+  if (fromEnv) return fromEnv;
+  const winDefault = path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Python', 'Python313', 'python.exe');
+  if (fs.existsSync(winDefault)) return winDefault;
+  return 'python';
+})();
+
+function pyEnv() {
+  const env = { ...process.env };
+  delete env.PYTHONHOME;
+  delete env.PYTHONPATH;
+  return env;
+}
+
+function pyExec(code, args = [], opts = {}) {
+  return execFileAsync(PYTHON_BIN, ['-c', code, ...args], {
+    timeout: opts.timeout || 30000,
+    maxBuffer: opts.maxBuffer || 1024 * 1024,
+    env: pyEnv()
   });
 }
 
 function pyExecStdin(code, stdinPayload = '', timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
-    const child = execFile('py', ['-c', code], {
+    const child = execFile(PYTHON_BIN, ['-c', code], {
       timeout: timeoutMs,
-      maxBuffer: 1024 * 1024
+      maxBuffer: 1024 * 1024,
+      env: pyEnv()
     }, (err, stdout, stderr) => {
       if (err) return reject(err);
       resolve({ stdout, stderr });
@@ -274,6 +793,7 @@ async function handleBrokerCandles(req, res) {
     const pyCode = [
       'import json,sys',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'pair_id=sys.argv[1]',
       'category=sys.argv[2]',
       'gran=sys.argv[3]',
@@ -281,7 +801,7 @@ async function handleBrokerCandles(req, res) {
       'tz=sys.argv[5]',
       'tf_map={"M1":mt5.TIMEFRAME_M1,"M5":mt5.TIMEFRAME_M5,"M15":mt5.TIMEFRAME_M15,"M30":mt5.TIMEFRAME_M30,"H1":mt5.TIMEFRAME_H1,"H4":mt5.TIMEFRAME_H4,"D1":mt5.TIMEFRAME_D1}',
       'timeframe=tf_map.get(gran,mt5.TIMEFRAME_H1)',
-      'if not mt5.initialize():',
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"error":"MT5 initialize basarisiz","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(1)',
       'symbols=mt5.symbols_get() or []',
@@ -321,7 +841,7 @@ async function handleBrokerCandles(req, res) {
       'mt5.shutdown()',
       'print(json.dumps({"provider":"mt5","env":"demo","instrument":symbol,"granularity":gran,"timezone":tz,"candles":candles}), flush=True)'
     ].join('\n');
-    const { stdout } = await execFileAsync('py', ['-c', pyCode, pairId, category, granularity, String(count), alignmentTimezone], {
+    const { stdout } = await pyExec(pyCode, [pairId, category, granularity, String(count), alignmentTimezone], {
       timeout: 15000,
       maxBuffer: 1024 * 1024
     });
@@ -363,10 +883,11 @@ async function handleClosePosition(req, res) {
     const pyCode = [
       'import json, sys',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'raw = sys.stdin.read()',
       'p = json.loads(raw or "{}")',
       'ticket = int(p.get("ticket",0) or 0)',
-      'if not mt5.initialize():',
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'pos_list = mt5.positions_get(ticket=ticket) or []',
@@ -376,6 +897,7 @@ async function handleClosePosition(req, res) {
       '  raise SystemExit(0)',
       'pos = pos_list[0]',
       'symbol = str(getattr(pos,"symbol","") or "")',
+      'side = "LONG" if int(getattr(pos,"type",-1)) == mt5.POSITION_TYPE_BUY else "SHORT"',
       'volume = float(getattr(pos,"volume",0) or 0)',
       'side_buy = int(getattr(pos,"type",-1)) == mt5.POSITION_TYPE_BUY',
       'tick = mt5.symbol_info_tick(symbol)',
@@ -401,15 +923,22 @@ async function handleClosePosition(req, res) {
       'result = mt5.order_send(req)',
       'rc = int(getattr(result,"retcode",0) or 0)',
       'ok = rc in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED)',
-      'out = {"ok":ok,"ticket":ticket,"symbol":symbol,"retcode":rc,"detail":str(getattr(result,"comment","") or "")}',
+      'out = {"ok":ok,"ticket":ticket,"symbol":symbol,"side":side,"retcode":rc,"detail":str(getattr(result,"comment","") or "")}',
       'mt5.shutdown()',
       'print(json.dumps(out), flush=True)'
     ].join('\n');
     const { stdout } = await pyExecStdin(pyCode, JSON.stringify({ ticket }));
     const j = JSON.parse((stdout || '').trim() || '{}');
     logEvent(j.ok ? 'info' : 'warn', 'close_position.result', {
-      ok: !!j.ok, ticket, retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
+      ok: !!j.ok, ticket, symbol: j.symbol || '', side: j.side || '', retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
     });
+    if (j.ok && j.symbol && j.side && CRT_MIRROR_CLOSE_ON_MANUAL) {
+      try {
+        j.mirror_close = await mirrorCloseOnSecondary(j.symbol, j.side);
+      } catch (_) {
+        j.mirror_close = [];
+      }
+    }
     writeJson(res, j.ok ? 200 : 400, j);
   } catch (err) {
     logEvent('error', 'close_position.failed', { detail: err.message });
@@ -430,10 +959,11 @@ async function handleCancelPending(req, res) {
     const pyCode = [
       'import json, sys',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'raw = sys.stdin.read()',
       'p = json.loads(raw or "{}")',
       'ticket = int(p.get("ticket",0) or 0)',
-      'if not mt5.initialize():',
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'orders = mt5.orders_get(ticket=ticket) or []',
@@ -441,18 +971,29 @@ async function handleCancelPending(req, res) {
       '  mt5.shutdown()',
       '  print(json.dumps({"ok":False,"error":"order_not_found","ticket":ticket}), flush=True)',
       '  raise SystemExit(0)',
+      'o = orders[0]',
+      'ot = int(getattr(o,"type",0))',
+      'side = "LONG" if ot in (mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_BUY_STOP) else "SHORT"',
+      'symbol = str(getattr(o,"symbol","") or "")',
       'req = {"action": mt5.TRADE_ACTION_REMOVE, "order": ticket}',
       'result = mt5.order_send(req)',
       'ok = bool(result and result.retcode in (mt5.TRADE_RETCODE_DONE, mt5.TRADE_RETCODE_PLACED))',
-      'out = {"ok":ok, "ticket":ticket, "retcode":int(getattr(result,"retcode",0) or 0), "detail":str(getattr(result,"comment","") or "")}',
+      'out = {"ok":ok, "ticket":ticket, "symbol":symbol, "side":side, "retcode":int(getattr(result,"retcode",0) or 0), "detail":str(getattr(result,"comment","") or "")}',
       'mt5.shutdown()',
       'print(json.dumps(out), flush=True)'
     ].join('\n');
     const { stdout } = await pyExecStdin(pyCode, JSON.stringify({ ticket }));
     const j = JSON.parse((stdout || '').trim() || '{}');
     logEvent(j.ok ? 'info' : 'warn', 'cancel_pending.result', {
-      ok: !!j.ok, ticket, retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
+      ok: !!j.ok, ticket, symbol: j.symbol || '', side: j.side || '', retcode: j.retcode || 0, elapsed_ms: Date.now() - startedAt
     });
+    if (j.ok && j.symbol && j.side) {
+      try {
+        j.mirror_cancel = await mirrorCancelPendingForPair(j.symbol, j.side);
+      } catch (_) {
+        j.mirror_cancel = [];
+      }
+    }
     writeJson(res, j.ok ? 200 : 400, j);
   } catch (err) {
     logEvent('error', 'cancel_pending.failed', { detail: err.message });
@@ -466,7 +1007,8 @@ async function handleListAllSymbols(_req, res) {
     const pyCode = [
       'import json',
       'import MetaTrader5 as mt5',
-      'if not mt5.initialize():',
+      ...PY_MT5_BOOT_LINES,
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'syms=mt5.symbols_get() or []',
@@ -589,9 +1131,10 @@ async function handleAvailablePairs(req, res) {
     const pyCode = [
       'import json,sys',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'p=json.loads(sys.argv[1])',
       'pairs=p.get("pairs",[]) if isinstance(p,dict) else []',
-      'if not mt5.initialize():',
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'symbols=mt5.symbols_get() or []',
@@ -707,7 +1250,8 @@ async function handleAccountInfo(_req, res) {
     const pyCode = [
       'import json',
       'import MetaTrader5 as mt5',
-      'if not mt5.initialize():',
+      ...PY_MT5_BOOT_LINES,
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok":False,"error":"mt5_init_failed","detail":str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'ai = mt5.account_info()',
@@ -743,13 +1287,33 @@ async function handleAccountInfo(_req, res) {
   }
 }
 
+function pyMt5InitLine() {
+  if (MT5_LOGIN_ENV && MT5_PASSWORD_ENV && MT5_SERVER_ENV) {
+    return `_crt_mt5_init(${Number(MT5_LOGIN_ENV)}, ${JSON.stringify(MT5_PASSWORD_ENV)}, ${JSON.stringify(MT5_SERVER_ENV)})`;
+  }
+  return '_crt_mt5_init()';
+}
+function pyMt5IfNotInitLine() {
+  return `if not ${pyMt5InitLine()}:`;
+}
+
+function handlePing(_req, res) {
+  writeJson(res, 200, {
+    ok: true,
+    service: 'forex-scanner-proxy',
+    port: PORT,
+    ts: Date.now()
+  });
+}
+
 async function handleHealth(_req, res) {
   const startedAt = Date.now();
   try {
     const pyCode = [
       'import json',
       'import MetaTrader5 as mt5',
-      'ok = mt5.initialize()',
+      ...PY_MT5_BOOT_LINES,
+      `ok = ${pyMt5InitLine()}`,
       'last = mt5.last_error()',
       'if ok:',
       '  ti = mt5.terminal_info()',
@@ -782,7 +1346,8 @@ async function handleTradeSnapshot(_req, res) {
     const pyCode = [
       'import json, datetime',
       'import MetaTrader5 as mt5',
-      'if not mt5.initialize():',
+      ...PY_MT5_BOOT_LINES,
+      pyMt5IfNotInitLine(),
       '  print(json.dumps({"ok": False, "error":"mt5_initialize_failed", "detail": str(mt5.last_error())}), flush=True)',
       '  raise SystemExit(0)',
       'ai = mt5.account_info()',
@@ -803,6 +1368,8 @@ async function handleTradeSnapshot(_req, res) {
       '  strategy_tag = "core"',
       '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
       '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
+      '  elif "ict" in lc or "liquidity" in lc: strategy_tag = "ict_liquidity"',
+      '  elif "lat" in lc: strategy_tag = "lat_flash"',
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
       '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
       'deals = mt5.history_deals_get(from_dt, to_dt) or []',
@@ -824,6 +1391,8 @@ async function handleTradeSnapshot(_req, res) {
       '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
       '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
+      '  elif "ict" in lc or "liquidity" in lc: strategy_tag = "ict_liquidity"',
+      '  elif "lat" in lc: strategy_tag = "lat_flash"',
       '  closed_rows.append({"deal": int(getattr(d, "ticket", 0) or 0), "position_id": int(getattr(d, "position_id", 0) or 0), "symbol": str(getattr(d, "symbol", "") or ""), "side": side, "volume": float(getattr(d, "volume", 0) or 0), "price": float(getattr(d, "price", 0) or 0), "profit": float(getattr(d, "profit", 0) or 0), "reason": reason_name, "result": result, "time": int(getattr(d, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
       'closed_rows = sorted(closed_rows, key=lambda x: x["time"], reverse=True)[:300]',
       '# Pending orders',
@@ -846,6 +1415,8 @@ async function handleTradeSnapshot(_req, res) {
       '  if "turtle" in lc: strategy_tag = "turtle_sopa"',
       '  elif "vwap" in lc: strategy_tag = "vwap_reclaim"',
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
+      '  elif "ict" in lc or "liquidity" in lc: strategy_tag = "ict_liquidity"',
+      '  elif "lat" in lc: strategy_tag = "lat_flash"',
       '  side = "LONG" if ot in (int(mt5.ORDER_TYPE_BUY_LIMIT), int(mt5.ORDER_TYPE_BUY_STOP)) else "SHORT"',
       '  sym_name = str(getattr(o,"symbol","") or "")',
       '  bid_v = 0.0; ask_v = 0.0',
@@ -892,12 +1463,18 @@ async function handleManagePositions(req, res) {
   const startedAt = Date.now();
   try {
     const body = await readBody(req);
-    const payload = JSON.parse(body || '{}');
+    const payload = normalizeManagePayload(JSON.parse(body || '{}'));
+    saveManageCfg(payload);
     const tp1R = Math.max(0.2, Number(payload.tp1_rr || 1.0));
     const beAtR = Math.max(0.2, Number(payload.be_at_r || 1.0));
     const trailAtR = Math.max(0.2, Number(payload.trail_at_r || 1.5));
     const partialClosePct = Math.max(0, Math.min(100, Number(payload.partial_close_pct || 50)));
     const earlyManageUsd = Math.max(0, Number(payload.early_manage_usd || 0));
+    const trailActivateUsd = Math.max(0, Number(payload.trail_activate_usd || 0));
+    const trailTargetUsd = Math.max(0, Number(payload.trail_target_usd || 0));
+    const trailPullbackUsd = Math.max(0, Number(payload.trail_pullback_usd || 5));
+    const lockSlUntilUsdTp = !!payload.lock_sl_until_usd_tp;
+    const slUsdMax = Math.max(0, Number(payload.sl_usd_max || 0));
     const portfolioTpUsd = Math.max(0, Number(payload.portfolio_tp_usd || 0));
     const portfolioSlUsd = Math.max(0, Number(payload.portfolio_sl_usd || 0));
     const portfolioBeUsd = Math.max(0, Number(payload.portfolio_be_usd || 0));
@@ -910,6 +1487,7 @@ async function handleManagePositions(req, res) {
     const pyCode = [
       'import json,sys,sqlite3,os,datetime,math',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'p=json.loads(sys.argv[1])',
       'db_path=sys.argv[2]',
       'os.makedirs(os.path.dirname(db_path), exist_ok=True)',
@@ -921,13 +1499,18 @@ async function handleManagePositions(req, res) {
       'trail_at_r=float(p.get("trail_at_r",1.5) or 1.5)',
       'partial_close_pct=float(p.get("partial_close_pct",50) or 50)',
       'early_manage_usd=float(p.get("early_manage_usd",0) or 0)',
+      'trail_activate_usd=float(p.get("trail_activate_usd",0) or 0)',
+      'trail_target_usd=float(p.get("trail_target_usd",0) or 0)',
+      'trail_pullback_usd=float(p.get("trail_pullback_usd",5) or 5)',
+      'lock_sl_until_usd_tp=bool(p.get("lock_sl_until_usd_tp",False))',
+      'sl_usd_max=float(p.get("sl_usd_max",0) or 0)',
       'portfolio_tp_usd=float(p.get("portfolio_tp_usd",0) or 0)',
       'portfolio_sl_usd=float(p.get("portfolio_sl_usd",0) or 0)',
       'portfolio_be_usd=float(p.get("portfolio_be_usd",0) or 0)',
       'portfolio_trail_activate_usd=float(p.get("portfolio_trail_activate_usd",0) or 0)',
       'portfolio_trail_drawdown_usd=float(p.get("portfolio_trail_drawdown_usd",0) or 0)',
       'cur.execute("""CREATE TABLE IF NOT EXISTS portfolio_state (id INTEGER PRIMARY KEY, peak_profit REAL DEFAULT 0, trail_armed INTEGER DEFAULT 0, updated_at TEXT)""")',
-      'if not mt5.initialize():',
+      pyMt5IfNotInitLine(),
       '  out={"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}',
       '  conn.close()',
       '  print(json.dumps(out), flush=True)',
@@ -985,13 +1568,94 @@ async function handleManagePositions(req, res) {
       '  vol_step=float(getattr(si,"volume_step",0.01) or 0.01)',
       '  vol_min=float(getattr(si,"volume_min",0.01) or 0.01)',
       '  px=float(tick.bid if side=="LONG" else tick.ask)',
-      '  # SL/TP atanmamissa sahiplen (adoption)',
-      '  needs_adoption = (sl<=0) or (tp<=0)',
+      '  digits=int(getattr(si,"digits",5) or 5)',
+      '  stops_level_pts=float(getattr(si,"trade_stops_level",0) or 0)',
+      '  min_dist=stops_level_pts*point if point>0 else 0.0',
+      '  # Hizli USD TP: entryye yakin broker TP (~$2). Uzak strateji TP varsa yeniden ayarla.',
+      '  if lock_sl_until_usd_tp and trail_target_usd>0.0 and sl>0 and volume>0:',
+      '    ot=mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
+      '    entry_ref=round(float(entry), digits)',
+      '    buf=max(min_dist, point*2)',
+      '    risk_ref=max(abs(entry-sl), buf, point*10)',
+      '    max_dist=max(risk_ref*3.0, buf*20, point*500)',
+      '    def _usd_tp_profit(px):',
+      '      return float(mt5.order_calc_profit(ot, symbol, volume, entry_ref, round(px, digits)) or 0)',
+      '    cur_est=_usd_tp_profit(tp) if tp>0 else 0.0',
+      '    need_usd_tp=(tp<=0) or (cur_est>trail_target_usd*1.15) or (cur_est<trail_target_usd*0.85)',
+      '    if need_usd_tp:',
+      '      new_tp=0.0',
+      '      if side=="LONG":',
+      '        lo=entry_ref+buf; hi=entry_ref+max_dist',
+      '        for _ in range(48):',
+      '          mid=round((lo+hi)/2, digits)',
+      '          if _usd_tp_profit(mid)<trail_target_usd: lo=mid',
+      '          else: hi=mid',
+      '        new_tp=round(hi, digits)',
+      '      else:',
+      '        hi=entry_ref-buf; lo=max(point, entry_ref-max_dist)',
+      '        for _ in range(48):',
+      '          mid=round((lo+hi)/2, digits)',
+      '          if _usd_tp_profit(mid)<trail_target_usd: hi=mid',
+      '          else: lo=mid',
+      '        new_tp=round(lo, digits)',
+      '      est=_usd_tp_profit(new_tp) if new_tp>0 else 0.0',
+      '      tp_ok=(side=="LONG" and new_tp>px+point) or (side=="SHORT" and new_tp<px-point)',
+      '      if tp>0 and abs(float(tp)-float(new_tp))<=point*2 and cur_est>=trail_target_usd*0.85:',
+      '        pass',
+      '      elif new_tp>0 and est>=trail_target_usd*0.85 and tp_ok:',
+      '        req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(sl),"tp":float(new_tp),"magic":20260506,"comment":"crt-tp-usd-price"}',
+      '        rr=mt5.order_send(req)',
+      '        rc=int(getattr(rr,"retcode",0) or 0)',
+      '        ok=bool(rr and rc in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED,10025))',
+      '        if ok or rc not in (10027,10004):',
+      '          actions.append({"ticket":ticket,"symbol":symbol,"side":side,"type":"tp_usd_set","ok":ok,"retcode":rc,"new_tp":float(new_tp),"profit_est_usd":float(est),"target_usd":float(trail_target_usd),"old_tp":float(tp),"old_est_usd":float(cur_est)})',
+      '        if ok and rc!=10025:',
+      '          tp=float(new_tp)',
+      '  # Max USD zarar: SL $8 uzerindeyse broker SLTP ile sinirla',
+      '  if lock_sl_until_usd_tp and sl_usd_max>0.0 and sl>0 and volume>0:',
+      '    ot=mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
+      '    entry_ref=round(float(entry), digits)',
+      '    buf=max(min_dist, point*2)',
+      '    risk_ref=max(abs(entry-sl), buf, point*10)',
+      '    max_dist=max(risk_ref*3.0, buf*20, point*500)',
+      '    def _usd_sl_loss(px):',
+      '      pr=float(mt5.order_calc_profit(ot, symbol, volume, entry_ref, round(px, digits)) or 0)',
+      '      return (-pr) if pr<0 else 0.0',
+      '    cur_sl_loss=_usd_sl_loss(sl)',
+      '    if cur_sl_loss>sl_usd_max+0.05:',
+      '      strat_sl=float(sl)',
+      '      if side=="LONG":',
+      '        hi=entry_ref-buf; lo=max(point, entry_ref-max_dist)',
+      '        for _ in range(48):',
+      '          mid=round((lo+hi)/2, digits)',
+      '          if _usd_sl_loss(mid)>sl_usd_max: lo=mid',
+      '          else: hi=mid',
+      '        new_sl=round(hi, digits)',
+      '        new_sl=float(max(strat_sl, new_sl))',
+      '      else:',
+      '        lo=entry_ref+buf; hi=entry_ref+max_dist',
+      '        for _ in range(48):',
+      '          mid=round((lo+hi)/2, digits)',
+      '          if _usd_sl_loss(mid)>sl_usd_max: hi=mid',
+      '          else: lo=mid',
+      '        new_sl=round(lo, digits)',
+      '        new_sl=float(min(strat_sl, new_sl))',
+      '      if abs(float(new_sl)-float(sl))>point*2:',
+      '        req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(new_sl),"tp":float(tp),"magic":20260506,"comment":"crt-sl-usd-cap"}',
+      '        rr=mt5.order_send(req)',
+      '        rc=int(getattr(rr,"retcode",0) or 0)',
+      '        ok=bool(rr and rc in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED,10025))',
+      '        if ok or rc not in (10027,10004):',
+      '          actions.append({"ticket":ticket,"symbol":symbol,"side":side,"type":"sl_usd_cap","ok":ok,"retcode":rc,"new_sl":float(new_sl),"loss_est_usd":float(_usd_sl_loss(new_sl)),"target_usd":float(sl_usd_max),"old_sl":float(sl),"old_loss_usd":float(cur_sl_loss)})',
+      '        if ok and rc!=10025:',
+      '          sl=float(new_sl)',
+      '  # SL/TP atanmamissa sahiplen (adoption) — hizli USD TP modunda tp=0 kasitli, adopt spam yapma',
+      '  needs_adoption = (sl<=0) or (tp<=0 and not (lock_sl_until_usd_tp and trail_target_usd>0.0))',
       '  if needs_adoption:',
       '    lv=adopt_levels(symbol, side, entry, point)',
       '    if lv is not None:',
       '      new_sl = lv["sl"] if sl<=0 else sl',
-      '      new_tp = lv["tp"] if tp<=0 else tp',
+      '      new_tp = 0.0 if (lock_sl_until_usd_tp and trail_target_usd>0.0) else (lv["tp"] if tp<=0 else tp)',
       '      # Pozisyon zarari geri donulemez seviyede ise sl secimi mantikli mi kontrolu',
       '      if side=="LONG" and new_sl>=px:',
       '        new_sl = px - max(lv["atr"]*0.8, point*30)',
@@ -1004,39 +1668,130 @@ async function handleManagePositions(req, res) {
       '      if ok:',
       '        sl=float(new_sl)',
       '        tp=float(new_tp)',
+      '  profit_usd=float(getattr(pos,"profit",0) or 0)',
+      '  try:',
+      '    cur.execute("ALTER TABLE manage_state ADD COLUMN peak_profit_usd REAL DEFAULT 0")',
+      '  except Exception:',
+      '    pass',
+      '  mrow=cur.execute("SELECT tp1_done, COALESCE(peak_profit_usd,0) FROM manage_state WHERE position_ticket=?",(ticket,)).fetchone()',
+      '  tp1_done=int(mrow[0]) if mrow else 0',
+      '  peak_usd=float(mrow[1] or 0) if mrow else 0.0',
+      '  usd_trail_armed=False',
+      '  if trail_target_usd>0.0 and not lock_sl_until_usd_tp and profit_usd>=(trail_target_usd-0.05):',
+      '    close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
+      '    close_price=float(tick.bid if close_type==mt5.ORDER_TYPE_SELL else tick.ask)',
+      '    req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(volume),"type":close_type,"position":ticket,"price":close_price,"deviation":20,"magic":20260506,"comment":"crt-tp-usd-target","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
+      '    rr=mt5.order_send(req)',
+      '    ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
+      '    actions.append({"ticket":ticket,"symbol":symbol,"type":"tp_usd_target","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"profit_usd":float(profit_usd),"target_usd":float(trail_target_usd)})',
+      '    if ok:',
+      '      cur.execute("DELETE FROM manage_state WHERE position_ticket=?",(ticket,))',
+      '    continue',
+      '  if trail_activate_usd>0.0 and profit_usd>=trail_activate_usd:',
+      '    usd_trail_armed=True',
+      '    peak_usd=max(peak_usd,profit_usd)',
+      '  if trail_pullback_usd>0.0 and peak_usd>=trail_activate_usd>0.0 and (peak_usd-profit_usd)>=trail_pullback_usd and profit_usd>0.0:',
+      '    close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
+      '    close_price=float(tick.bid if close_type==mt5.ORDER_TYPE_SELL else tick.ask)',
+      '    req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(volume),"type":close_type,"position":ticket,"price":close_price,"deviation":20,"magic":20260506,"comment":"crt-tp-usd-trail","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
+      '    rr=mt5.order_send(req)',
+      '    ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
+      '    actions.append({"ticket":ticket,"symbol":symbol,"type":"tp_usd_trail_pullback","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"profit_usd":float(profit_usd),"peak_usd":float(peak_usd),"pullback_usd":float(trail_pullback_usd)})',
+      '    if ok:',
+      '      cur.execute("DELETE FROM manage_state WHERE position_ticket=?",(ticket,))',
+      '    continue',
       '  risk=abs(entry-sl)',
       '  if sl<=0 or risk<=point*2:',
       '    continue',
       '  r=(px-entry)/risk if side=="LONG" else (entry-px)/risk',
-      '  profit_usd=float(getattr(pos,"profit",0) or 0)',
-      '  # Erken yonetim: profit_usd belirli esigi gecince BE+trailing+TP1 ayni anda devreye girer',
       '  early_hit=(early_manage_usd>0.0 and profit_usd>=early_manage_usd)',
-      '  desired_sl=sl',
-      '  if r>=be_at_r or early_hit:',
-      '    desired_sl=max(desired_sl,entry) if side=="LONG" else (min(desired_sl,entry) if desired_sl>0 else entry)',
-      '  if r>=trail_at_r or early_hit:',
-      '    trail_dist=risk*0.6',
-      '    t_sl=(px-trail_dist) if side=="LONG" else (px+trail_dist)',
-      '    desired_sl=max(desired_sl,t_sl) if side=="LONG" else (min(desired_sl,t_sl) if desired_sl>0 else t_sl)',
-      '  improve=(desired_sl-sl)>(point*5) if side=="LONG" else ((sl-desired_sl)>(point*5) if sl>0 else True)',
-      '  if improve and desired_sl>0:',
-      '    req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(desired_sl),"tp":float(tp),"magic":20260506,"comment":"crt-manage"}',
-      '    rr=mt5.order_send(req)',
-      '    actions.append({"ticket":ticket,"symbol":symbol,"type":"sl_update","ok":bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED)),"retcode":int(getattr(rr,"retcode",0) or 0),"new_sl":float(desired_sl)})',
-      '  row=cur.execute("SELECT tp1_done FROM manage_state WHERE position_ticket=?",(ticket,)).fetchone()',
-      '  tp1_done=int(row[0]) if row else 0',
-      '  if (r>=tp1_r or early_hit) and tp1_done==0 and partial_close_pct>0:',
-      '    close_vol=max(vol_min, math.floor((volume*(partial_close_pct/100.0))/vol_step)*vol_step)',
-      '    if close_vol>=vol_min and close_vol<volume:',
-      '      close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
-      '      close_price=float(tick.bid if close_type==mt5.ORDER_TYPE_SELL else tick.ask)',
-      '      req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(close_vol),"type":close_type,"position":ticket,"price":close_price,"deviation":20,"magic":20260506,"comment":"crt-tp1-partial","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
+      '  skip_sl_manage=(lock_sl_until_usd_tp and trail_target_usd>0.0 and profit_usd<trail_target_usd)',
+      '  if not skip_sl_manage:',
+      '    desired_sl=sl',
+      '    if r>=be_at_r or early_hit or usd_trail_armed:',
+      '      desired_sl=max(desired_sl,entry) if side=="LONG" else (min(desired_sl,entry) if desired_sl>0 else entry)',
+      '    if r>=trail_at_r or early_hit or usd_trail_armed:',
+      '      if usd_trail_armed and trail_target_usd>trail_activate_usd and profit_usd>=trail_activate_usd:',
+      '        prog=min(1.0,(profit_usd-trail_activate_usd)/max(0.01,trail_target_usd-trail_activate_usd))',
+      '        trail_mult=0.65-0.35*prog',
+      '        trail_dist=risk*max(0.25,trail_mult)',
+      '      else:',
+      '        trail_dist=risk*0.6',
+      '      t_sl=(px-trail_dist) if side=="LONG" else (px+trail_dist)',
+      '      desired_sl=max(desired_sl,t_sl) if side=="LONG" else (min(desired_sl,t_sl) if desired_sl>0 else t_sl)',
+      '    improve=(desired_sl-sl)>(point*5) if side=="LONG" else ((sl-desired_sl)>(point*5) if sl>0 else True)',
+      '    if improve and desired_sl>0:',
+      '      req={"action":mt5.TRADE_ACTION_SLTP,"position":ticket,"symbol":symbol,"sl":float(desired_sl),"tp":float(tp),"magic":20260506,"comment":"crt-manage"}',
       '      rr=mt5.order_send(req)',
-      '      ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
-      '      actions.append({"ticket":ticket,"symbol":symbol,"type":"tp1_partial_close","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"closed_volume":float(close_vol)})',
-      '      if ok:',
-      '        cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,updated_at) VALUES(?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET tp1_done=excluded.tp1_done, updated_at=excluded.updated_at",(ticket,1,datetime.datetime.utcnow().isoformat()))',
-      '  cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,updated_at) VALUES(?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET updated_at=excluded.updated_at",(ticket,tp1_done,datetime.datetime.utcnow().isoformat()))',
+      '      actions.append({"ticket":ticket,"symbol":symbol,"type":"sl_update","ok":bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED)),"retcode":int(getattr(rr,"retcode",0) or 0),"new_sl":float(desired_sl),"usd_trail":bool(usd_trail_armed)})',
+      '    if (r>=tp1_r or early_hit) and tp1_done==0 and partial_close_pct>0:',
+      '      close_vol=max(vol_min, math.floor((volume*(partial_close_pct/100.0))/vol_step)*vol_step)',
+      '      if close_vol>=vol_min and close_vol<volume:',
+      '        close_type=mt5.ORDER_TYPE_SELL if side=="LONG" else mt5.ORDER_TYPE_BUY',
+      '        close_price=float(tick.bid if close_type==mt5.ORDER_TYPE_SELL else tick.ask)',
+      '        req={"action":mt5.TRADE_ACTION_DEAL,"symbol":symbol,"volume":float(close_vol),"type":close_type,"position":ticket,"price":close_price,"deviation":20,"magic":20260506,"comment":"crt-tp1-partial","type_time":mt5.ORDER_TIME_GTC,"type_filling":mt5.ORDER_FILLING_IOC}',
+      '        rr=mt5.order_send(req)',
+      '        ok=bool(rr and rr.retcode in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED))',
+      '        actions.append({"ticket":ticket,"symbol":symbol,"type":"tp1_partial_close","ok":ok,"retcode":int(getattr(rr,"retcode",0) or 0),"closed_volume":float(close_vol)})',
+      '        if ok:',
+      '          cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,updated_at) VALUES(?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET tp1_done=excluded.tp1_done, updated_at=excluded.updated_at",(ticket,1,datetime.datetime.utcnow().isoformat()))',
+      '  cur.execute("INSERT INTO manage_state(position_ticket,tp1_done,peak_profit_usd,updated_at) VALUES(?,?,?,?) ON CONFLICT(position_ticket) DO UPDATE SET tp1_done=excluded.tp1_done, peak_profit_usd=CASE WHEN excluded.peak_profit_usd>COALESCE(manage_state.peak_profit_usd,0) THEN excluded.peak_profit_usd ELSE manage_state.peak_profit_usd END, updated_at=excluded.updated_at",(ticket,tp1_done,float(peak_usd),datetime.datetime.utcnow().isoformat()))',
+      '# Bekleyen emirler: uzak strateji TP -> $2 TP (crt-* yorumlu)',
+      'if lock_sl_until_usd_tp and trail_target_usd>0.0:',
+      '  for po in (mt5.orders_get() or []):',
+      '    ticket_o=int(getattr(po,"ticket",0) or 0)',
+      '    symbol_o=str(getattr(po,"symbol","") or "")',
+      '    if not symbol_o or ticket_o<=0: continue',
+      '    comment_o=str(getattr(po,"comment","") or "")',
+      '    if not comment_o.startswith("crt-"): continue',
+      '    vol_o=float(getattr(po,"volume_initial",0) or getattr(po,"volume_current",0) or 0)',
+      '    if vol_o<=0: continue',
+      '    side_o="LONG" if int(getattr(po,"type",-1)) in (mt5.ORDER_TYPE_BUY_LIMIT,mt5.ORDER_TYPE_BUY_STOP,mt5.ORDER_TYPE_BUY_STOP_LIMIT) else "SHORT"',
+      '    entry_o=float(getattr(po,"price_open",0) or 0)',
+      '    sl_o=float(getattr(po,"sl",0) or 0)',
+      '    tp_o=float(getattr(po,"tp",0) or 0)',
+      '    if entry_o<=0 or sl_o<=0: continue',
+      '    si_o=mt5.symbol_info(symbol_o)',
+      '    if si_o is None: continue',
+      '    pt_o=max(float(getattr(si_o,"point",0.00001) or 0.00001),0.00001)',
+      '    dg_o=int(getattr(si_o,"digits",5) or 5)',
+      '    st_o=float(getattr(si_o,"trade_stops_level",0) or 0)',
+      '    md_o=st_o*pt_o if pt_o>0 else 0.0',
+      '    bf_o=max(md_o, pt_o*2)',
+      '    ot_o=mt5.ORDER_TYPE_BUY if side_o=="LONG" else mt5.ORDER_TYPE_SELL',
+      '    er_o=round(entry_o, dg_o)',
+      '    def _po_profit(px):',
+      '      return float(mt5.order_calc_profit(ot_o, symbol_o, vol_o, er_o, round(px, dg_o)) or 0)',
+      '    ce_o=_po_profit(tp_o) if tp_o>0 else 0.0',
+      '    if not ((tp_o<=0) or (ce_o>trail_target_usd*1.15) or (ce_o<trail_target_usd*0.85)): continue',
+      '    rr_o=max(abs(entry_o-sl_o), bf_o, pt_o*10)',
+      '    mx_o=max(rr_o*3.0, bf_o*20, pt_o*500)',
+      '    if side_o=="LONG":',
+      '      lo_o=er_o+bf_o; hi_o=er_o+mx_o',
+      '      for _ in range(48):',
+      '        mid_o=round((lo_o+hi_o)/2, dg_o)',
+      '        if _po_profit(mid_o)<trail_target_usd: lo_o=mid_o',
+      '        else: hi_o=mid_o',
+      '      ntp_o=round(hi_o, dg_o)',
+      '    else:',
+      '      hi_o=er_o-bf_o; lo_o=max(pt_o, er_o-mx_o)',
+      '      for _ in range(48):',
+      '        mid_o=round((lo_o+hi_o)/2, dg_o)',
+      '        if _po_profit(mid_o)<trail_target_usd: hi_o=mid_o',
+      '        else: lo_o=mid_o',
+      '      ntp_o=round(lo_o, dg_o)',
+      '    est_o=_po_profit(ntp_o) if ntp_o>0 else 0.0',
+      '    tick_o=mt5.symbol_info_tick(symbol_o)',
+      '    ref_o=float(tick_o.bid if side_o=="LONG" else tick_o.ask) if tick_o else entry_o',
+      '    tp_ok_o=(side_o=="LONG" and ntp_o>ref_o+pt_o) or (side_o=="SHORT" and ntp_o<ref_o-pt_o)',
+      '    if ntp_o<=0 or est_o<trail_target_usd*0.85 or not tp_ok_o: continue',
+      '    if tp_o>0 and abs(float(tp_o)-float(ntp_o))<=pt_o*2 and ce_o>=trail_target_usd*0.85: continue',
+      '    req_o={"action":mt5.TRADE_ACTION_MODIFY,"order":ticket_o,"symbol":symbol_o,"price":float(entry_o),"sl":float(sl_o),"tp":float(ntp_o),"magic":int(getattr(po,"magic",20260506) or 20260506)}',
+      '    rr2=mt5.order_send(req_o)',
+      '    rc2=int(getattr(rr2,"retcode",0) or 0)',
+      '    ok2=bool(rr2 and rc2 in (mt5.TRADE_RETCODE_DONE,mt5.TRADE_RETCODE_PLACED,10025))',
+      '    if ok2 or rc2 not in (10027,10004):',
+      '      actions.append({"ticket":ticket_o,"symbol":symbol_o,"side":side_o,"type":"tp_usd_set_pending","ok":ok2,"retcode":rc2,"new_tp":float(ntp_o),"profit_est_usd":float(est_o),"target_usd":float(trail_target_usd),"old_tp":float(tp_o),"old_est_usd":float(ce_o)})',
       '# === PORTFOLIO LEVEL BASKET TP/SL/BE — GLOBAL + PER-CATEGORY ===',
       'cur.execute("""CREATE TABLE IF NOT EXISTS category_portfolio_state (category TEXT PRIMARY KEY, peak_profit REAL DEFAULT 0, trail_armed INTEGER DEFAULT 0, updated_at TEXT)""")',
       'try:',
@@ -1218,7 +1973,7 @@ async function handleManagePositions(req, res) {
       'mt5.shutdown()',
       'print(json.dumps({"ok":True,"managed_count":len(positions),"actions":actions,"total_profit":float(total_profit_all),"global_profit":float(total_profit),"peak_profit":float(peak_profit),"drawdown":float(drawdown),"trail_armed":int(trail_armed),"portfolio_action":portfolio_action,"category_results":category_results,"enabled_categories":sorted(list(enabled_cats))}, ensure_ascii=False), flush=True)'
     ].join('\n');
-    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct, early_manage_usd: earlyManageUsd, portfolio_tp_usd: portfolioTpUsd, portfolio_sl_usd: portfolioSlUsd, portfolio_be_usd: portfolioBeUsd, portfolio_trail_activate_usd: portfolioTrailActivateUsd, portfolio_trail_drawdown_usd: portfolioTrailDrawdownUsd, category_baskets: categoryBaskets, pair_categories: pairCategories }), DB_PATH]);
+    const { stdout } = await pyExec(pyCode, [JSON.stringify({ tp1_rr: tp1R, be_at_r: beAtR, trail_at_r: trailAtR, partial_close_pct: partialClosePct, early_manage_usd: earlyManageUsd, trail_activate_usd: trailActivateUsd, trail_target_usd: trailTargetUsd, trail_pullback_usd: trailPullbackUsd, lock_sl_until_usd_tp: lockSlUntilUsdTp, sl_usd_max: slUsdMax || (lockSlUntilUsdTp ? MAX_SL_USD : 0), portfolio_tp_usd: portfolioTpUsd, portfolio_sl_usd: portfolioSlUsd, portfolio_be_usd: portfolioBeUsd, portfolio_trail_activate_usd: portfolioTrailActivateUsd, portfolio_trail_drawdown_usd: portfolioTrailDrawdownUsd, category_baskets: categoryBaskets, pair_categories: pairCategories }), DB_PATH]);
     const j = JSON.parse((stdout || '').trim() || '{}');
     writeJson(res, 200, j);
     logEvent('info', 'manage_positions.ok', {
@@ -1229,6 +1984,108 @@ async function handleManagePositions(req, res) {
   } catch (err) {
     logEvent('error', 'manage_positions.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
     writeJson(res, 500, { ok: false, error: 'manage_positions_failed', detail: err.message });
+  }
+}
+
+async function handleBacktestLatForex(req, res) {
+  const startedAt = Date.now();
+  try {
+    const body = await readBody(req);
+    const payload = JSON.parse(body || '{}');
+    const profile = String(payload.profile || 'auto').toLowerCase();
+    const isCrypto = profile === 'crypto' || !!payload.auto_crypto;
+    const days = Math.max(7, Math.min(1460, Number(payload.days || (isCrypto ? 365 : 90))));
+    const tf = String(payload.tf || (isCrypto ? 'M15' : 'M5')).toUpperCase();
+    const minConf = Math.max(50, Math.min(95, Number(payload.min_conf || payload.minConf || (isCrypto ? 68 : 65))));
+    const autoCrypto = !!payload.auto_crypto;
+    const maxSymbols = Math.max(1, Math.min(40, Number(payload.max_symbols || 25)));
+    const minTrades = Math.max(1, Number(payload.min_trades || 12));
+    const minWr = Number(payload.min_wr || 48);
+    const minPf = Number(payload.min_pf || 1.05);
+    const saveWhitelist = !!payload.save_whitelist;
+    let symbols = [];
+    if (Array.isArray(payload.symbols) && payload.symbols.length) {
+      symbols = payload.symbols.map((s) => String(s).trim().toUpperCase()).filter(Boolean).slice(0, maxSymbols);
+    } else if (!autoCrypto && profile !== 'crypto') {
+      symbols = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'NAS100'];
+    }
+    const scriptPath = path.join(__dirname, 'scripts', 'backtest_lat_forex.py');
+    if (!fs.existsSync(scriptPath)) {
+      writeJson(res, 404, { ok: false, error: 'backtest_script_missing' });
+      return;
+    }
+    const args = [
+      scriptPath,
+      '--days', String(days),
+      '--tf', tf,
+      '--min-conf', String(minConf),
+      '--profile', isCrypto ? 'crypto' : profile,
+      '--max-symbols', String(maxSymbols),
+      '--min-trades', String(minTrades),
+      '--min-wr', String(minWr),
+      '--min-pf', String(minPf),
+      '--compact'
+    ];
+    if (autoCrypto || (profile === 'crypto' && !symbols.length)) {
+      args.push('--auto-crypto');
+    } else {
+      args.push('--symbols', symbols.join(','));
+    }
+    if (saveWhitelist) {
+      args.push('--out', path.join(__dirname, 'data', 'lat_crypto_whitelist.json'));
+    }
+    const timeoutMs = isCrypto ? Math.min(600000, 45000 + days * maxSymbols * 80) : 180000;
+    const { stdout, stderr } = await execFileAsync(PYTHON_BIN, args, {
+      timeout: timeoutMs,
+      maxBuffer: 8 * 1024 * 1024,
+      env: pyEnv()
+    });
+    const j = JSON.parse(String(stdout || '').trim() || '{}');
+    if (!j.ok) {
+      writeJson(res, 400, { ok: false, error: j.error || 'backtest_failed', detail: j.detail || stderr });
+      return;
+    }
+    logEvent('info', 'backtest_lat_forex.ok', {
+      profile: isCrypto ? 'crypto' : profile,
+      days,
+      tf,
+      symbols: Number(j.symbols_tested || symbols.length || 0),
+      whitelist: Number(j.summary?.whitelist_count || 0),
+      trades: Number(j.summary?.trades || 0),
+      elapsed_ms: Date.now() - startedAt
+    });
+    writeJson(res, 200, j);
+  } catch (err) {
+    logEvent('error', 'backtest_lat_forex.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
+    writeJson(res, 500, { ok: false, error: 'backtest_lat_forex_failed', detail: err.message });
+  }
+}
+
+function handleLatForexWhitelist(_req, res) {
+  try {
+    const p = path.join(__dirname, 'data', 'lat_forex_whitelist.json');
+    if (!fs.existsSync(p)) {
+      writeJson(res, 200, { ok: true, whitelist: [], symbols: [], summary: null });
+      return;
+    }
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    writeJson(res, 200, { ok: true, ...j });
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'lat_forex_whitelist_read_failed', detail: err.message });
+  }
+}
+
+function handleLatCryptoWhitelist(_req, res) {
+  try {
+    const p = path.join(__dirname, 'data', 'lat_crypto_whitelist.json');
+    if (!fs.existsSync(p)) {
+      writeJson(res, 200, { ok: true, whitelist: [], symbols: [], summary: null });
+      return;
+    }
+    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+    writeJson(res, 200, { ok: true, ...j });
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'lat_whitelist_read_failed', detail: err.message });
   }
 }
 
@@ -1363,6 +2220,7 @@ async function handleExecuteOrder(req, res) {
     const pyCode = [
       'import json,sys,sqlite3,os,datetime',
       'import MetaTrader5 as mt5',
+      ...PY_MT5_BOOT_LINES,
       'p=json.loads(sys.argv[1])',
       'db_path=sys.argv[2]',
       'os.makedirs(os.path.dirname(db_path), exist_ok=True)',
@@ -1390,7 +2248,7 @@ async function handleExecuteOrder(req, res) {
       'meta_server = str(p.get("meta_server","") or "")',
       'target_account_type = str(p.get("target_account_type","") or "").lower()',
       'strategy_tag = str(p.get("strategy_tag","core") or "core").strip().lower()',
-      'if strategy_tag not in ("core","turtle_sopa","vwap_reclaim","sr_breakout"): strategy_tag = "core"',
+      'if strategy_tag not in ("core","turtle_sopa","vwap_reclaim","sr_breakout","lat_flash","ict_liquidity"): strategy_tag = "core"',
       'allow_pyramiding = bool(p.get("allow_pyramiding", False))',
       'if not symbol or side not in ("LONG","SHORT") or lot<=0:',
       '  out={"ok":False,"error":"invalid_payload"}',
@@ -1401,9 +2259,9 @@ async function handleExecuteOrder(req, res) {
       '  cur.execute("INSERT INTO orders(ts,symbol,side,lot,entry,sl,tp,dry_run,status,detail,target_account_type,strategy_tag) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",(datetime.datetime.utcnow().isoformat(),symbol,side,lot,0,sl,tp,1,"rejected","invalid_target_account_type",target_account_type,strategy_tag))',
       '  conn.commit(); conn.close(); print(json.dumps(out), flush=True); raise SystemExit(0)',
       'if meta_login and meta_password and meta_server:',
-      '  ok_init = mt5.initialize(login=meta_login, password=meta_password, server=meta_server)',
+      '  ok_init = _crt_mt5_init(meta_login, meta_password, meta_server)',
       'else:',
-      '  ok_init = mt5.initialize()',
+      '  ok_init = _crt_mt5_init()',
       'if not ok_init:',
       '  out={"ok":False,"error":"mt5_initialize_failed","detail":str(mt5.last_error())}',
       'ai = mt5.account_info()',
@@ -1527,6 +2385,70 @@ async function handleExecuteOrder(req, res) {
       '      pending_type = mt5.ORDER_TYPE_SELL_LIMIT if target > ref else mt5.ORDER_TYPE_SELL_STOP',
       '      pending_label = "SELL_LIMIT" if target > ref else "SELL_STOP"',
       '    final_price = target',
+      '# Hizli USD TP: broker TP fiyatini order_calc_profit ile hedef USD kari verecek sekilde ayarla',
+      'lock_sl_until_usd_tp=bool(p.get("lock_sl_until_usd_tp", False))',
+      'tp_usd_target=float(p.get("tp_usd_target",0) or 0)',
+      'if tp_usd_target<=0 and lock_sl_until_usd_tp:',
+      '  tp_usd_target=max(0.0, float(os.environ.get("CRT_QUICK_TP_USD","2") or 2))',
+      'tp_profit_est=0.0',
+      'if tp_usd_target>0 and lot>0:',
+      '  tp=0.0',
+      '  ot=mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
+      '  entry_ref=round(float(final_price), digits)',
+      '  def _tp_profit(px):',
+      '    return float(mt5.order_calc_profit(ot, symbol, lot, entry_ref, round(px, digits)) or 0)',
+      '  buf=max(min_dist, point*2)',
+      '  risk_ref=max(abs(entry_ref-float(sl)), buf, point*10) if float(sl)>0 else max(buf*10, point*500)',
+      '  max_dist=max(risk_ref*3.0, buf*20, point*500)',
+      '  if side=="LONG":',
+      '    lo=entry_ref+buf; hi=entry_ref+max_dist',
+      '    for _ in range(48):',
+      '      mid=round((lo+hi)/2, digits)',
+      '      if _tp_profit(mid)<tp_usd_target: lo=mid',
+      '      else: hi=mid',
+      '    tp=round(hi, digits)',
+      '  else:',
+      '    hi=entry_ref-buf; lo=max(point, entry_ref-max_dist)',
+      '    for _ in range(48):',
+      '      mid=round((lo+hi)/2, digits)',
+      '      if _tp_profit(mid)<tp_usd_target: hi=mid',
+      '      else: lo=mid',
+      '    tp=round(lo, digits)',
+      '  tp_profit_est=_tp_profit(tp)',
+      '# Max USD zarar: strateji SL $8 uzerindeyse broker order_calc_profit ile sinirla',
+      'sl_usd_max=float(p.get("sl_usd_max",0) or 0)',
+      'if sl_usd_max<=0 and lock_sl_until_usd_tp:',
+      '  sl_usd_max=max(0.0, float(os.environ.get("CRT_MAX_SL_USD","8") or 8))',
+      'sl_loss_est=0.0',
+      'if sl_usd_max>0 and lot>0:',
+      '  ot_sl=mt5.ORDER_TYPE_BUY if side=="LONG" else mt5.ORDER_TYPE_SELL',
+      '  entry_ref_sl=round(float(final_price), digits)',
+      '  buf_sl=max(min_dist, point*2)',
+      '  risk_ref_sl=max(abs(entry_ref_sl-float(sl)), buf_sl, point*10) if float(sl)>0 else max(buf_sl*10, point*500)',
+      '  max_dist_sl=max(risk_ref_sl*3.0, buf_sl*20, point*500)',
+      '  def _sl_loss(px):',
+      '    pr=float(mt5.order_calc_profit(ot_sl, symbol, lot, entry_ref_sl, round(px, digits)) or 0)',
+      '    return (-pr) if pr<0 else 0.0',
+      '  strat_sl=float(sl)',
+      '  cur_loss=_sl_loss(strat_sl) if strat_sl>0 else (sl_usd_max+1.0)',
+      '  if strat_sl<=0 or cur_loss>sl_usd_max+0.05:',
+      '    if side=="LONG":',
+      '      hi=entry_ref_sl-buf_sl; lo=max(point, entry_ref_sl-max_dist_sl)',
+      '      for _ in range(48):',
+      '        mid=round((lo+hi)/2, digits)',
+      '        if _sl_loss(mid)>sl_usd_max: lo=mid',
+      '        else: hi=mid',
+      '      sl_at_max=round(hi, digits)',
+      '      sl=float(max(strat_sl, sl_at_max) if strat_sl>0 else sl_at_max)',
+      '    else:',
+      '      lo=entry_ref_sl+buf_sl; hi=entry_ref_sl+max_dist_sl',
+      '      for _ in range(48):',
+      '        mid=round((lo+hi)/2, digits)',
+      '        if _sl_loss(mid)>sl_usd_max: hi=mid',
+      '        else: lo=mid',
+      '      sl_at_max=round(lo, digits)',
+      '      sl=float(min(strat_sl, sl_at_max) if strat_sl>0 else sl_at_max)',
+      '  sl_loss_est=_sl_loss(float(sl)) if float(sl)>0 else 0.0',
       '# SL/TP minimum mesafe dogrulamasi',
       'def _violates_stops(price, sl_v, tp_v, is_long):',
       '  if min_dist<=0: return ""',
@@ -1626,6 +2548,9 @@ async function handleExecuteOrder(req, res) {
       detail: j.detail || '',
       elapsed_ms: Date.now() - startedAt
     });
+    if (j.ok && !j.dry_run) {
+      try { await mirrorOrderToSecondary(payload, j); } catch (_) { /* ignore */ }
+    }
     writeJson(res, j.ok ? 200 : 400, j);
   } catch (err) {
     logEvent('error', 'execute_order.failed', { detail: err.message, elapsed_ms: Date.now() - startedAt });
@@ -1665,12 +2590,20 @@ const server = http.createServer((req, res) => {
     handleBrokerCandles(req, res);
     return;
   }
+  if (routePath === '/api/ping' && req.method === 'GET') {
+    handlePing(req, res);
+    return;
+  }
   if (routePath === '/api/health' && req.method === 'GET') {
     handleHealth(req, res);
     return;
   }
   if (routePath === '/api/execute-order' && req.method === 'POST') {
     handleExecuteOrder(req, res);
+    return;
+  }
+  if (routePath === '/api/sync-mirror-pending' && req.method === 'POST') {
+    handleSyncMirrorPending(req, res);
     return;
   }
   if (routePath === '/api/trade-snapshot' && req.method === 'GET') {
@@ -1714,6 +2647,37 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/list-all-symbols' && (req.method === 'POST' || req.method === 'GET')) {
     handleListAllSymbols(req, res);
+    return;
+  }
+  if (routePath === '/api/edges' && req.method === 'GET') {
+    try {
+      writeJson(res, 200, { ok: true, ...loadEdgesDb() });
+    } catch (err) {
+      writeJson(res, 500, { ok: false, error: 'edges_load_failed', detail: err.message });
+    }
+    return;
+  }
+  if (routePath === '/api/edge-bias' && req.method === 'GET') {
+    try {
+      const pair = String(parsedUrl.searchParams.get('pair') || '').trim();
+      const cat = String(parsedUrl.searchParams.get('cat') || 'forex').trim();
+      const bias = edgeEngine.computeEdgeBias(pair, new Date(), loadEdgesDb(), cat);
+      writeJson(res, 200, { ok: true, ...bias });
+    } catch (err) {
+      writeJson(res, 500, { ok: false, error: 'edge_bias_failed', detail: err.message });
+    }
+    return;
+  }
+  if (routePath === '/api/backtest-lat-forex' && req.method === 'POST') {
+    handleBacktestLatForex(req, res);
+    return;
+  }
+  if (routePath === '/api/lat-forex-whitelist' && req.method === 'GET') {
+    handleLatForexWhitelist(req, res);
+    return;
+  }
+  if (routePath === '/api/lat-crypto-whitelist' && req.method === 'GET') {
+    handleLatCryptoWhitelist(req, res);
     return;
   }
   if (routePath === '/api/cancel-pending' && req.method === 'POST') {
@@ -1784,8 +2748,147 @@ const server = http.createServer((req, res) => {
   writeJson(res, 404, { error: 'Not found' });
 });
 
+let autoManageInFlight = false;
+let mirrorSyncInFlight = false;
+const mirrorDismissedUntilPrimaryClose = new Set();
+const mirrorDismissPending = new Map();
+let lastMirrorOpenKeys = new Set();
+
+function bumpMirrorDismissPending(key, reason) {
+  const n = (mirrorDismissPending.get(key) || 0) + 1;
+  mirrorDismissPending.set(key, n);
+  if (n >= MIRROR_DISMISS_TICKS) {
+    mirrorDismissedUntilPrimaryClose.add(key);
+    mirrorDismissPending.delete(key);
+    logEvent('info', 'mirror_dismiss.set', { key, reason, ticks: n });
+  }
+}
+
+function updateMirrorDismissState(primary, mirror) {
+  const primaryOpen = new Set(
+    (primary.open_positions || []).filter(isCrtOpenPosition).map((p) => mirrorPendingKey(p.symbol, p.side))
+  );
+  const currentMirrorOpen = new Set(
+    (mirror.open_positions || []).filter(isCrtOpenPosition).map((p) => mirrorPendingKey(p.symbol, p.side))
+  );
+  for (const key of lastMirrorOpenKeys) {
+    if (!currentMirrorOpen.has(key) && primaryOpen.has(key)) {
+      bumpMirrorDismissPending(key, 'mirror_closed_primary_still_open');
+    }
+  }
+  const nowSec = Date.now() / 1000;
+  for (const p of (primary.open_positions || []).filter(isCrtOpenPosition)) {
+    const key = mirrorPendingKey(p.symbol, p.side);
+    if (currentMirrorOpen.has(key) || mirrorDismissedUntilPrimaryClose.has(key)) continue;
+    const recentMirrorClose = (mirror.closed_deals || []).some((d) => {
+      if (mirrorPendingKey(d.symbol, d.side) !== key) return false;
+      const t = Number(d.time || 0);
+      return t > 0 && (nowSec - t) < 7200;
+    });
+    if (recentMirrorClose) bumpMirrorDismissPending(key, 'recent_mirror_tp_while_primary_open');
+  }
+  for (const key of currentMirrorOpen) mirrorDismissPending.delete(key);
+  lastMirrorOpenKeys = currentMirrorOpen;
+  for (const key of [...mirrorDismissedUntilPrimaryClose]) {
+    if (!primaryOpen.has(key)) mirrorDismissedUntilPrimaryClose.delete(key);
+  }
+  for (const key of [...mirrorDismissPending.keys()]) {
+    if (!primaryOpen.has(key)) mirrorDismissPending.delete(key);
+  }
+}
+
+function isMirrorDismissed(symbol, side) {
+  return mirrorDismissedUntilPrimaryClose.has(mirrorPendingKey(symbol, side));
+}
+
+async function mirrorCloseOnSecondary(symbol, side) {
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790) return [];
+  const results = [];
+  try {
+    const mirror = await httpGetJson(CRT_MIRROR_SNAPSHOT_URL);
+    const key = mirrorPendingKey(symbol, side);
+    for (const p of (mirror.open_positions || [])) {
+      if (!isCrtOpenPosition(p) || mirrorPendingKey(p.symbol, p.side) !== key) continue;
+      const ticket = Number(p.ticket || 0);
+      if (!ticket) continue;
+      const cj = await httpPostJson(CRT_MIRROR_CLOSE_URL, { ticket });
+      results.push({ type: 'close', ticket, ok: !!cj.ok, detail: cj.detail || '' });
+    }
+    for (const m of (mirror.pending_orders || [])) {
+      if (!isCrtPendingOrder(m) || mirrorPendingKey(m.symbol, m.side) !== key) continue;
+      const ticket = Number(m.ticket || 0);
+      if (!ticket) continue;
+      const cj = await httpPostJson(CRT_MIRROR_CANCEL_URL, { ticket });
+      results.push({ type: 'cancel', ticket, ok: !!cj.ok, detail: cj.detail || '' });
+    }
+  } catch (err) {
+    logEvent('warn', 'mirror_close.secondary_failed', { symbol, side, detail: err.message });
+  }
+  return results;
+}
+const AUTO_MANAGE_MS = Math.max(2000, Number(process.env.CRT_AUTO_MANAGE_MS || 4000));
+const MIRROR_SYNC_MS = Math.max(5000, Number(process.env.CRT_MIRROR_SYNC_MS || 15000));
+
+async function tickMirrorSync() {
+  if (!CRT_MIRROR_ENABLED || Number(PORT) !== 8790 || mirrorSyncInFlight) return;
+  mirrorSyncInFlight = true;
+  try {
+    const result = await runMirrorSync();
+    const added = (result.actions || []).filter((a) => !a.skipped && !a.action && a.ok);
+    const cancelled = (result.actions || []).filter((a) => a.action === 'cancel' && a.ok);
+    if (added.length || cancelled.length) {
+      logEvent('info', 'mirror_sync.tick', {
+        added: added.map((a) => `${a.symbol}:${a.side}`).join(','),
+        cancelled: cancelled.map((a) => `${a.symbol}:${a.side}`).join(',')
+      });
+    }
+  } catch (err) {
+    logEvent('warn', 'mirror_sync.tick_failed', { detail: err.message });
+  } finally {
+    mirrorSyncInFlight = false;
+  }
+}
+
+async function tickAutoManage() {
+  if (autoManageInFlight) return;
+  autoManageInFlight = true;
+  try {
+    const cfg = loadManageCfg();
+    if (!(Number(cfg.trail_target_usd || 0) > 0)) return;
+    const res = await fetch(`http://127.0.0.1:${PORT}/api/manage-positions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg)
+    });
+    if (!res.ok) return;
+    const j = await res.json();
+    const hits = (j.actions || []).filter((a) => a.type === 'tp_usd_target' && a.ok);
+    if (hits.length) {
+      logEvent('info', 'auto_manage.tp_usd_target', {
+        count: hits.length,
+        symbols: hits.map((a) => a.symbol).join(','),
+        profits: hits.map((a) => a.profit_usd)
+      });
+    }
+  } catch (err) {
+    logEvent('warn', 'auto_manage.failed', { detail: err.message });
+  } finally {
+    autoManageInFlight = false;
+  }
+}
+
 server.listen(PORT, LISTEN_HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`CRT AI proxy dinleniyor: ${LISTEN_HOST}:${PORT}`);
+  console.log(`CRT AI proxy calisiyor: http://${LISTEN_HOST}:${PORT}`);
   logEvent('info', 'server.started', { port: PORT, listen_host: LISTEN_HOST, token_required: !!PROXY_TOKEN, debug_log_path: DEBUG_LOG_PATH });
+  saveManageCfg(loadManageCfg());
+  if (String(process.env.CRT_AUTO_MANAGE || 'true').toLowerCase() !== 'false') {
+    setInterval(tickAutoManage, AUTO_MANAGE_MS);
+    logEvent('info', 'auto_manage.started', { interval_ms: AUTO_MANAGE_MS, trail_target_usd: loadManageCfg().trail_target_usd });
+  }
+  if (CRT_MIRROR_ENABLED && Number(PORT) === 8790) {
+    setInterval(tickMirrorSync, MIRROR_SYNC_MS);
+    logEvent('info', 'mirror_sync.started', { interval_ms: MIRROR_SYNC_MS });
+    setTimeout(() => { tickMirrorSync().catch(() => {}); }, 3000);
+  }
 });

@@ -1,0 +1,137 @@
+{
+  "ok": true,
+  "profile": "auto",
+  "days": 180,
+  "tf": "M5",
+  "min_conf": 65,
+  "filters": {
+    "min_trades": 8,
+    "min_wr": 45.0,
+    "min_pf": 1.05
+  },
+  "symbols_tested": 6,
+  "symbols": [
+    {
+      "symbol": "XAUUSD",
+      "category": "forex",
+      "trades": 253,
+      "wins": 116,
+      "losses": 137,
+      "wr": 45.8,
+      "pf": 0.9,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 65,
+        "price_threshold": 0.38,
+        "vol_mult": 2.4,
+        "rsi_long": 26,
+        "rsi_short": 74,
+        "window": 40
+      }
+    },
+    {
+      "symbol": "EURUSD",
+      "category": "forex",
+      "trades": 151,
+      "wins": 74,
+      "losses": 77,
+      "wr": 49.0,
+      "pf": 1.18,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 65,
+        "price_threshold": 0.22,
+        "vol_mult": 2.8,
+        "rsi_long": 28,
+        "rsi_short": 72,
+        "window": 45
+      }
+    },
+    {
+      "symbol": "USDJPY",
+      "category": "forex",
+      "trades": 164,
+      "wins": 84,
+      "losses": 80,
+      "wr": 51.2,
+      "pf": 1.31,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 65,
+        "price_threshold": 0.22,
+        "vol_mult": 2.8,
+        "rsi_long": 28,
+        "rsi_short": 72,
+        "window": 45
+      }
+    },
+    {
+      "symbol": "GBPUSD",
+      "category": "forex",
+      "trades": 178,
+      "wins": 82,
+      "losses": 96,
+      "wr": 46.1,
+      "pf": 1.2,
+      "avg_rr": 1.24,
+      "params": {
+        "tp_fib": 0.618,
+        "sl_fib": 0.5,
+        "min_conf": 65,
+        "price_threshold": 0.22,
+        "vol_mult": 2.8,
+        "rsi_long": 28,
+        "rsi_short": 72,
+        "window": 45
+      }
+    },
+    {
+      "symbol": "NAS100",
+      "error": "symbol_not_found",
+      "trades": 0
+    },
+    {
+      "symbol": "GER40",
+      "error": "symbol_not_found",
+      "trades": 0
+    }
+  ],
+  "whitelist": [
+    {
+      "symbol": "USDJPY",
+      "trades": 164,
+      "wr": 51.2,
+      "pf": 1.31,
+      "avg_rr": 1.24
+    },
+    {
+      "symbol": "GBPUSD",
+      "trades": 178,
+      "wr": 46.1,
+      "pf": 1.2,
+      "avg_rr": 1.24
+    },
+    {
+      "symbol": "EURUSD",
+      "trades": 151,
+      "wr": 49.0,
+      "pf": 1.18,
+      "avg_rr": 1.24
+    }
+  ],
+  "rejected_count": 1,
+  "error_count": 2,
+  "summary": {
+    "trades": 746,
+    "wins": 356,
+    "wr": 47.7,
+    "whitelist_count": 3
+  },
+  "generated": "2026-06-05T13:48:29.743528+00:00"
+}

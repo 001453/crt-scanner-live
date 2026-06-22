@@ -1,0 +1,1225 @@
+Candle Range Theory · ▶ STRATEJİYİ BAŞLAT = forex çiftlerini tara → sinyal bul → kurallar uygunsa MT5’e emir (otomatik).
+
+Taranıyor... 47/87 · AUD/CAD
+Kaynak: mt5(87) · verisiz(0) · aktif tarama:87/87 · TF kontrol: M15/H1/H4 · TZ:UTC
+⏸ STRATEJİYİ DURDUR
+ÇALIŞIYOR · periyodik tarama + sinyal → uygunsa MT5 · MT5 ✓ · LIVE ⚠ · profil: default
+↗
+Sinyaller
+Akış
+Yönetim
+⚙ Ayarlar
+Hesap: 
+— Plan ayarlarındaki (default) —
++ Kaydet
+🗑
+Hesap:
+LIVE
+· canli
+OTO:AÇIK
+A+:KAPALI
+Trade: 12 (limit kapalı)
+Açık:
+1
+· Pending:
+5
+·
+[6/6]
+⚠ DOLU
+Tarama: FX+Metal+Endeks+Kripto+Enerji (87 parite)
+Toplam: -5.29USD (Trail:+15/8 / BE:+20 / SL:-50)
+L:3/3 · S:3/3 ⚠
+Korel: CHF:-2 EUR:-2 JPY:+2 RISK_ON:+1
+PnL bugun:
+-16.61
+USD (limit 6USD, %263)
+Loss limit:
+%1.5
+1%
+2%
+5%
+10%
+RESET
+core:-16.6 (1/2)
+telemetri: 16 emir · OK 12/FAIL 4 · avg lat 389ms (max 542) · avg slip 5037.5pt (max 50000)
+FİLTRE
+Tümü
+Forex
+Metal
+Kripto
+Endeks
+SİSTEM
+AI Filtre: Açık
+Limit: 6
+🌙 Gece
+Oto Tarama: Açık
+Sonraki tarama: 37sn
+🔄 Tara
+🛑 ACİL DUR
+Taranan
+45
+Long
+0
+Short
+6
+Yatay Bölge
+17
+Yönetimde
+5
+Bekleyen
+5
+İnceleme için aktif sinyal yok.
+Canlı Grafik (Seçili Sinyal)
+5:21:58 PM · EUR/CHF SHORT · TF M30/H1 5:21:58 PM · EUR/NOK SHORT · TF M15/H1 5:21:58 PM · USD/HKD LONG · TF M30/H1 5:21:58 PM · EUR/PLN SHORT · TF M15/H1 5:21:58 PM · SP500.X SHORT · TF M30/H1 5:21:58 PM · ALUMINIUM LONG · TF H1/H4 5:22:00 PM · Emir HATA USD/HKD: spread_too_wide 5:22:00 PM · Pending LIVE CAD/CHF LONG lot:0.13 · tip:BUY_LIMIT · hesap:live
+USD/JPY · son fiyat 159.94600 · TF:H1 · son mum 0s once
+ENTRY: — · SL: — · TP: —
+Sabitle: Kapalı
+Seçili parite otomatik değişebilir.
+Canlı İşlem Akışı
+Emir: 18 · Başarılı: 13 · Hata: 5 · Yönetim: 0
+Temizle
+4:39:29 PM
+EMİR GÖNDERİLİYOR · GER30.X LONG · lot:0.01 · SL:$14.46 TP:$43.39 (hedef sapma +67%) · niyet:24861.79900 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (24861.80000→24861.79900, SL 24803.94250→24803.94150)
+4:39:30 PM
+EMİR YERLEŞTİRİLDİ LIVE · GER30.X LONG · tip:BUY_LIMIT · TTL:30dk · lot:0.01 · risk:$14.46/$43.39 · tetik:24861.80000 · SL:24803.94150 · TP:25035.37150 · hesap:live · ticket:19441351 · spread:37.000000000007276pt · rc:10009 DONE (basarili) · 368ms
+4:39:30 PM
+EMİR GÖNDERİLİYOR · CAC40.X LONG · lot:0.04 · SL:$8.40 TP:$25.20 · niyet:8165.79900 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (8165.80000→8165.79900, SL 8144.80250→8144.80150)
+4:39:30 PM
+EMİR YERLEŞTİRİLDİ LIVE · CAC40.X LONG · tip:BUY_LIMIT · TTL:30dk · lot:0.04 · risk:$8.40/$25.20 · tetik:8165.30000 · SL:8144.80150 · TP:8228.79150 · KAYDIRILDI 8165.80000→8165.30000 (broker min mesafe) · hesap:live · ticket:19441352 · spread:10pt · slip:50000pt · rc:10009 DONE (basarili) · 376ms
+4:39:30 PM
+EMİR GÖNDERİLİYOR · CHF/JPY SHORT · lot:0.05 · SL:$8.29 TP:$24.87 · niyet:202.58900 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (202.48900→202.58900, SL 202.75410→202.85410)
+4:39:31 PM
+EMİR YERLEŞTİRİLDİ LIVE · CHF/JPY SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.05 · risk:$8.29/$24.87 · tetik:202.58900 · SL:202.85410 · TP:201.79370 · hesap:live · ticket:19441353 · spread:38.99999999998727pt · slip:10000pt · rc:10009 DONE (basarili) · 403ms
+4:39:31 PM
+EMİR GÖNDERİLİYOR · CAD/CHF SHORT · lot:0.09 · SL:$7.80 TP:$23.39 · niyet:0.57045 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (0.56945→0.57045, SL 0.57013→0.57113)
+4:39:32 PM
+EMİR YERLEŞTİRİLDİ LIVE · CAD/CHF SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.09 · risk:$7.80/$23.39 · tetik:0.57045 · SL:0.57113 · TP:0.56840 · hesap:live · ticket:19441354 · spread:44.99999999999504pt · slip:100pt · rc:10009 DONE (basarili) · 389ms
+4:39:32 PM
+EMİR GÖNDERİLİYOR · EUR/CHF SHORT · lot:0.05 · SL:$7.20 TP:$21.61 · niyet:0.91738 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (0.91638→0.91738, SL 0.91752→0.91852)
+4:39:32 PM
+EMİR YERLEŞTİRİLDİ LIVE · EUR/CHF SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.05 · risk:$7.20/$21.61 · tetik:0.91738 · SL:0.91852 · TP:0.91396 · hesap:live · ticket:19441355 · spread:53.99999999999849pt · slip:100pt · rc:10009 DONE (basarili) · 396ms
+4:40:42 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441351
+4:41:15 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441352
+4:42:41 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:2 pending:4) · Yeni emir gonderilmeyecek
+4:47:41 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:2 pending:4) · Yeni emir gonderilmeyecek
+4:49:08 PM
+POZ. KAPANDI · GER30.x LONG · STOP · PnL: -16.86 USD · lot:0.01 · kapanis:24803.7
+4:51:50 PM
+EMİR GÖNDERİLİYOR · SP500.X LONG · lot:0.01 · SL:$6.55 TP:$19.65 (hedef sapma -22%) · niyet:7571.19900 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (7571.20000→7571.19900, SL 7558.10250→7558.10150)
+4:51:51 PM
+EMİR YERLEŞTİRİLDİ LIVE · SP500.X LONG · tip:BUY_LIMIT · TTL:30dk · lot:0.01 · risk:$6.55/$19.65 · tetik:7571.20000 · SL:7558.10150 · TP:7610.49150 · hesap:live · ticket:19441574 · spread:26.99999999999818pt · rc:10009 DONE (basarili) · 418ms
+4:51:51 PM
+⚠️ MIN LOT ASIRI RISK · WAI.X LONG · lot 0.01 → SL $31.88 (hedef $8.43, +278%) · ATLANDI
+4:51:51 PM
+EMİR GÖNDERİLİYOR · N225.X LONG · lot:0.01 · SL:$18.59 TP:$55.77 (hedef sapma +121%) · niyet:67991.99900 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (67992.00000→67991.99900, SL 67806.10000→67806.09900)
+4:51:51 PM
+EMİR REDDEDİLDİ · N225.X LONG · lot:0.01 · sebep: Spread cok genis (200.0pt > 180.0pt limit) · spread:200.0pt · 313ms
+4:55:44 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:1 pending:5) · Yeni emir gonderilmeyecek
+4:59:48 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:1 pending:5) · Yeni emir gonderilmeyecek
+5:03:52 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:1 pending:5) · Yeni emir gonderilmeyecek
+5:07:46 PM
+🚫 AÇIK POZISYON LIMITI · 6/6 (acik:1 pending:5) · Yeni emir gonderilmeyecek
+5:08:59 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441349
+5:08:59 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441353
+5:08:59 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441354
+5:08:59 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441355
+5:11:41 PM
+EMİR GÖNDERİLİYOR · AUD/CHF LONG · lot:0.07 · SL:$7.66 TP:$22.98 · niyet:0.56343 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (0.56443→0.56343, SL 0.56357→0.56257)
+5:11:42 PM
+EMİR YERLEŞTİRİLDİ LIVE · AUD/CHF LONG · tip:BUY_LIMIT · TTL:30dk · lot:0.07 · risk:$7.66/$22.98 · tetik:0.56343 · SL:0.56257 · TP:0.56602 · hesap:live · ticket:19441811 · spread:44.99999999999504pt · slip:100pt · rc:10009 DONE (basarili) · 542ms
+5:11:42 PM
+LOT KUCULULTULDU · USD/HKD SHORT · marjin %36.8 → %29.7 · lot:0.31 → 0.25
+5:11:42 PM
+EMİR GÖNDERİLİYOR · USD/HKD SHORT · lot:0.25 · SL:$6.66 TP:$19.98 (hedef sapma -21%) · niyet:7.83539 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (7.83439→7.83539, SL 7.83648→7.83748)
+5:11:43 PM
+EMİR REDDEDİLDİ · USD/HKD SHORT · lot:0.25 · sebep: Spread cok genis (745.0pt > 180.0pt limit) · spread:745.0pt · 256ms
+5:15:47 PM
+LOT KUCULULTULDU · EUR/CAD SHORT · marjin %31.6 → %28.9 · lot:0.23 → 0.21
+5:15:48 PM
+EMİR GÖNDERİLİYOR · EUR/CAD SHORT · lot:0.21 · SL:$7.56 TP:$22.68 · niyet:1.61055 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (1.60955→1.61055, SL 1.61005→1.61105)
+5:15:48 PM
+EMİR YERLEŞTİRİLDİ LIVE · EUR/CAD SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.21 · risk:$7.56/$22.68 · tetik:1.61055 · SL:1.61105 · TP:1.60905 · hesap:live · ticket:19441845 · spread:43.00000000001525pt · slip:100pt · rc:10009 DONE (basarili) · 431ms
+5:15:48 PM
+LOT KUCULULTULDU · USD/HKD SHORT · marjin %36.8 → %29.7 · lot:0.31 → 0.25
+5:15:48 PM
+EMİR GÖNDERİLİYOR · USD/HKD SHORT · lot:0.25 · SL:$6.66 TP:$19.98 (hedef sapma -21%) · niyet:7.83539 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (7.83439→7.83539, SL 7.83648→7.83748)
+5:15:49 PM
+EMİR REDDEDİLDİ · USD/HKD SHORT · lot:0.25 · sebep: Spread cok genis (745.0pt > 180.0pt limit) · spread:745.0pt · 295ms
+5:18:25 PM
+EMİR GÖNDERİLİYOR · EUR/JPY SHORT · lot:0.07 · SL:$7.47 TP:$22.41 · niyet:185.71300 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (185.61300→185.71300, SL 185.78363→185.88362)
+5:18:25 PM
+EMİR YERLEŞTİRİLDİ LIVE · EUR/JPY SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.07 · risk:$7.47/$22.41 · tetik:185.71300 · SL:185.88362 · TP:185.20112 · hesap:live · ticket:19441865 · spread:36.000000000001364pt · slip:10000pt · rc:10009 DONE (basarili) · 419ms
+5:18:25 PM
+EMİR GÖNDERİLİYOR · CAD/JPY SHORT · lot:0.11 · SL:$7.76 TP:$23.28 · niyet:115.42600 · mod:pending (30dk TTL) · max_spread:60pt · strateji:core · geri çek:10pt (115.32600→115.42600, SL 115.43882→115.53882)
+5:18:26 PM
+EMİR YERLEŞTİRİLDİ LIVE · CAD/JPY SHORT · tip:SELL_LIMIT · TTL:30dk · lot:0.11 · risk:$7.76/$23.28 · tetik:115.42600 · SL:115.53882 · TP:115.08752 · hesap:live · ticket:19441866 · spread:45.000000000001705pt · slip:10000pt · rc:10009 DONE (basarili) · 356ms
+5:21:01 PM
+PENDING TAMAMLANDI/IPTAL · ticket:19441574
+5:21:59 PM
+LOT KUCULULTULDU · USD/HKD LONG · marjin %40.3 → %29.7 · lot:0.34 → 0.25
+5:21:59 PM
+EMİR GÖNDERİLİYOR · USD/HKD LONG · lot:0.25 · SL:$6.12 TP:$18.37 (hedef sapma -27%) · niyet:7.83348 · mod:pending (30dk TTL) · max_spread:60pt · strateji:sr_breakout · geri çek:10pt (7.83448→7.83348, SL 7.83256→7.83156)
+5:22:00 PM
+EMİR REDDEDİLDİ · USD/HKD LONG · lot:0.25 · sebep: Spread cok genis (745.0pt > 180.0pt limit) · spread:745.0pt · 368ms
+5:22:00 PM
+⚠️ MIN LOT ASIRI RISK · ALUMINIUM LONG · lot 0.01 → SL $44.00 (hedef $8.43, +422%) · ATLANDI
+5:22:00 PM
+EMİR GÖNDERİLİYOR · CAD/CHF LONG · lot:0.13 · SL:$8.22 TP:$24.67 · niyet:0.56872 · mod:pending (30dk TTL) · max_spread:60pt · strateji:vwap_reclaim · geri çek:10pt (0.56972→0.56872, SL 0.56922→0.56822)
+5:22:00 PM
+EMİR YERLEŞTİRİLDİ LIVE · CAD/CHF LONG · tip:BUY_LIMIT · TTL:30dk · lot:0.13 · risk:$8.22/$24.67 · tetik:0.56872 · SL:0.56822 · TP:0.57022 · hesap:live · ticket:19441897 · spread:44.99999999999504pt · slip:100pt · rc:10009 DONE (basarili) · 395ms
+Yönetilen İşlemler
+1 adet · BE:1R · Trail:1.5R · TP1:1R · Erken yonetim: 13$
+CAC40.x
+LONG
+core
+giriş:8165.30000 · SL:8144.80000 (205000pt) · TP:8228.80000 (635000pt · 3.10R) · lot:0.04 · ticket:19441352 · yaş:0dk
+-2.55 USD
+Kapat
+Bekleyen Pending Emirler
+5 adet
+AUDCHF LONG · BUY_LIMIT · tetik:0.56343 · SL:0.56257 · TP:0.56602 · lot:0.07 · ticket:19441811 · -169dk once · TTL: 197dk kalan
+İptal
+EURCAD SHORT · SELL_LIMIT · tetik:1.61055 · SL:1.61105 · TP:1.60905 · lot:0.21 · ticket:19441845 · -173dk once · TTL: 201dk kalan
+İptal
+EURJPY SHORT · SELL_LIMIT · tetik:185.71300 · SL:185.88400 · TP:185.20100 · lot:0.07 · ticket:19441865 · -176dk once · TTL: 204dk kalan
+İptal
+CADJPY SHORT · SELL_LIMIT · tetik:115.42600 · SL:115.53900 · TP:115.08800 · lot:0.11 · ticket:19441866 · -176dk once · TTL: 204dk kalan
+İptal
+CADCHF LONG · BUY_LIMIT · tetik:0.56872 · SL:0.56822 · TP:0.57022 · lot:0.13 · ticket:19441897 · -179dk once · TTL: 208dk kalan
+İptal
+Kategori Bazlı Tarama (Hepsi)Gizle
+Forex · 18 ürün · 2 sinyal
+EUR/USD · WAIT · TF:—
+GBP/USD · WAIT · TF:—
+USD/JPY · WAIT · TF:—
+EUR/GBP · SHORT · TF:M15/H1
+AUD/USD · WAIT · TF:—
+EUR/JPY · WAIT · TF:—
+USD/CAD · WAIT · TF:—
+USD/CHF · WAIT · TF:—
+CHF/JPY · SHORT · TF:M30/H1
+NZD/USD · WAIT · TF:—
+EUR/CAD · WAIT · TF:—
+AUD/CHF · WAIT · TF:—
+CAD/CHF · WAIT · TF:—
+CAD/JPY · WAIT · TF:—
+AUD/JPY · WAIT · TF:—
+NZD/CHF · WAIT · TF:—
+GBP/JPY · WAIT · TF:—
+GBP/CAD · WAIT · TF:—
+Metaller · 0 ürün · 0 sinyal
+Veri yok
+Kripto · 24 ürün · 4 sinyal
+#BNBUSD · WAIT · TF:—
+#ETHBTC · WAIT · TF:—
+#THTUSD · WAIT · TF:—
+#XLMUSD · WAIT · TF:—
+#XRPEUR · WAIT · TF:—
+#XTZUSD · SHORT · TF:M30/H1
+#AVEUSD · WAIT · TF:—
+#XEMUSD · WAIT · TF:—
+#DOTUSD · SHORT · TF:M30/H1
+#LNKUSD · WAIT · TF:—
+#ADAUSD · WAIT · TF:—
+#BSVUSD · WAIT · TF:—
+#DOGEUSD · SHORT · TF:M30/H1
+#DSHUSD · SHORT · TF:M30/H1
+#UNIUSD · WAIT · TF:—
+#TRXUSD · WAIT · TF:—
+#EOSUSD · WAIT · TF:—
+#XMRUSD · WAIT · TF:—
+#BCHUSD · WAIT · TF:—
+#XRPUSD · WAIT · TF:—
+#LTCUSD · WAIT · TF:—
+#ETHUSD · WAIT · TF:—
+#BTCUSD · WAIT · TF:—
+#BTCEUR · WAIT · TF:—
+Endeks · 0 ürün · 0 sinyal
+Veri yok
+Kasa / Lot Yönetimi
+Forex için varsayılan kaldıraç: 1:200. Önerilen lot, risk tutarı ve marjin sınırı birlikte dikkate alınarak hesaplanır.
+Bakiye (USD)
+432
+Risk % (işlem başı)
+2
+Risk USD (işlem başı)
+8.64
+Kaldıraç
+200
+Min Lot
+0.01
+Max Lot
+5
+Lot Adımı
+0.01
+Bir SL'de kaybedilecek: 8.43 USD (~%2.00 bakiye).
+Lot Hesabını Güncelle
+⚙ Tek Tık Emir Planı (Strateji Ayarları)Gizle
+Tüm strateji, risk ve emir ayarlarını burada düzenle. Bölümleri tıklayarak aç/kapa. Tooltip için inputların üzerine gel. Düzenleme sonrası "Planı Güncelle" butonuna bas.
+Max Günlük Risk %
+2
+Günlük Zarar Limiti %
+1.5
+Günlük zarar limiti uygula (emir engeli)
+Max Günlük Trade
+10
+Günlük trade limiti uygula
+Aynı Anda Açık Pozisyon
+6
+Aynı Yön Max (L/S)
+3
+Korelasyon Limiti
+2
+Basit Net Yön (|L−S|)
+0
+Max Marjin Kullanım %
+30
+Max Spread (point)
+60
+Parite Cooldown (dk)
+40
+Strateji Modu
+Hybrid (CRT + Turtle)
+Strateji Profili
+Balanced (dengeli)
+A+ Modu (kalite)
+Zayıf Stratejiyi Ele
+Institutional Mod
+Institutional Min RR
+1.8
+Turtle Scalp İzin
+Turtle Min RR
+1.6
+Sinyal TTL (dk)
+45
+Üst TF Onayı (H4)
+Auto News Block
+Aktif Tarama Stratejileri
+Core (CRT+PA)
+Turtle Sopa
+VWAP Reclaim
+S/R Breakout
+Tarama Kategorileri (Ürün Tipi)
+Forex
+Metal
+Endeks
+Enerji
+Kripto
+Emtia
+Tahvil
+Hisse
+Sadece seçili kategoriler taranır. Default: forex+metal+endeks+enerji açık, kripto/emtia/tahvil/hisse kapalı.
+⚡ Circuit Breaker (Otomatik Dur)
+Üst üste kayıplar veya hızlı drawdown tetiklenirse auto-trade otomatik kapanır. Açık pozisyonlara dokunulmaz, manuel resetlersin.
+CB Aktif
+Ardışık Kayıp Max
+4
+Günlük DD %
+5
+Equity Peak DD %
+8
+⚪ Devre dışı
+🚫 İşlem Yapılmayacak Pariteler (Blacklist)
+Bu listedeki sembollerden sinyal gelse bile emir gönderilmez. Tarama sonucu görünür ama auto-execute reddeder.
+EURGBP×
+Sembol ekle (örn: EURGBP)
++ Ekle
+↺ Default
+📍 Canlı performans: Her stratejinin son 20 kapanmış işlemi baz alınır. Win Rate, ortalama PnL, profit factor ve sinyal sıklığını görüp hangisi senin hesabında iyi/kötü çalışıyor görebilirsin. Aç/Kapat butonuyla zayıf stratejileri devre dışı bırakabilirsin. Skor < 0.8 + WR < 38% + negatif PnL ise sistem zaten otomatik blokluyor (Zayıf Stratejiyi Devre Dışı seçeneği açıksa).
+🎯 Core (CRT+PA)
+AKTIF
+→ Normal
+·
+Skor: 1.07x
+Win Rate (son 20)
+60%
+12W / 8L
+Toplam PnL
+-27.26$
+Ort: -1.36$
+En İyi / En Kötü
++11.99 / -16.86
+Profit Factor: 0.60
+Sinyal Sıklığı
+24s: 0
+Şu an aktif: 1
+Tüm zaman: 24 işlem · -39.99$
+Kapat
+🐢 Turtle Sopa
+AKTIF
+→ Normal
+·
+Skor: 1.00x
+Win Rate (son 0)
+—
+0W / 0L
+Toplam PnL
++0.00$
+Ort: +0.00$
+En İyi / En Kötü
++0.00 / 0.00
+Profit Factor: —
+Sinyal Sıklığı
+24s: 0
+Şu an aktif: 0
+veri yok
+Tüm zaman: 0 işlem · +0.00$
+Kapat
+📈 VWAP Reclaim
+AKTIF
+→ Normal
+·
+Skor: 1.00x
+Win Rate (son 0)
+—
+0W / 0L
+Toplam PnL
++0.00$
+Ort: +0.00$
+En İyi / En Kötü
++0.00 / 0.00
+Profit Factor: —
+Sinyal Sıklığı
+24s: 0
+Şu an aktif: 5
+veri yok
+Tüm zaman: 0 işlem · +0.00$
+Kapat
+🔨 S/R Breakout
+AKTIF
+→ Normal
+·
+Skor: 1.00x
+Win Rate (son 0)
+—
+0W / 0L
+Toplam PnL
++0.00$
+Ort: +0.00$
+En İyi / En Kötü
++0.00 / 0.00
+Profit Factor: —
+Sinyal Sıklığı
+24s: 0
+Şu an aktif: 0
+veri yok
+Tüm zaman: 0 işlem · +0.00$
+Kapat
+Skor: 1.0 = nötr, >1.1 güçlü, <0.85 zayıf
+·
+Profit Factor: brüt kâr / brüt zarar (≥1.5 ideal)
+·
+Mini grafik: son 5 trade PnL'i
+↻ Yenile
+💾 Planı Güncelle
+⬇ Export
+⬆ Import
+UYARI: Emirler LIVE hesaba gidecek.
+Health: MT5 OK · account 506185 · mode real · auto ON · LIVE · target Live
+Plan için uygun sinyal yok.
+Tüm Tarama Sonuçları
+Not: Bölge % sinyalden sonraki değişim değil, sinyal anındaki range genişliğidir. Formül: (CRH-CRL)/Mid * 100.
+Parite	Fiyat	Trend	Sinyal	Giriş	SL	TP	R:R	Takip TF	CRH	CRL	Bölge%
+#BNBUSD	631.42000	down	—	—	—	—	—	—	—	—	—
+#ETHBTC	0.02782	up	—	—	—	—	—	—	—	—	—
+#THTUSD	0.18800	down	—	—	—	—	—	—	—	—	—
+#XLMUSD	0.22290	up	—	—	—	—	—	—	—	—	—
+#XRPEUR	1.05380	down	—	—	—	—	—	—	—	—	—
+#XTZUSD	0.30400	down	SHORT AI Bekliyor	0.30400	0.30700	0.29500	3.00	M30/H1	0.30700	0.30100	1.10%
+#AVEUSD	75.22000	down	—	—	—	—	—	—	—	—	—
+#XEMUSD	0.00110	down	—	—	—	—	—	—	—	—	—
+#DOTUSD	1.11200	down	SHORT AI Bekliyor	1.11200	1.12200	1.08200	3.00	M30/H1	1.13100	1.10300	1.10%
+#LNKUSD	8.42900	down	—	—	—	—	—	—	—	—	—
+#ADAUSD	0.21360	down	—	—	—	—	—	—	—	—	—
+#BSVUSD	14.13000	down	—	—	—	—	—	—	—	—	—
+#DOGEUSD	0.09335	down	SHORT AI Bekliyor	0.09335	0.09415	0.09095	3.00	M30/H1	0.09445	0.09335	1.10%
+#DSHUSD	39.62000	down	SHORT AI Bekliyor	39.62000	39.95000	38.63000	3.00	M30/H1	40.22000	39.04000	1.10%
+#UNIUSD	2.88600	down	—	—	—	—	—	—	—	—	—
+#TRXUSD	0.33284	down	—	—	—	—	—	—	—	—	—
+#EOSUSD	0.76500	down	—	—	—	—	—	—	—	—	—
+#XMRUSD	353.43000	down	—	—	—	—	—	—	—	—	—
+#BCHUSD	238.13000	down	—	—	—	—	—	—	—	—	—
+#XRPUSD	1.21300	down	—	—	—	—	—	—	—	—	—
+#LTCUSD	46.67500	down	—	—	—	—	—	—	—	—	—
+#ETHUSD	1852.95500	down	—	—	—	—	—	—	—	—	—
+#BTCUSD	66677.40000	down	—	—	—	—	—	—	—	—	—
+#BTCEUR	57372.41000	down	—	—	—	—	—	—	—	—	—
+BRENT.X	100.31000	down	—	—	—	—	—	—	—	—	—
+NGAS.X	3.03600	up	—	—	—	—	—	—	—	—	—
+WTI.X	96.57000	down	—	—	—	—	—	—	—	—	—
+EUR/USD	1.16022	range	—	—	—	—	—	—	—	—	—
+GBP/USD	1.34270	range	—	—	—	—	—	—	—	—	—
+USD/JPY	159.94600	up	—	—	—	—	—	—	—	—	—
+EUR/GBP	0.86402	range	SHORT AI Bekliyor	0.86402	0.86431	0.86314	3.00	M15/H1	0.86423	0.86310	0.13%
+AUD/USD	0.71437	range	—	—	—	—	—	—	—	—	—
+EUR/JPY	185.71300	—	PENDING · SHORT · ticket 19441865 bekliyor	185.71300	185.88400	185.20100	—	BEKLİYOR	—	—	—
+USD/CAD	1.38708	up	—	—	—	—	—	—	—	—	—
+USD/CHF	0.79027	up	—	—	—	—	—	—	—	—	—
+CHF/JPY	202.38000	down	SHORT AI Bekliyor	202.38000	202.53600	201.91200	3.00	M30/H1	202.69800	201.95000	1.10%
+NZD/USD	0.58767	up	—	—	—	—	—	—	—	—	—
+EUR/CAD	1.61055	—	PENDING · SHORT · ticket 19441845 bekliyor	1.61055	1.61105	1.60905	—	BEKLİYOR	—	—	—
+AUD/CHF	0.56343	—	PENDING · LONG · ticket 19441811 bekliyor	0.56343	0.56257	0.56602	—	BEKLİYOR	—	—	—
+CAD/CHF	0.56872	—	PENDING · LONG · ticket 19441897 bekliyor	0.56872	0.56822	0.57022	—	BEKLİYOR	—	—	—
+CAD/JPY	115.42600	—	PENDING · SHORT · ticket 19441866 bekliyor	115.42600	115.53900	115.08800	—	BEKLİYOR	—	—	—
+AUD/JPY	114.26500	up	—	—	—	—	—	—	—	—	—
+NZD/CHF	0.46443	up	—	—	—	—	—	—	—	—	—
+GBP/JPY	214.76100	up	—	—	—	—	—	—	—	—	—
+GBP/CAD	1.86239	up	—	—	—	—	—	—	—	—	—
+Sinyal Sonuç / Sebep (İnceleme Alanı)Gizle
+EUR/GBP · SHORT · R:R 3.00
+Strateji: core
+Aksiyon: WAIT (core_kosul_eksik)
+Entry Tetik: elliott_bias_uyumsuz
+Invalidation: SL 0.86431
+Take Profit: TP 0.86314
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend yatay, dar bölge, yüksek RR
+Onay: M15/H1
+Geçersiz olma: H1 kapanış SL (0.86431) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 0.13%
+Lot (öneri): 0.21 · Hedef risk $8.43 · Marjin 28.9%
+1 Lot Notional: $86402
+SL vurursa kayip: $8.31 (~%1.97 bakiye)
+TP vurursa kar: $24.94 (~%5.92 bakiye)
+#XTZUSD · SHORT · R:R 3.00
+Strateji: vwap_reclaim
+Aksiyon: WAIT (vwap_kosul_eksik)
+Entry Tetik: VWAP reclaim + guclu mum
+Invalidation: SL 0.30700
+Take Profit: TP 0.29500
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend aşağı, dar bölge, yüksek RR
+Onay: M30/H1
+Geçersiz olma: H1 kapanış SL (0.30700) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 1.10%
+Lot (öneri): 0.14 · Hedef risk $8.43 · Marjin 10.1%
+1 Lot Notional: $6080
+SL vurursa kayip: $8.40 (~%1.99 bakiye)
+TP vurursa kar: $25.20 (~%5.98 bakiye)
+#DOTUSD · SHORT · R:R 3.00
+Strateji: vwap_reclaim
+Aksiyon: WAIT (vwap_kosul_eksik)
+Entry Tetik: VWAP reclaim + guclu mum
+Invalidation: SL 1.12200
+Take Profit: TP 1.08200
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend aşağı, dar bölge, yüksek RR
+Onay: M30/H1
+Geçersiz olma: H1 kapanış SL (1.12200) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 1.10%
+Lot (öneri): 0.84 · Hedef risk $8.43 · Marjin 33.5%
+1 Lot Notional: $3336
+SL vurursa kayip: $8.40 (~%1.99 bakiye)
+TP vurursa kar: $25.20 (~%5.98 bakiye)
+#DOGEUSD · SHORT · R:R 3.00
+Strateji: vwap_reclaim
+Aksiyon: WAIT (vwap_kosul_eksik)
+Entry Tetik: VWAP reclaim + guclu mum
+Invalidation: SL 0.09415
+Take Profit: TP 0.09095
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend aşağı, dar bölge, yüksek RR
+Onay: M30/H1
+Geçersiz olma: H1 kapanış SL (0.09415) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 1.10%
+Lot (öneri): 0.1 · Hedef risk $8.43 · Marjin 11.2%
+1 Lot Notional: $9335
+SL vurursa kayip: $8.00 (~%1.90 bakiye)
+TP vurursa kar: $24.00 (~%5.69 bakiye)
+#DSHUSD · SHORT · R:R 3.00
+Strateji: vwap_reclaim
+Aksiyon: WAIT (vwap_kosul_eksik)
+Entry Tetik: VWAP reclaim + guclu mum
+Invalidation: SL 39.95000
+Take Profit: TP 38.63000
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend aşağı, dar bölge, yüksek RR
+Onay: M30/H1
+Geçersiz olma: H1 kapanış SL (39.95000) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 1.10%
+Lot (öneri): 0.08 · Hedef risk $8.43 · Marjin 11.3%
+1 Lot Notional: $11886
+SL vurursa kayip: $7.92 (~%1.88 bakiye)
+TP vurursa kar: $23.76 (~%5.64 bakiye)
+CHF/JPY · SHORT · R:R 3.00
+Strateji: vwap_reclaim
+Aksiyon: WAIT (vwap_kosul_eksik)
+Entry Tetik: VWAP reclaim + guclu mum
+Invalidation: SL 202.53600
+Take Profit: TP 201.91200
+Öneri: Pas
+Sonuç: İzleme
+Sebep: trend aşağı, dar bölge, yüksek RR
+Onay: M30/H1
+Geçersiz olma: H1 kapanış SL (202.53600) üstü
+Güvenlik Notu: AI onayi yok
+Bölge: 1.10%
+Lot (öneri): 0.08 · Hedef risk $8.43 · Marjin 12.0%
+1 Lot Notional: $20238000
+SL vurursa kayip: $7.80 (~%1.85 bakiye)
+TP vurursa kar: $23.41 (~%5.55 bakiye)
+Geçmiş Sinyaller (Kartlık Backtest)Gizle
+MT5 gercek acik pozisyonlar ve kapanan islemler listelenir (simulasyon degil).
+Gercek MT5 Ozeti: Acik 1 · TP/Kar 13 · Stop/Zarar 11
+Devam Eden
+CAC40.x LONG
+Entry 8165.30 · Lot 0.04
+Kar/Zarar: -1.62
+Açık
+TP Olan
+CHFJPY LONG
+Kapanış 202.39 · Lot 0.01
+Kar/Zarar: 0.25
+Kapanış: 6/3/2026, 6:47:27 PM
+Russel2000.x LONG
+Kapanış 2922.44 · Lot 0.08
+Kar/Zarar: 9.76
+Kapanış: 6/3/2026, 1:52:31 PM
+XAUUSD SHORT
+Kapanış 4460.45 · Lot 0.01
+Kar/Zarar: 1.17
+Kapanış: 6/3/2026, 1:44:01 PM
+GBPCHF SHORT
+Kapanış 1.06 · Lot 0.06
+Kar/Zarar: 0.76
+Kapanış: 6/2/2026, 12:11:11 AM
+XAGUSDMIN.x LONG
+Kapanış 75.29 · Lot 0.01
+Kar/Zarar: 1.66
+Kapanış: 6/2/2026, 12:11:04 AM
+SP500.x LONG
+Kapanış 7600.30 · Lot 0.01
+Kar/Zarar: 6.25
+Kapanış: 6/1/2026, 11:31:21 PM
+#BNBUSD LONG
+Kapanış 679.75 · Lot 0.05
+Kar/Zarar: 0.20
+Kapanış: 6/1/2026, 10:26:44 PM
+#BNBUSD SHORT
+Kapanış 674.77 · Lot 0.01
+Kar/Zarar: 0.36
+Kapanış: 6/1/2026, 10:11:20 PM
+AUDJPY LONG
+Kapanış 114.11 · Lot 0.06
+Kar/Zarar: 2.93
+Kapanış: 6/1/2026, 9:24:40 PM
+GBPNZD SHORT
+Kapanış 2.27 · Lot 0.03
+Kar/Zarar: 2.79
+Kapanış: 6/1/2026, 9:18:30 PM
+Russel2000.x SHORT
+Kapanış 2888.50 · Lot 0.01
+Kar/Zarar: 11.99
+Kapanış: 6/1/2026, 8:04:25 PM
+WAI.x LONG
+Kapanış 13521.44 · Lot 0.01
+Kar/Zarar: 3.38
+Kapanış: 6/1/2026, 6:32:01 PM
+NAS100.x SHORT
+Kapanış 30500.08 · Lot 0.01
+Kar/Zarar: 0.05
+Kapanış: 6/1/2026, 1:18:28 PM
+Stop Olan
+GER30.x LONG
+Kapanış 24803.70 · Lot 0.01
+Kar/Zarar: -16.86
+Kapanış: 6/3/2026, 7:49:07 PM
+USDJPY LONG
+Kapanış 159.79 · Lot 0.01
+Kar/Zarar: -0.25
+Kapanış: 6/3/2026, 3:58:16 PM
+Russel2000.x LONG
+Kapanış 2917.98 · Lot 0.05
+Kar/Zarar: -8.68
+Kapanış: 6/3/2026, 3:58:05 PM
+GER30.x LONG
+Kapanış 24898.40 · Lot 0.01
+Kar/Zarar: -12.95
+Kapanış: 6/3/2026, 1:32:22 PM
+CAC40.x LONG
+Kapanış 8172.10 · Lot 0.19
+Kar/Zarar: -11.04
+Kapanış: 6/3/2026, 12:34:18 PM
+EURAUD SHORT
+Kapanış 1.62 · Lot 0.24
+Kar/Zarar: -10.13
+Kapanış: 6/3/2026, 12:27:26 PM
+#AVEUSD SHORT
+Kapanış 80.24 · Lot 0.01
+Kar/Zarar: -1.88
+Kapanış: 6/2/2026, 12:10:56 AM
+GER30.x SHORT
+Kapanış 25275.20 · Lot 0.01
+Kar/Zarar: -6.97
+Kapanış: 6/1/2026, 6:44:50 PM
+EURCAD SHORT
+Kapanış 1.61 · Lot 0.08
+Kar/Zarar: -4.34
+Kapanış: 6/1/2026, 6:31:56 PM
+Russel2000.x LONG
+Kapanış 2914.77 · Lot 0.02
+Kar/Zarar: -4.46
+Kapanış: 6/1/2026, 5:50:16 PM
+CAC40.x SHORT
+Kapanış 8209.80 · Lot 0.02
+Kar/Zarar: -3.98
+Kapanış: 6/1/2026, 5:39:57 PM
+Pas Gecenler (Hipotetik Backtest)Gizle
+Sistem "Pas/Bekle" dedigi sinyaller girilseydi, sonraki fiyat akisina gore TP/Stop/Devam olarak izlenir.
+Pas Backtest: Devam 67 · TP 11 · Stop 47
+Devam Eden
+USD/HKD LONG
+Entry 7.83448 · SL 7.83256 · TP 7.84024
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+#DSHUSD SHORT
+Entry 39.64000 · SL 39.95000 · TP 38.71000
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+#DOTUSD SHORT
+Entry 1.11300 · SL 1.12200 · TP 1.08600
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+ALUMINIUM LONG
+Entry 3682.00000 · SL 3673.20000 · TP 3708.40000
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/MXN LONG
+Entry 17.31895 · SL 17.26785 · TP 17.47225
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+GBP/AUD LONG
+Entry 1.87964 · SL 1.87509 · TP 1.89329
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+GER30.X SHORT
+Entry 24820.80000 · SL 25079.30000 · TP 24045.30000
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+EUR/GBP SHORT
+Entry 0.86406 · SL 0.86431 · TP 0.86330
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/NOK SHORT
+Entry 10.79575 · SL 10.79958 · TP 10.78427
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/MXN SHORT
+Entry 17.32465 · SL 17.33531 · TP 17.29268
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/NZD SHORT
+Entry 1.97506 · SL 1.97637 · TP 1.97114
+Str: core · Rec: Pas
+Durum: Beklemede
+#DOGEUSD SHORT
+Entry 0.09405 · SL 0.09453 · TP 0.09260
+Str: core · Rec: Pas
+Durum: Beklemede
+N225.X LONG
+Entry 67992.00000 · SL 67806.10000 · TP 68549.70000
+Str: core · Rec: Pas
+Durum: Beklemede
+WAI.X LONG
+Entry 13361.10000 · SL 13329.22325 · TP 13456.73025
+Str: core · Rec: Pas
+Durum: Beklemede
+GBP/NZD SHORT
+Entry 2.28538 · SL 2.28688 · TP 2.28087
+Str: core · Rec: Pas
+Durum: Beklemede
+#BNBUSD SHORT
+Entry 631.14000 · SL 646.74000 · TP 584.34000
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+NZD/CAD LONG
+Entry 0.81518 · SL 0.81452 · TP 0.81715
+Str: core · Rec: Pas
+Durum: Beklemede
+NZD/CHF LONG
+Entry 0.46421 · SL 0.46396 · TP 0.46496
+Str: core · Rec: Pas
+Durum: Beklemede
+CHF/JPY SHORT
+Entry 202.45100 · SL 202.75410 · TP 201.54170
+Str: core · Rec: Pas
+Durum: Beklemede
+#AVEUSD SHORT
+Entry 76.42000 · SL 77.01500 · TP 74.63500
+Str: core · Rec: Pas
+Durum: Beklemede
+GBP/TRY LONG
+Entry 61.70131 · SL 61.67317 · TP 61.78573
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/PLN LONG
+Entry 4.23720 · SL 4.23505 · TP 4.24365
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+EUR/JPY SHORT
+Entry 185.53900 · SL 185.83093 · TP 184.66322
+Str: core · Rec: Pas
+Durum: Beklemede
+#XLMUSD SHORT
+Entry 0.22870 · SL 0.23200 · TP 0.21880
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+CAD/JPY LONG
+Entry 115.27700 · SL 114.99305 · TP 116.12885
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/NZD LONG
+Entry 1.97171 · SL 1.96508 · TP 1.99160
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+GOLD SHORT
+Entry 4452.62000 · SL 4465.62000 · TP 4413.62000
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+USD/CAD LONG
+Entry 1.38699 · SL 1.38455 · TP 1.39431
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+#LTCUSD SHORT
+Entry 47.05000 · SL 47.24500 · TP 46.46500
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+EUR/USD LONG
+Entry 1.15994 · SL 1.15921 · TP 1.16213
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/TRY LONG
+Entry 53.30031 · SL 53.26957 · TP 53.39253
+Str: core · Rec: Pas
+Durum: Beklemede
+GBP/JPY LONG
+Entry 214.78300 · SL 214.33980 · TP 216.11260
+Str: core · Rec: Pas
+Durum: Beklemede
+CHF/JPY LONG
+Entry 202.31500 · SL 201.83607 · TP 203.75178
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/JPY LONG
+Entry 185.50300 · SL 185.02038 · TP 186.95087
+Str: core · Rec: Pas
+Durum: Beklemede
+PLATIN SHORT
+Entry 1910.30000 · SL 1932.78000 · TP 1842.86000
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+DXY.X SHORT
+Entry 99.18200 · SL 99.24300 · TP 98.99900
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/ZAR SHORT
+Entry 16.29820 · SL 16.33867 · TP 16.17680
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/HKD SHORT
+Entry 7.83376 · SL 7.83648 · TP 7.82560
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/SEK SHORT
+Entry 10.88930 · SL 10.91044 · TP 10.82587
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/PLN SHORT
+Entry 3.65143 · SL 3.65550 · TP 3.63921
+Str: core · Rec: Pas
+Durum: Beklemede
+AUD/NZD SHORT
+Entry 1.21542 · SL 1.21658 · TP 1.21195
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/CHF SHORT
+Entry 0.91678 · SL 0.91752 · TP 0.91456
+Str: core · Rec: Pas
+Durum: Beklemede
+#BTCEUR SHORT
+Entry 57833.57000 · SL 58020.42850 · TP 57272.99450
+Str: core · Rec: Pas
+Durum: Beklemede
+AUD/JPY LONG
+Entry 114.35900 · SL 114.16972 · TP 114.92682
+Str: core · Rec: Pas
+Durum: Beklemede
+NZD/USD SHORT
+Entry 0.58888 · SL 0.59197 · TP 0.57961
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+EUR/AUD LONG
+Entry 1.62164 · SL 1.62045 · TP 1.62521
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+USD/ZAR LONG
+Entry 16.29160 · SL 16.25025 · TP 16.41565
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+CAC40.X LONG
+Entry 8171.70000 · SL 8156.89250 · TP 8216.12250
+Str: core · Rec: Pas
+Durum: Beklemede
+PALADYUM SHORT
+Entry 1342.60000 · SL 1376.30000 · TP 1241.50000
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+USD/JPY SHORT
+Entry 159.86000 · SL 160.03573 · TP 159.33283
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/GBP LONG
+Entry 0.86362 · SL 0.86327 · TP 0.86467
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+EUR/SEK LONG
+Entry 10.88570 · SL 10.86610 · TP 10.94450
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+GBP/NZD LONG
+Entry 2.28053 · SL 2.27859 · TP 2.28635
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+AUD/NZD LONG
+Entry 1.21478 · SL 1.21372 · TP 1.21796
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+EUR/CHF LONG
+Entry 0.91646 · SL 0.91609 · TP 0.91757
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+GBP/CHF LONG
+Entry 1.06116 · SL 1.06062 · TP 1.06278
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+#UNIUSD LONG
+Entry 2.88300 · SL 2.86500 · TP 2.93700
+Str: turtle_sopa · Rec: Pas
+Durum: Beklemede
+CAD/CHF LONG
+Entry 0.56968 · SL 0.56918 · TP 0.57118
+Str: vwap_reclaim · Rec: Pas
+Durum: Beklemede
+#THTUSD LONG
+Entry 0.18700 · SL 0.17500 · TP 0.22300
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+USD/TRY SHORT
+Entry 45.91120 · SL 45.91309 · TP 45.90553
+Str: core · Rec: Pas
+Durum: Beklemede
+GBP/JPY SHORT
+Entry 214.97200 · SL 215.23793 · TP 214.17422
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/PLN SHORT
+Entry 4.23580 · SL 4.24221 · TP 4.21659
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/NOK LONG
+Entry 10.77880 · SL 10.76106 · TP 10.83201
+Str: core · Rec: Pas
+Durum: Beklemede
+EUR/USD SHORT
+Entry 1.16184 · SL 1.16253 · TP 1.15976
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/NOK LONG
+Entry 9.26615 · SL 9.25204 · TP 9.30847
+Str: core · Rec: Pas
+Durum: Beklemede
+USD/PLN LONG
+Entry 3.64523 · SL 3.64231 · TP 3.65400
+Str: core · Rec: Pas
+Durum: Beklemede
+AUD/JPY SHORT
+Entry 114.50700 · SL 114.85100 · TP 113.47500
+Str: sr_breakout · Rec: Pas
+Durum: Beklemede
+TP Olan
+SILVER SHORT
+Entry 74.28600 · SL 74.48700 · TP 73.68300
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+XAGUSDMIN.X SHORT
+Entry 74.27800 · SL 74.48700 · TP 73.65100
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+GBP/AUD LONG
+Entry 1.87719 · SL 1.87618 · TP 1.88022
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+RUSSEL2000.X SHORT
+Entry 2919.43000 · SL 2923.26000 · TP 2907.94000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+WAI.X SHORT
+Entry 13413.44000 · SL 13425.85000 · TP 13376.21000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+EUR/CAD LONG
+Entry 1.60864 · SL 1.60810 · TP 1.61026
+Str: core · Rec: Bekle
+Sonuc: TP/Kar
+SILVER SHORT
+Entry 74.36500 · SL 74.49800 · TP 73.96600
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+XAGUSDMIN.X SHORT
+Entry 74.36700 · SL 74.49800 · TP 73.97400
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+PLATIN SHORT
+Entry 1928.00000 · SL 1933.95600 · TP 1910.13200
+Str: core · Rec: Pas
+Sonuc: TP/Kar
+EUR/TRY SHORT
+Entry 53.38691 · SL 53.41724 · TP 53.29593
+Str: core · Rec: Pas
+Sonuc: TP/Kar
+CAC40.X SHORT
+Entry 8183.50000 · SL 8188.40000 · TP 8168.80000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: TP/Kar
+Stop Olan
+DJ30.X LONG
+Entry 51012.00000 · SL 50935.65000 · TP 51241.05000
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/CAD SHORT
+Entry 1.60922 · SL 1.61005 · TP 1.60673
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+#DSHUSD SHORT
+Entry 39.76000 · SL 39.86000 · TP 39.46000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/NZD SHORT
+Entry 1.97296 · SL 1.97443 · TP 1.96855
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+NZD/CHF LONG
+Entry 0.46447 · SL 0.46425 · TP 0.46513
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+COPPER LONG
+Entry 13872.00000 · SL 13845.37500 · TP 13951.87500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+N225.X LONG
+Entry 68264.00000 · SL 68088.82500 · TP 68789.52500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+#DOGEUSD SHORT
+Entry 0.09385 · SL 0.09425 · TP 0.09265
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/AUD SHORT
+Entry 1.62312 · SL 1.62356 · TP 1.62180
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/GBP SHORT
+Entry 0.86402 · SL 0.86410 · TP 0.86378
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/AUD SHORT
+Entry 1.87815 · SL 1.87871 · TP 1.87646
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/AUD SHORT
+Entry 1.62221 · SL 1.62248 · TP 1.62141
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+RUSSEL2000.X LONG
+Entry 2912.67000 · SL 2897.95125 · TP 2956.82625
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+#ETHBTC LONG
+Entry 0.02792 · SL 0.02788 · TP 0.02803
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+ALUMINIUM LONG
+Entry 3700.00000 · SL 3693.62500 · TP 3719.12500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/USD LONG
+Entry 1.34304 · SL 1.34230 · TP 1.34525
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+NZD/CAD LONG
+Entry 0.81573 · SL 0.81521 · TP 0.81729
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+NZD/JPY LONG
+Entry 94.08100 · SL 93.95710 · TP 94.45270
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+NZD/USD LONG
+Entry 0.58828 · SL 0.58772 · TP 0.58996
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+WAI.X LONG
+Entry 13405.04000 · SL 13381.91975 · TP 13474.40075
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GER30.X LONG
+Entry 24894.20000 · SL 24803.94250 · TP 25164.97250
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+USD/MXN SHORT
+Entry 17.30325 · SL 17.32190 · TP 17.24730
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/NZD SHORT
+Entry 1.97128 · SL 1.97244 · TP 1.96779
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/NZD SHORT
+Entry 2.28258 · SL 2.28433 · TP 2.27734
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+CAD/CHF SHORT
+Entry 0.56995 · SL 0.57013 · TP 0.56940
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/GBP SHORT
+Entry 0.86352 · SL 0.86376 · TP 0.86280
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+EUR/NOK SHORT
+Entry 10.78630 · SL 10.79528 · TP 10.75937
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+AUD/CAD LONG
+Entry 0.99190 · SL 0.99110 · TP 0.99430
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+SP500.X LONG
+Entry 7593.30000 · SL 7590.33750 · TP 7602.18750
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+RUSSEL2000.X LONG
+Entry 2914.55000 · SL 2913.59775 · TP 2917.40675
+Str: core · Rec: Bekle
+Sonuc: Stop/Zarar
+NAS100.X LONG
+Entry 30677.89000 · SL 30632.30900 · TP 30814.63300
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+#ETHBTC LONG
+Entry 0.02797 · SL 0.02793 · TP 0.02809
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+CAD/JPY SHORT
+Entry 115.34500 · SL 115.37700 · TP 115.24900
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+RUSSEL2000.X LONG
+Entry 2917.97000 · SL 2915.91975 · TP 2924.12075
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+SP500.X LONG
+Entry 7596.40000 · SL 7594.96000 · TP 7600.72000
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+COPPER LONG
+Entry 13891.00000 · SL 13864.72500 · TP 13969.82500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GOLD SHORT
+Entry 4453.16000 · SL 4464.47000 · TP 4419.23000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+CAD/JPY LONG
+Entry 115.36900 · SL 115.31800 · TP 115.52200
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+AUD/CHF LONG
+Entry 0.56527 · SL 0.56497 · TP 0.56617
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/CAD LONG
+Entry 1.86245 · SL 1.86193 · TP 1.86402
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+N225.X LONG
+Entry 68277.00000 · SL 68189.87500 · TP 68538.37500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+WTI.X LONG
+Entry 97.98000 · SL 97.07000 · TP 100.71000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+BRENT.X LONG
+Entry 101.41000 · SL 100.74000 · TP 103.42000
+Str: vwap_reclaim · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/TRY LONG
+Entry 61.77694 · SL 61.74726 · TP 61.86598
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+GBP/USD LONG
+Entry 1.34425 · SL 1.34383 · TP 1.34552
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+ALUMINIUM LONG
+Entry 3724.00000 · SL 3716.97500 · TP 3745.07500
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+NZD/CHF LONG
+Entry 0.46534 · SL 0.46483 · TP 0.46687
+Str: core · Rec: Pas
+Sonuc: Stop/Zarar
+AI Analiz (OpenAI)Gizle
+Tarama sonrası analiz alabilirsiniz.
+Analiz Et
+Debug / Log
+Debug: Açık
+Log Yenile
+Ayar Yedekle (JSON)
+Ayar Geri Yükle
+Trades CSV İndir
+Backend log satırı: 9
+5:21:08 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:11 PM · snapshot open=1 closed=24
+5:21:11 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:14 PM · snapshot open=1 closed=24
+5:21:14 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:18 PM · snapshot open=1 closed=24
+5:21:18 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:21 PM · snapshot open=1 closed=24
+5:21:21 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:23 PM · scan_skip_open_pos CAC40.X side=LONG ticket=19441352
+5:21:24 PM · snapshot open=1 closed=24
+5:21:24 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:27 PM · snapshot open=1 closed=24
+5:21:27 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:31 PM · snapshot open=1 closed=24
+5:21:31 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:34 PM · snapshot open=1 closed=24
+5:21:34 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:35 PM · health MT5 OK account=506185 mode=real
+5:21:38 PM · snapshot open=1 closed=24
+5:21:38 PM · perf core(24) s=1.07 turtle(0) s=1.00
+5:21:41 PM · snapshot open=1 closed=24

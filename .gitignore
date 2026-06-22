@@ -1,10 +1,16 @@
 .env
+.env.vantage
 *.db
 *.sqlite
 *.sqlite3
 node_modules/
+runtime/python313/
 __pycache__/
 *.pyc
 *.log
+# Calisma zamani verisi (whitelist ornekleri haric)
+data/*
+!data/lat_forex_whitelist.json
+!data/lat_crypto_whitelist.json
 # GitHub 100MB tek dosya limitini asan referans materyalleri
 knowledge/idoc.pub_*.pdf
