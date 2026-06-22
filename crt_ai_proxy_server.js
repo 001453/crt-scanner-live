@@ -51,8 +51,55 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/responses';
 const DB_PATH = resolveProjectPath(process.env.CRT_DB_PATH, 'data/trade_log.db');
 const MANAGE_CFG_PATH = resolveProjectPath(process.env.CRT_MANAGE_CFG_PATH, 'data/manage_cfg.json');
+const TRENDGRID334_GUARD_PATH = resolveProjectPath(process.env.CRT_TRENDGRID334_GUARD_PATH, 'data/trendgrid334_guard.json');
+const TRENDGRID334_MAGIC = 334001;
+const TRENDGRID334_COMMENT_PREFIX = 'TG334';
+const TRENDGRID334_DEFAULT_SYMBOL = 'EURUSD';
 const QUICK_TP_USD = Math.max(0, Number(process.env.CRT_QUICK_TP_USD || 2));
 const MAX_SL_USD = Math.max(0, Number(process.env.CRT_MAX_SL_USD || 8));
+
+const DEFAULT_TRENDGRID334_GUARD = {
+  active: false,
+  symbol: TRENDGRID334_DEFAULT_SYMBOL,
+  magic: TRENDGRID334_MAGIC,
+  comment_prefix: TRENDGRID334_COMMENT_PREFIX
+};
+
+function loadTrendGrid334Guard() {
+  try {
+    if (fs.existsSync(TRENDGRID334_GUARD_PATH)) {
+      const saved = JSON.parse(fs.readFileSync(TRENDGRID334_GUARD_PATH, 'utf8'));
+      return { ...DEFAULT_TRENDGRID334_GUARD, ...saved };
+    }
+  } catch (_) { /* ignore */ }
+  return { ...DEFAULT_TRENDGRID334_GUARD };
+}
+
+function saveTrendGrid334Guard(payload) {
+  const merged = { ...DEFAULT_TRENDGRID334_GUARD, ...(payload && typeof payload === 'object' ? payload : {}) };
+  merged.active = !!merged.active;
+  merged.symbol = String(merged.symbol || TRENDGRID334_DEFAULT_SYMBOL).trim().toUpperCase() || TRENDGRID334_DEFAULT_SYMBOL;
+  merged.magic = Number(merged.magic || TRENDGRID334_MAGIC) || TRENDGRID334_MAGIC;
+  merged.comment_prefix = String(merged.comment_prefix || TRENDGRID334_COMMENT_PREFIX).trim() || TRENDGRID334_COMMENT_PREFIX;
+  fs.mkdirSync(path.dirname(TRENDGRID334_GUARD_PATH), { recursive: true });
+  fs.writeFileSync(TRENDGRID334_GUARD_PATH, JSON.stringify(merged, null, 2));
+  return merged;
+}
+
+function isTrendGrid334ExclusiveSymbol(symbol) {
+  const guard = loadTrendGrid334Guard();
+  if (!guard.active) return false;
+  const sym = String(symbol || '').trim().toUpperCase();
+  const reserved = String(guard.symbol || TRENDGRID334_DEFAULT_SYMBOL).trim().toUpperCase();
+  return sym === reserved;
+}
+
+const PY_TG334_SKIP_LINES = [
+  'def is_tg334_owned(obj):',
+  `  magic=int(getattr(obj,"magic",0) or 0)`,
+  '  comment=str(getattr(obj,"comment","") or "")',
+  `  return magic==${TRENDGRID334_MAGIC} or comment.startswith("${TRENDGRID334_COMMENT_PREFIX}")`
+];
 
 const DEFAULT_MANAGE_CFG = {
   tp1_rr: 999,
@@ -1371,7 +1418,8 @@ async function handleTradeSnapshot(_req, res) {
       '  elif "ict" in lc or "liquidity" in lc: strategy_tag = "ict_liquidity"',
       '  elif "lat" in lc: strategy_tag = "lat_flash"',
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
-      '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag})',
+      '  elif comment.startswith("TG334") or int(getattr(p,"magic",0) or 0)==334001: strategy_tag = "trendgrid334"',
+      '  open_rows.append({"ticket": int(getattr(p, "ticket", 0) or 0), "symbol": str(getattr(p, "symbol", "") or ""), "side": side, "volume": float(getattr(p, "volume", 0) or 0), "price_open": float(getattr(p, "price_open", 0) or 0), "sl": float(getattr(p, "sl", 0) or 0), "tp": float(getattr(p, "tp", 0) or 0), "profit": float(getattr(p, "profit", 0) or 0), "time": int(getattr(p, "time", 0) or 0), "comment": comment, "strategy_tag": strategy_tag, "magic": int(getattr(p,"magic",0) or 0)})',
       'deals = mt5.history_deals_get(from_dt, to_dt) or []',
       'closed_rows = []',
       'for d in deals:',
@@ -1417,6 +1465,7 @@ async function handleTradeSnapshot(_req, res) {
       '  elif "sr_break" in lc or "sr-" in lc: strategy_tag = "sr_breakout"',
       '  elif "ict" in lc or "liquidity" in lc: strategy_tag = "ict_liquidity"',
       '  elif "lat" in lc: strategy_tag = "lat_flash"',
+      '  elif comment.startswith("TG334") or int(getattr(o,"magic",0) or 0)==334001: strategy_tag = "trendgrid334"',
       '  side = "LONG" if ot in (int(mt5.ORDER_TYPE_BUY_LIMIT), int(mt5.ORDER_TYPE_BUY_STOP)) else "SHORT"',
       '  sym_name = str(getattr(o,"symbol","") or "")',
       '  bid_v = 0.0; ask_v = 0.0',
@@ -1440,7 +1489,8 @@ async function handleTradeSnapshot(_req, res) {
       '    "bid": bid_v,',
       '    "ask": ask_v,',
       '    "comment": comment,',
-      '    "strategy_tag": strategy_tag',
+      '    "strategy_tag": strategy_tag,',
+      '    "magic": int(getattr(o,"magic",0) or 0)',
       '  })',
       'mt5.shutdown()',
       'print(json.dumps({"ok": True, "account_login": acc_login, "account_mode": acc_mode, "open_positions": open_rows, "closed_deals": closed_rows, "pending_orders": pending_rows}), flush=True)'
@@ -1516,6 +1566,7 @@ async function handleManagePositions(req, res) {
       '  print(json.dumps(out), flush=True)',
       '  raise SystemExit(0)',
       'positions=mt5.positions_get() or []',
+      ...PY_TG334_SKIP_LINES,
       'actions=[]',
       'def adopt_levels(symbol, side, entry, point):',
       '  # SL/TP atanmamis pozisyonu son 96 M15 mumdan CRH/CRL ve ATR ile sahiplen',
@@ -1551,6 +1602,7 @@ async function handleManagePositions(req, res) {
       '    tp_new=entry - risk*2.0',
       '  return {"sl":float(sl_new),"tp":float(tp_new),"crh":float(crh),"crl":float(crl),"atr":float(atr)}',
       'for pos in positions:',
+      '  if is_tg334_owned(pos): continue',
       '  ticket=int(getattr(pos,"ticket",0) or 0)',
       '  symbol=str(getattr(pos,"symbol","") or "")',
       '  side="LONG" if int(getattr(pos,"type",-1))==mt5.POSITION_TYPE_BUY else "SHORT"',
@@ -1819,6 +1871,7 @@ async function handleManagePositions(req, res) {
       '# Pozisyonlari kategoriye ayir',
       'positions_by_cat={}',
       'for pp in fresh_positions:',
+      '  if is_tg334_owned(pp): continue',
       '  cat=pos_category(pp)',
       '  positions_by_cat.setdefault(cat,[]).append(pp)',
       '# Enabled kategori basket setleri (en az 1 esik tanimliysa enabled sayilir)',
@@ -2193,11 +2246,41 @@ async function handleResetPortfolioState(req, res) {
   }
 }
 
+async function handleTrendGrid334Guard(req, res) {
+  try {
+    if (req.method === 'GET') {
+      writeJson(res, 200, { ok: true, ...loadTrendGrid334Guard() });
+      return;
+    }
+    if (req.method === 'POST') {
+      const body = await readBody(req);
+      const payload = JSON.parse(body || '{}');
+      const saved = saveTrendGrid334Guard(payload);
+      logEvent('info', 'trendgrid334_guard.updated', { active: saved.active, symbol: saved.symbol });
+      writeJson(res, 200, { ok: true, ...saved });
+      return;
+    }
+    writeJson(res, 405, { ok: false, error: 'method_not_allowed' });
+  } catch (err) {
+    writeJson(res, 500, { ok: false, error: 'trendgrid334_guard_failed', detail: err.message });
+  }
+}
+
 async function handleExecuteOrder(req, res) {
   const startedAt = Date.now();
   try {
     const body = await readBody(req);
     const payload = JSON.parse(body || '{}');
+    const execSymbol = String(payload.symbol || '').trim().toUpperCase();
+    if (isTrendGrid334ExclusiveSymbol(execSymbol)) {
+      logEvent('warn', 'execute_order.trendgrid334_blocked', { symbol: execSymbol });
+      writeJson(res, 403, {
+        ok: false,
+        error: 'trendgrid334_ea_exclusive',
+        detail: `${execSymbol} TrendGrid334 EA tarafindan yonetiliyor. Dashboard emirleri bu paritede kapali.`
+      });
+      return;
+    }
     const targetAccountType = String(payload.target_account_type || '').trim().toLowerCase();
     if (!['demo', 'live'].includes(targetAccountType)) {
       logEvent('warn', 'execute_order.invalid_target_account_type', { targetAccountType });
@@ -2612,6 +2695,10 @@ const server = http.createServer((req, res) => {
   }
   if (routePath === '/api/manage-positions' && req.method === 'POST') {
     handleManagePositions(req, res);
+    return;
+  }
+  if (routePath === '/api/trendgrid334-guard' && (req.method === 'GET' || req.method === 'POST')) {
+    handleTrendGrid334Guard(req, res);
     return;
   }
   if (routePath === '/api/reset-portfolio-state' && req.method === 'POST') {

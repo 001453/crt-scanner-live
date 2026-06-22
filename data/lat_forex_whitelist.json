@@ -103,27 +103,20 @@
     }
   ],
   "whitelist": [
-    {
-      "symbol": "USDJPY",
-      "trades": 164,
-      "wr": 51.2,
-      "pf": 1.31,
-      "avg_rr": 1.24
-    },
-    {
-      "symbol": "GBPUSD",
-      "trades": 178,
-      "wr": 46.1,
-      "pf": 1.2,
-      "avg_rr": 1.24
-    },
-    {
-      "symbol": "EURUSD",
-      "trades": 151,
-      "wr": 49.0,
-      "pf": 1.18,
-      "avg_rr": 1.24
-    }
+    {"symbol": "USDJPY", "trades": 164, "wr": 51.2, "pf": 1.31, "avg_rr": 1.24},
+    {"symbol": "EURUSD", "trades": 151, "wr": 49.0, "pf": 1.18, "avg_rr": 1.24},
+    {"symbol": "GBPUSD", "trades": 178, "wr": 46.1, "pf": 1.2, "avg_rr": 1.24},
+    {"symbol": "AUDUSD", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "major_fx"},
+    {"symbol": "USDCAD", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "major_fx"},
+    {"symbol": "USDCHF", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "major_fx"},
+    {"symbol": "NZDUSD", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "major_fx"},
+    {"symbol": "EURJPY", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "cross_fx"},
+    {"symbol": "GBPJPY", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "cross_fx"},
+    {"symbol": "XAUUSD", "trades": 253, "wr": 45.8, "pf": 0.9, "avg_rr": 1.24, "note": "manual_include"},
+    {"symbol": "XAGUSD", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "metals"},
+    {"symbol": "US30", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "indices"},
+    {"symbol": "US500", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "indices"},
+    {"symbol": "NAS100", "trades": 0, "wr": 0, "pf": 0, "avg_rr": 1.24, "note": "indices"}
   ],
   "rejected_count": 1,
   "error_count": 2,
@@ -131,7 +124,8 @@
     "trades": 746,
     "wins": 356,
     "wr": 47.7,
-    "whitelist_count": 3
+    "whitelist_count": 14
   },
-  "generated": "2026-06-05T13:48:29.743528+00:00"
+  "generated": "2026-06-22T12:00:00+00:00",
+  "notes": "Ilk 3 sembol backtest gecti; digerleri major/cross/metal/endeks genisletmesi (Lotas tarama havuzu)."
 }
